@@ -1,6 +1,6 @@
 # WWM R Data Workflow
 
-The purpose of WWM R Data Workflow is to process, analyze and plot WhereWeMoveData
+The purpose of WWM R Data Workflow is to process, analyze and plot WhereWeMove data
 
 ## Installation
 
