@@ -2,6 +2,23 @@
 
 The purpose of WWM R Data Workflow is to process, analyze and plot WhereWeMove data
 
+## Project Organization
+
+Below you can find the folder structure of this repository
+
+    ├── CHANGELOG.md              <- List of changes made to the project.
+    ├── LICENSE                   <- The license under which the project is released.
+    ├── WAIVER                    <- For authors to claim back ownership of this software.
+    ├── CITATION.cff              <- Citation file for the project.
+    ├── CONTRIBUTING.md           <- Guidelines on how to contribute to this project 
+    ├── README.md                 <- Top-level README for developers using this project.
+    ├── data/                     <- Stores raw and processed datasets.
+    ├── man/                      <- Contains documentation for package functions, ensuring proper descriptions and metadata.
+    ├── scripts/                  <- Contains R scripts for functions and analyses.
+    ├── tests/                    <- Tests for scripts in `scripts/`
+    └── vignettes/                <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the project effectively.
+
+
 ## Installation
 
 [Describe the steps that users (not developers) should follow to install the code in each of the intended platforms (e.g. Window 10, MacOS, etc.).]
