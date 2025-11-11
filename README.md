@@ -20,7 +20,12 @@ This software is distributed under a [Apache Software License](LICENSE).
 
 ## Copyright
 
-&copy; Juliette Cortes Arevalo, The Netherlands. 
+Juliette Cortes Arevalo, The Netherlands. 
+Alexander Verbraecken, The Netherlands.
+
+[CITATION](./CITATION.cff)
+[LICENSE](./LICENSE)
+[WAIVER](./WAIVER.md)
 
 ## Citation
 
