@@ -6,18 +6,32 @@ The purpose of WWM R Data Workflow is to process, analyze and plot WhereWeMove d
 
 Below you can find the folder structure of this repository
 
-    ├── CHANGELOG.md              <- List of changes made to the project.
-    ├── LICENSE                   <- The license under which the project is released.
-    ├── WAIVER                    <- For authors to claim back ownership of this software.
-    ├── CITATION.cff              <- Citation file for the project.
-    ├── CONTRIBUTING.md           <- Guidelines on how to contribute to this project 
-    ├── README.md                 <- Top-level README for developers using this project.
-    ├── data/                     <- Stores raw and processed datasets.
-    ├── man/                      <- Contains documentation for package functions, ensuring proper descriptions and metadata.
-    ├── scripts/                  <- Contains R scripts for functions and analyses.
-    ├── tests/                    <- Tests for scripts in `scripts/`
-    └── vignettes/                <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the project effectively.
+    ├── CHANGELOG.md                <- List of changes made to the project.
+    ├── LICENSE                     <- The license under which the project is released.
+    ├── WAIVER                      <- For authors to claim back ownership of this software.
+    ├── CITATION.cff                <- Citation file for the project.
+    ├── CONTRIBUTING.md             <- Guidelines on how to contribute to this project 
+    ├── README.md                   <- Top-level README for developers using this project.
+    ├──.gitignore                   <- Specifies files and directories to be ignored by Git.
+    ├── data/                       <- Stores raw and processed datasets.
+    ├── man/                        <- Contains documentation for package functions, ensuring proper descriptions and metadata.
+    ├── scripts/                    <- Contains R scripts for functions and analyses.
+    ├── tests/                      <- Tests for scripts in `scripts/`
+    ├── vignettes/                  <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the
+    |                                  project effectively.
+    |
+    ├── WWM-R-data-workflow.Rproj   <- R project file for easy access in RStudio created upon R project creation in RStudio.
+    ├── .Rprofile                   <- To activate renv when opening the project in RStudio.
+    ├── renv.lock                   <- Lock file for renv package management.
+    └── renv/                       <- renv library for package management.
 
+
+Here we followed guidelines for structuring software projects from the following resources:
+- [SS NES R Project Template](https://ss-nes.github.io/meta-template/r-case.html)
+- [FAIR Code Template for TU Delft](https://ss-nes.github.io/meta-template/python-case.html#fair-code-template-for-tu-delft)
+- [langtonhugh's reprod_r repository](https://github.com/langtonhugh/reprod_r)
+
+.Rprofile, renv.lock, and renv/ are created when creating renv package management for the R project.
 
 ## Installation
 
@@ -29,7 +43,7 @@ Below you can find the folder structure of this repository
 
 
 ### Community
-If you want to contribute with the development of WWM R Data Workflow, read our [contriguting guidelines](CONTRIBUTING.md).
+If you want to contribute with the development of WWM R Data Workflow, read our [contributing guidelines](CONTRIBUTING.md).
 
 
 ## License
