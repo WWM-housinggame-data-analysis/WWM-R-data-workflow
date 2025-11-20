@@ -1,1 +1,1 @@
-![](.github/imgs/251120_DCC Meeting # 2.jpg?raw=true)
+![](.github/imgs/251120_DCCMeeting2.jpg?raw=true)
