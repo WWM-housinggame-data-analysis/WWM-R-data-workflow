@@ -11,6 +11,16 @@ If that is done, make sure your Github fork repository is updated in the Github 
 
 2. If you do not have yet a local copy of your Github fork repository, [clone your fork repository in your own machine](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo#cloning-your-forked-repository).
 
+> Note:
+> When cloning the Github fork reprository via the terminal, you should be able to see the git remote connections to `origin` (Github fork repsoitory) and `upstream` (Github upstream repository) when running `git remote -v`:
+> ```
+> $ git remote -v
+> origin    https://github.com/YOUR-USERNAME/YOUR-FORK.git (fetch)
+> origin    https://github.com/YOUR-USERNAME/YOUR-FORK.git (push)
+> upstream  https://github.com/ORIGINAL-OWNER/ORIGINAL-REPOSITORY.git (fetch)
+> upstream  https://github.com/ORIGINAL-OWNER/ORIGINAL-REPOSITORY.git (push)
+> ``` 
+
 3. If you did that already, make sure your local fork is updated by running `git pull` in your terminal inside the main folder of thr local fork `R-data-analysis-BEPs/`.
 
 5. Inside the main folder of your local fork, create a subfolder where your code should be stored, e.g. `mkdir scripts_studentname/`
