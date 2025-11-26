@@ -4,7 +4,7 @@ The purpose of R-data-analysis-BEPs is to process, analyze and plot WhereWeMove 
 
 ## Contributing to the project
 
-![](.github/imgs/251120_DCCMeeting2.jpg?raw=true)
+![](.github/imgs/251126_Github_collab_workflow.jpg?raw=true)
 
 1. In the upstream repository [WWM-housinggame-data-analysis/R-data-analysis-BEPs](https://github.com/WWM-housinggame-data-analysis/R-data-analysis-BEPs), create a [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo#forking-a-repository) of (i.e. a copy of) this repository in your own Github account.
 If that is done, make sure your Github fork repository is updated in the Github webpage by clinking on [Sync Fork -> Update Branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork#syncing-a-fork-branch-from-the-web-ui)
