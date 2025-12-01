@@ -16,23 +16,22 @@ library(ggtext)
 
 
 # Get the path of the current script (works in RStudio)
-script_path <- rstudioapi::getActiveDocumentContext()$path
-script_dir_up <- dirname(dirname(script_path))
+getwd() # when you open Rstudio by clinking on .Rproj, default working directory is R-data-analysis-BEPs/
 
 # Load required functions
-function_path <- paste0(script_dir_up, "/", "Scripts_vjcortesa/functions")
-source(file.path(function_path, "Combine_csvs_to_excel_function_vjcortesa.R"))
-source(file.path(function_path, "Read_all_csvs_function_vjcortesa.R"))
+function_path <- file.path("scripts", "functions","manage-data")
+source(file.path(function_path, "combine_csvs_to_excel.R"))
+source(file.path(function_path, "read_all_csvs.R"))
 
 # Read the database folder to create accordingly the dataframe tables
-folder_name <- "housinggame_session_20_251007_VerzekeraarsMasterClass"
-# Set the folder path dynamically
-folder_path <- paste0(script_dir_up, "/", "Datasets")
+folder_path <- file.path("data", "database-tables") 
+folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
+
 
 # Read all tables in the folder with the custom function
 csv_data_list <- read_all_csvs(folder_path, folder_name)
 # Create a combined excel with all database tables to have as a reference their initial configuration
-combine_csvs_to_excel(folder_path,folder_name)
+combine_csvs_to_excel(folder_path,folder_name) #avoid repeating read_all_csvs workflow within this function
 
 # Assign each table to a variable in the global environment
 # Not ideal because makes the global environment crowded with unnecessary variables
@@ -158,10 +157,15 @@ list_income_dist <- list(
   playerround = playerround
 )
 
+# plot section ------------------------------------------------------------
+
 # trying script for the plot
 session_name <- folder_name
 group <- "all"
 round <- "all"
+
+
+
 
 dataset <- df_income_dist
 # Calcule the reference dataset with all players average
