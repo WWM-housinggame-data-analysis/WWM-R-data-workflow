@@ -239,6 +239,12 @@ if (nplayer == nrow(players)) {
 # Filter the dataset according to the player(s) to plot
 income_dist <- fdataset
 
+bar_groups <- c("playerround_id", "player_id", "groupround_id",
+               "groupround_round_number", "round_income", "p_code")
+income_dist <- income_dist %>% mutate_at(bar_groups, as.factor)
+
+income_dist <- income_dist %>% mutate_at(names(income_dist)[!(names(income_dist) %in% bar_groups)], as.numeric)
+
 # Plot title definition
 plot_title <- "How did players spend their money in average?"
 plot_subtitle <- paste("Session:", session_name, "\nGroup:", group, "\nPlayer(s):", player_plot, "\nRound:", round)
@@ -261,25 +267,32 @@ income_dist_plt <- income_dist %>%
   ) %>%
   ungroup()
 
-# Categorise the income distribution per plot category
-line_spendable = income_dist_plt_ref %>% select(ave_Spendable)
-bars_expenses <- income_dist_plt %>% select(ave_debt, ave_mortgage, ave_taxes, ave_profit_minus_spent_savings_house_moving, ave_satisfaction, ave_measures, ave_fluvial_damage, ave_pluvial_damage)
-area_income <- income_dist_plt_ref %>% select(ave_income_minus_living)
 
 # Adding an index to plot the area and bars together
-line_spendable$Index <- seq_len(nrow(line_spendable))
-bars_expenses$Index <- seq_len(nrow(bars_expenses))
-area_income$Index <- seq_len(nrow(area_income))
+income_dist_plt_ref$Index <- seq_len(nrow(income_dist_plt_ref))
+income_dist_plt$Index <- seq_len(nrow(income_dist_plt))
+
+# Categorise the income distribution per plot category
+line_spendable = income_dist_plt_ref %>% select(ave_Spendable, Index)
+bars_expenses <- income_dist_plt %>% select(ave_debt, ave_mortgage, ave_taxes, ave_profit_minus_spent_savings_house_moving, ave_satisfaction, ave_measures, ave_fluvial_damage, ave_pluvial_damage, Index)
+area_income <- income_dist_plt_ref %>% select(ave_income_minus_living, Index)
 
 # Set x range of the plot
 # Calculate limits
-x_min <- min(area_income$Index) -0.5 #starts from zero
-x_max <- max(area_income$Index) + 0.5
-y_max <- max(area_income$ave_income_minus_living)
-y_min <- min(bars_expenses$ave_profit_minus_spent_savings_house_moving)
+x_min <- min(income_dist$Index) -0.5 #starts from zero
+x_max <- max(income_dist$Index) + 0.5
+y_max <- max(income_dist_plt$ave_income_minus_living)
+y_min <- min(income_dist_plt$ave_profit_minus_spent_savings_house_moving)
 w = 0.9
 
 # Formatting the dataset to plot per category
+income_dist_formatted <- income_dist %>%
+  pivot_longer(cols = where(is.numeric), names_to = "Cost_Type",
+               values_to = "Cost_Value") %>%
+  mutate(Cost_Type = factor(Cost_Type))
+
+
+
 bars_expenses_formatted <- bars_expenses %>%
   pivot_longer(cols = -Index, names_to = "Type", values_to = "Value")
 
@@ -287,6 +300,13 @@ area_income_formatted <- area_income %>%
   pivot_longer(cols = -Index, names_to = "Type", values_to = "Value")
 
 # Formatting the dataset to stack the bars following the given order
+
+bar_expenses_cols <- c("cost_personal_measures_bought", "cost_fluvial_damage",
+                      "cost_pluvial_damage", "cost_house_measures_bought",
+                      "paid_debt", "cost_taxes", "mortgage_payment",
+                      "profit_minus_spent_savings_house_moving")
+
+
 bars_expenses_formatted$Type <- factor(
   bars_expenses_formatted$Type,
   levels = c(
@@ -375,6 +395,56 @@ plot <- ggplot() +
     plot.subtitle = element_text(hjust = 0.5, size = 10),
     plot.title.position = "plot"
   )
+
+plot(plot)
+
+plot <- ggplot(income_dist_formatted) +
+  
+  geom_bar(data = ~ .x |>
+             dplyr::filter(Cost_Type %in% bar_expenses_cols) |>
+             dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, bar_expenses_cols)),
+           aes(x = round_income, y = Cost_Value, fill = Cost_Type),
+           stat = "summary", fun = "mean", position = "stack",
+           na.rm = TRUE, width = w) +
+  
+  scale_fill_manual(
+    name = "Round costs",
+    values = c(
+      "paid_debt" = "black",
+      "cost_personal_measures_bought" = "#dfaba3",
+      "cost_house_measures_bought" = "white",
+      "profit_minus_spent_savings_house_moving" = "#a3a3a3",
+      "mortgage_payment" = "#cccccc",
+      "cost_taxes" = "#dddddd",
+      "cost_fluvial_damage" = "#79A2C5",
+      "cost_pluvial_damage" = "#79BCC5"),
+    labels = c(
+      "paid_debt" = "Debt",
+      "cost_personal_measures_bought" = "Satisfaction",
+      "cost_house_measures_bought" = "Measures",
+      "mortgage_payment" = "Mortgage",
+      "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+      "cost_taxes" = "Taxes",
+      "cost_fluvial_damage" = "River damage",
+      "cost_pluvial_damage" = "Rain damage")
+    ) +
+
+  guides(
+    fill = guide_legend(title = "Round costs")
+    ) +
+  
+  #Y-axis formatting
+  scale_y_continuous(
+    labels = function(y) y / 1000,
+    name = "Game Currency (k)"
+  ) +
+  
+  theme_minimal() +
+
+  theme(
+    axis.text.x = element_markdown(angle = 0, hjust = 0.5), ##takes rich html
+  )
+
 #interactive_plot <- ggplotly(plot)
 #htmlwidgets::saveWidget(interactive_plot, "interactive_plot.html")
 #browseURL("interactive_plot.html")
