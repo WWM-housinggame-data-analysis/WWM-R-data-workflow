@@ -439,10 +439,15 @@ plot <- ggplot(income_dist_formatted) +
     name = "Game Currency (k)"
   ) +
   
+  scale_x_discrete(
+    name = "Round income (k) \n Players per class",
+    labels = income_dist_x$round_income
+  ) +
+  
   theme_minimal() +
 
   theme(
-    axis.text.x = element_markdown(angle = 0, hjust = 0.5), ##takes rich html
+    axis.text.x = element_markdown(angle = 0, hjust = 0.5) ##takes rich html
   )
 
 #interactive_plot <- ggplotly(plot)

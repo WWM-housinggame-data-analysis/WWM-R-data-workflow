@@ -29,11 +29,11 @@ ui <- page_navbar(
               penguins[c("species", "island", "sex")],
               selected = "species"
             ),
-            checkboxGroupInput("Player_by", "Player:",
-                               choices = c("All", "Player 1", "Player 2"),
+            checkboxGroupInput("player", "Player:",
+                               choices = c("All", as.character(unique(income_dist_formatted$player_id))),
                                selected = "All"),
-            checkboxGroupInput("var_by", "Variable:",
-                               choices = c("All", "var 1", "var 2"),
+            checkboxGroupInput("cost_type", "Cost_Types:",
+                               choices = c("All", bar_expenses_cols),
                                selected = "All")
           ),
           accordion_panel("3: Selected measures"),
@@ -94,38 +94,40 @@ ui <- page_navbar(
   )
 )
 
-server <- function(input, output) {
+# Reactive plot based on user input
+get_costs_barplot <- function(input_data, stacked_vars, xlabels) {
   
-  # Reactive plot based on user input
-  gg_plot <- reactive({
-    ggplot() +
+  costs_barplot <- reactive({
+    
+    ggplot(input_data) +
       
-      geom_bar(data = bars_expenses_formatted,
-               aes(x = Index, y = Value, fill = Type),
-               stat = "identity",
-               position = "stack",
-               width = w) +
+      geom_bar(data = ~ .x |>
+                 dplyr::filter(Cost_Type %in% stacked_vars) |>
+                 dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, stacked_vars)),
+               aes(x = round_income, y = Cost_Value, fill = Cost_Type),
+               stat = "summary", fun = "mean", position = "stack",
+               na.rm = TRUE, width = w) +
       
       scale_fill_manual(
         name = "Round costs",
         values = c(
-          "ave_debt" = "black",
-          "ave_satisfaction" = "#dfaba3",
-          "ave_measures" = "white",
-          "ave_profit_minus_spent_savings_house_moving" =  "#a3a3a3",
-          "ave_mortgage" = "#cccccc",
-          "ave_taxes" = "#dddddd",
-          "ave_fluvial_damage" = "#79A2C5",
-          "ave_pluvial_damage" = "#79BCC5"),
+          "paid_debt" = "black",
+          "cost_personal_measures_bought" = "#dfaba3",
+          "cost_house_measures_bought" = "white",
+          "profit_minus_spent_savings_house_moving" = "#a3a3a3",
+          "mortgage_payment" = "#cccccc",
+          "cost_taxes" = "#dddddd",
+          "cost_fluvial_damage" = "#79A2C5",
+          "cost_pluvial_damage" = "#79BCC5"),
         labels = c(
-          "ave_debt" = "Debt",
-          "ave_satisfaction" = "Satisfaction",
-          "ave_measures" = "Measures",
-          "ave_mortgage" = "Mortgage",
-          "ave_profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-          "ave_taxes" = "Taxes",
-          "ave_fluvial_damage" = "River damage",
-          "ave_pluvial_damage" = "Rain damage")
+          "paid_debt" = "Debt",
+          "cost_personal_measures_bought" = "Satisfaction",
+          "cost_house_measures_bought" = "Measures",
+          "mortgage_payment" = "Mortgage",
+          "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+          "cost_taxes" = "Taxes",
+          "cost_fluvial_damage" = "River damage",
+          "cost_pluvial_damage" = "Rain damage")
       ) +
       
       guides(
@@ -138,21 +140,27 @@ server <- function(input, output) {
         name = "Game Currency (k)"
       ) +
       
-      scale_x_continuous(
+      scale_x_discrete(
         name = "Round income (k) \n Players per class",
-        breaks = c(1, 2, 3, 4, 5, 6),
-        labels = income_dist_x$round_income) +
+        labels = xlabels
+      ) +
       
       theme_minimal() +
       
       theme(
-        axis.text.x = element_markdown(angle = 0, hjust = 0.5), ##takes rich html
+        axis.text.x = element_markdown(angle = 0, hjust = 0.5) ##takes rich html
       )
   })
   
+  return(costs_barplot)
+  
+  }
+  
+server <- function(input, output) {
+  
   # Reactive dataset grouped by the chosen color_by variable
   grouped_data <- reactive({
-    penguins |>
+    income_dist_formatted |>
       dplyr::group_by(.data[[input$color_by]]) |>
       dplyr::summarise(
         count = dplyr::n(),
@@ -163,11 +171,36 @@ server <- function(input, output) {
       )
   })
   
+  # if ("All" %in% reactive({as.vector(input$player)}) == False) {
+  #   
+  #   income_dist_filtered <- reactive({
+  #     income_dist_formatted |> 
+  #       filter( player_id %in% as.vector(input$player))
+  #     
+  #   })
+  # } else {
+  #   income_dist_filtered <- income_dist_formatted
+  # }
+  # 
+  # if ("All" %in% reactive({as.vector(input$cost_type)}) == False) {
+  #   
+  #   income_dist_filtered <- reactive({
+  #     income_dist_filtered |> 
+  #       filter( Cost_Type %in% as.vector(input$cost_type))
+  #     
+  #   })
+  # }
+    
+  gg_plot <- get_costs_barplot(income_dist_formatted, bar_expenses_cols, income_dist_x$round_income)
+  gg_plot1 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 1), bar_expenses_cols, income_dist_x$round_income)
+  gg_plot2 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 2), bar_expenses_cols, income_dist_x$round_income)
+  gg_plot3 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 3), bar_expenses_cols, income_dist_x$round_income)
+  
   # Connect plots
   output$plot_all <- renderPlot({ gg_plot() })
-  output$plot_r1  <- renderPlot({ gg_plot() })
-  output$plot_r2  <- renderPlot({ gg_plot() })
-  output$plot_r3  <- renderPlot({ gg_plot() })
+  output$plot_r1  <- renderPlot({ gg_plot1() })
+  output$plot_r2  <- renderPlot({ gg_plot2() })
+  output$plot_r3  <- renderPlot({ gg_plot3() })
   
   # Summaries (update based on color_by choice)
   output$summary_all <- renderPrint({ summary(grouped_data()) })
