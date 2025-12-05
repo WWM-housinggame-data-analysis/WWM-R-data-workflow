@@ -19,16 +19,16 @@ ui <- page_navbar(
           accordion_panel("1: Where players live"),
           accordion_panel(
             "2: Player spending",
-            varSelectInput(
-              "color_by", "Color by",
-              penguins[c("species", "island", "sex")],
-              selected = "species"
-            ),
-            varSelectInput(
-              "table_by", "Table",
-              penguins[c("species", "island", "sex")],
-              selected = "species"
-            ),
+            # varSelectInput(
+            #   "color_by", "Color by",
+            #   penguins[c("species", "island", "sex")],
+            #   selected = "species"
+            # ),
+            # varSelectInput(
+            #   "table_by", "Table",
+            #   penguins[c("species", "island", "sex")],
+            #   selected = "species"
+            # ),
             checkboxGroupInput("player", "Player:",
                                choices = c("All", as.character(unique(income_dist_formatted$player_id))),
                                selected = "All"),
@@ -95,64 +95,79 @@ ui <- page_navbar(
 )
 
 # Reactive plot based on user input
-get_costs_barplot <- function(input_data, stacked_vars, xlabels) {
+get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive) {
   
-  costs_barplot <- reactive({
+  reactive({
     
-    ggplot(input_data) +
+    # Pull the latest data and selection from the reactives
+    plot_data   <- input_data_reactive()
+    stacked_vec <- stacked_vars_reactive()
+    selected_players_vec <-selected_players_reactive()
+    
+    # Guard against empty states
+    req(nrow(plot_data) > 0, length(stacked_vec) > 0)
+    
+    
+    # Filter and prepare just before plotting
+    plot_data <- plot_data |>
+      dplyr::filter( player_id %in% selected_players_vec) |> 
+      droplevels() |>
+      dplyr::filter(Cost_Type %in% stacked_vec) |>
+      droplevels() |>
+      dplyr::mutate(
+        Cost_Type  = forcats::fct_relevel(Cost_Type, stacked_vec),
+        Cost_Value = as.numeric(gsub(",", "", as.character(Cost_Value))) # safe numeric
+      )
+    
+    xlabels <- paste(as.numeric(levels(plot_data$round_income))/1000, "k", sep="")
+    
+    
+    # Central colour/label dictionaries (names must match Cost_Type in data)
+    fill_values_all <- c(
+      "paid_debt"                         = "black",
+      "cost_personal_measures_bought"     = "#dfaba3",
+      "cost_house_measures_bought"        = "white",
+      "profit_minus_spent_savings_house_moving" = "#a3a3a3",
+      "mortgage_payment"                  = "#cccccc",
+      "cost_taxes"                        = "#dddddd",
+      "cost_fluvial_damage"               = "#79A2C5",
+      "cost_pluvial_damage"               = "#79BCC5"
+    )
+    
+    
+    fill_labels_all <- c(
+      "paid_debt"                         = "Debt",
+      "cost_personal_measures_bought"     = "Satisfaction",
+      "cost_house_measures_bought"        = "Measures",
+      "mortgage_payment"                  = "Mortgage",
+      "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+      "cost_taxes"                        = "Taxes",
+      "cost_fluvial_damage"               = "River damage",
+      "cost_pluvial_damage"               = "Rain damage"
+    )
+    
+    
+          
+    
+    ggplot(plot_data) +
       
-      geom_bar(data = ~ .x |>
-                 dplyr::filter(Cost_Type %in% stacked_vars) |>
-                 dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, stacked_vars)),
-               aes(x = round_income, y = Cost_Value, fill = Cost_Type),
+      geom_bar(aes(x = round_income, y = Cost_Value, fill = Cost_Type),
                stat = "summary", fun = "mean", position = "stack",
                na.rm = TRUE, width = w) +
       
       scale_fill_manual(
         name = "Round costs",
-        values = c(
-          "paid_debt" = "black",
-          "cost_personal_measures_bought" = "#dfaba3",
-          "cost_house_measures_bought" = "white",
-          "profit_minus_spent_savings_house_moving" = "#a3a3a3",
-          "mortgage_payment" = "#cccccc",
-          "cost_taxes" = "#dddddd",
-          "cost_fluvial_damage" = "#79A2C5",
-          "cost_pluvial_damage" = "#79BCC5"),
-        labels = c(
-          "paid_debt" = "Debt",
-          "cost_personal_measures_bought" = "Satisfaction",
-          "cost_house_measures_bought" = "Measures",
-          "mortgage_payment" = "Mortgage",
-          "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-          "cost_taxes" = "Taxes",
-          "cost_fluvial_damage" = "River damage",
-          "cost_pluvial_damage" = "Rain damage")
+        values = fill_values_all[stacked_vec],
+        labels = fill_labels_all[stacked_vec]
       ) +
       
-      guides(
-        fill = guide_legend(title = "Round costs")
-      ) +
-      
-      #Y-axis formatting
-      scale_y_continuous(
-        labels = function(y) y / 1000,
-        name = "Game Currency (k)"
-      ) +
-      
-      scale_x_discrete(
-        name = "Round income (k) \n Players per class",
-        labels = xlabels
-      ) +
+      guides(fill = guide_legend(title = "Round costs")) +
+      scale_y_continuous(labels = function(y) y / 1000, name = "Game Currency (k)") +
+      scale_x_discrete(name = "Round income (k) \n Players per class", labels = xlabels) +
       
       theme_minimal() +
-      
-      theme(
-        axis.text.x = element_markdown(angle = 0, hjust = 0.5) ##takes rich html
-      )
+      theme(axis.text.x = element_markdown(angle = 0, hjust = 0.5)) ##takes rich html
   })
-  
-  return(costs_barplot)
   
   }
   
@@ -171,30 +186,36 @@ server <- function(input, output) {
       )
   })
   
-  # if ("All" %in% reactive({as.vector(input$player)}) == False) {
-  #   
-  #   income_dist_filtered <- reactive({
-  #     income_dist_formatted |> 
-  #       filter( player_id %in% as.vector(input$player))
-  #     
-  #   })
-  # } else {
-  #   income_dist_filtered <- income_dist_formatted
-  # }
-  # 
-  # if ("All" %in% reactive({as.vector(input$cost_type)}) == False) {
-  #   
-  #   income_dist_filtered <- reactive({
-  #     income_dist_filtered |> 
-  #       filter( Cost_Type %in% as.vector(input$cost_type))
-  #     
-  #   })
-  # }
-    
-  gg_plot <- get_costs_barplot(income_dist_formatted, bar_expenses_cols, income_dist_x$round_income)
-  gg_plot1 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 1), bar_expenses_cols, income_dist_x$round_income)
-  gg_plot2 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 2), bar_expenses_cols, income_dist_x$round_income)
-  gg_plot3 <- get_costs_barplot(income_dist_formatted |> dplyr::filter(groupround_round_number %in% 3), bar_expenses_cols, income_dist_x$round_income)
+  
+  selected_players <- reactive({
+    req(input$player)
+    # remove the special label
+    req_types <- as.character(unique(income_dist_formatted$player_id))
+    # if All is selected OR none selected -> treat as all
+    if ("All" %in% as.vector(input$player)) {
+      req_types
+    } else {
+      intersect(input$player, req_types)
+    }
+  })
+  
+  selected_costtypes <- reactive({
+    req(input$cost_type)
+    # remove the special label
+    req_types <- bar_expenses_cols
+    # if All is selected OR none selected -> treat as all
+    if ("All" %in% as.vector(input$cost_type)) {
+      req_types
+    } else {
+      intersect(input$cost_type, req_types)
+    }
+  })
+  
+  
+  gg_plot <- get_costs_barplot(reactive({income_dist_formatted}), selected_costtypes, selected_players)
+  gg_plot1 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)
+  gg_plot2 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
+  gg_plot3 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
   
   # Connect plots
   output$plot_all <- renderPlot({ gg_plot() })
