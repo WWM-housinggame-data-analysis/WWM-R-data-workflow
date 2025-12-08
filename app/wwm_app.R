@@ -1,6 +1,7 @@
 library(shiny)
 library(bslib)
 library(ggplot2)
+library(plotly)
 data(penguins, package = "palmerpenguins")
 
 ui <- page_navbar(
@@ -48,7 +49,7 @@ ui <- page_navbar(
           accordion_panel(
             "All Rounds",
             tabsetPanel(type = "tabs",
-                        tabPanel("Plot", plotOutput("plot_all")),
+                        tabPanel("Plot", plotlyOutput("plot_all"), verbatimTextOutput("debug")),
                         tabPanel("Summary", verbatimTextOutput("summary_all")),
                         tabPanel("Table", tableOutput("table_all"))
             )
@@ -81,6 +82,8 @@ ui <- page_navbar(
       )
     )
   ),
+  
+  
   
   nav_panel(title = "Game Settings", p("First page content.")),
   nav_spacer(),
@@ -173,19 +176,7 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
   
 server <- function(input, output) {
   
-  # Reactive dataset grouped by the chosen color_by variable
-  grouped_data <- reactive({
-    income_dist_formatted |>
-      dplyr::group_by(.data[[input$color_by]]) |>
-      dplyr::summarise(
-        count = dplyr::n(),
-        mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
-        mean_bill_depth  = mean(bill_depth_mm, na.rm = TRUE),
-        mean_body_mass   = mean(body_mass_g, na.rm = TRUE),
-        .groups = "drop"
-      )
-  })
-  
+  income_dist_reactive <- reactive({income_dist_formatted})
   
   selected_players <- reactive({
     req(input$player)
@@ -211,17 +202,39 @@ server <- function(input, output) {
     }
   })
   
+  # Reactive dataset grouped by the chosen color_by variable
+  grouped_data <- reactive({
+    income_dist_reactive() |>
+      dplyr::group_by(.data[[input$color_by]]) |>
+      dplyr::summarise(
+        count = dplyr::n(),
+        mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
+        mean_bill_depth  = mean(bill_depth_mm, na.rm = TRUE),
+        mean_body_mass   = mean(body_mass_g, na.rm = TRUE),
+        .groups = "drop"
+      )
+  })
   
-  gg_plot <- get_costs_barplot(reactive({income_dist_formatted}), selected_costtypes, selected_players)
-  gg_plot1 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)
-  gg_plot2 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
-  gg_plot3 <- get_costs_barplot(reactive({income_dist_formatted |> dplyr::filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
+  
+  gg_plot <- get_costs_barplot(income_dist_reactive, selected_costtypes, selected_players)
+  gg_plot1 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)
+  gg_plot2 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
+  gg_plot3 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
   
   # Connect plots
-  output$plot_all <- renderPlot({ gg_plot() })
+  output$plot_all <- renderPlotly({
+    ggplotly(gg_plot(), tooltip = c("x", "fill", "count"))
+  })
   output$plot_r1  <- renderPlot({ gg_plot1() })
   output$plot_r2  <- renderPlot({ gg_plot2() })
   output$plot_r3  <- renderPlot({ gg_plot3() })
+  
+  
+  # Optional: inspect reactive rows
+  output$debug <- renderPrint({
+    paste("Rows:", nrow(income_dist_reactive()))
+  })
+  
   
   # Summaries (update based on color_by choice)
   output$summary_all <- renderPrint({ summary(grouped_data()) })
