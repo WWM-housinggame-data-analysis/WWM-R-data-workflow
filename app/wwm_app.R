@@ -97,30 +97,6 @@ ui <- page_navbar(
   )
 )
 
-# Central colour/label dictionaries (names must match Cost_Type in data)
-fill_values_all <- c(
-  "paid_debt"                         = "black",
-  "cost_personal_measures_bought"     = "#dfaba3",
-  "cost_house_measures_bought"        = "white",
-  "profit_minus_spent_savings_house_moving" = "#a3a3a3",
-  "mortgage_payment"                  = "#cccccc",
-  "cost_taxes"                        = "#dddddd",
-  "cost_fluvial_damage"               = "#79A2C5",
-  "cost_pluvial_damage"               = "#79BCC5"
-)
-
-
-fill_labels_all <- c(
-  "paid_debt"                         = "Debt",
-  "cost_personal_measures_bought"     = "Satisfaction",
-  "cost_house_measures_bought"        = "Measures",
-  "mortgage_payment"                  = "Mortgage",
-  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-  "cost_taxes"                        = "Taxes",
-  "cost_fluvial_damage"               = "River damage",
-  "cost_pluvial_damage"               = "Rain damage"
-)
-
 # Reactive plot based on user input
 get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive) {
   
@@ -146,24 +122,41 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
         Cost_Value = as.numeric(gsub(",", "", as.character(Cost_Value))) # safe numeric
       )
     
-    
-    # Pre-aggregate: mean and count per bar segment (round_income × Cost_Type)
-    summary_df <- plot_data |>
-      dplyr::group_by(round_income, Cost_Type) |>
-      dplyr::summarise(
-        mean_value = mean(Cost_Value, na.rm = TRUE),
-        n          = dplyr::n(),
-        .groups    = "drop"
-      )
-    
-    
     xlabels <- paste(as.numeric(levels(plot_data$round_income))/1000, "k", sep="")
     
-    # Build plot on the aggregated data (geom_col)
-    gp <- ggplot(summary_df) +
+    
+    # Central colour/label dictionaries (names must match Cost_Type in data)
+    fill_values_all <- c(
+      "paid_debt"                         = "black",
+      "cost_personal_measures_bought"     = "#dfaba3",
+      "cost_house_measures_bought"        = "white",
+      "profit_minus_spent_savings_house_moving" = "#a3a3a3",
+      "mortgage_payment"                  = "#cccccc",
+      "cost_taxes"                        = "#dddddd",
+      "cost_fluvial_damage"               = "#79A2C5",
+      "cost_pluvial_damage"               = "#79BCC5"
+    )
+    
+    
+    fill_labels_all <- c(
+      "paid_debt"                         = "Debt",
+      "cost_personal_measures_bought"     = "Satisfaction",
+      "cost_house_measures_bought"        = "Measures",
+      "mortgage_payment"                  = "Mortgage",
+      "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+      "cost_taxes"                        = "Taxes",
+      "cost_fluvial_damage"               = "River damage",
+      "cost_pluvial_damage"               = "Rain damage"
+    )
+    
+    
+          
+    
+    ggplot(plot_data) +
       
-      geom_col(aes(x = round_income, y = mean_value, fill = Cost_Type),
-               position = "stack", na.rm = TRUE, width = w) +
+      geom_bar(aes(x = round_income, y = Cost_Value, fill = Cost_Type),
+               stat = "summary", fun = "mean", position = "stack",
+               na.rm = TRUE, width = w) +
       
       scale_fill_manual(
         name = "Round costs",
@@ -177,12 +170,10 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
       
       theme_minimal() +
       theme(axis.text.x = element_markdown(angle = 0, hjust = 0.5)) ##takes rich html
-    
-    list(plot = gp, data = summary_df, barfill = stacked_vec)
   })
   
-}
-
+  }
+  
 server <- function(input, output) {
   
   income_dist_reactive <- reactive({income_dist_formatted})
@@ -230,97 +221,10 @@ server <- function(input, output) {
   gg_plot2 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
   gg_plot3 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
   
+  # Connect plots
   output$plot_all <- renderPlotly({
-    
-    obj <- gg_plot()         # obj is list(plot, data)
-    gp  <- obj$plot
-    df  <- obj$data          # summary_df with mean_value & n
-    stacked_vec <- obj$barfill
-    
-    plt <- ggplotly(gp)
-    plt <- layout(plt, hovermode = "closest")
-    
-    # We need per-trace (Cost_Type) vectors of value_k and n in the same order as trace points.
-    # Plotly creates one trace per Cost_Type.
-    # For each trace name (fullData.name), subset df and order by the x (round_income) factor
-    # to match bar positions.
-    
-    # Get x positions order as they appear in the first trace
-    x_order <- plt$x$data[[1]]$x
-    
-    for (i in seq_along(plt$x$data)) {
-      tr      <- plt$x$data[[i]]
-      catname <- tr$name                 # equals legend label (fill_labels_all)
-      xs      <- tr$x                    # x values for this trace
-      
-      # Map legend label back to Cost_Type value. If you used labels, we need a reverse map:
-      # build it once outside and keep it around; for demo we rebuild quickly:
-      # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
-      rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
-      
-      # If catname equals the label, translate to original Cost_Type:
-      # cost_type_value <- rev_map[catname]
-      # If you didn't customize labels, catname is directly the Cost_Type.
-      
-      # If using labels, do:
-      cost_type_value <- if (!is.na(rev_map[catname])) rev_map[catname] else catname
-      
-      # For simplicity here, assume catname == Cost_Type (no label remap). If you used labels,
-      # add the reverse mapping shown above.
-      cost_type_value <- catname
-      
-      # Subset summary data for this Cost_Type and order by x
-      sub <- df |> dplyr::filter(Cost_Type == cost_type_value)
-      
-      # Ensure the same x order
-      sub <- sub |> dplyr::mutate(round_income = factor(round_income, levels = x_order)) |>
-        dplyr::arrange(round_income)
-      
-      value_k <- sub$mean_value / 1000
-      n_vec   <- sub$n
-      
-      plt$x$data[[i]]$customdata <- cbind(value_k, n_vec)
-      plt$x$data[[i]]$hovertemplate <- paste0(
-        "<b>%{fullData.name}</b><br>",
-        "Mean: %{customdata[0]:.2f}k<br>",
-        "N: %{customdata[1]}",
-        "<extra></extra>"
-      )
-    }
-    
-    plt
+    ggplotly(gg_plot(), tooltip = c("x", "fill", "count"))
   })
-  
-  
-  # # Connect plots
-  # output$plot_all <- renderPlotly({
-  #   
-  #   # Build the ggplot first
-  #   gp <- gg_plot()              # this is your reactive() that returns a ggplot
-  #   
-  #   # Convert to plotly
-  #   plt <- ggplotly(gp)          # do not pass tooltip=...; we’ll control via hovertemplate
-  #   
-  #   # 1) Use unified hover → single tooltip box per x (bar)
-  #   plt <- layout(plt, hovermode = "x unified")
-  #   
-  #   # 2) Format each stacked trace’s line in the unified tooltip
-  #   #    - Use the trace name (matches your fill labels) + y value
-  #   #    - Show values in 'k' using customdata (y/1000)
-  #   for (i in seq_along(plt$x$data)) {
-  #     yi <- plt$x$data[[i]]$y
-  #     if (!is.null(yi)) {
-  #       plt$x$data[[i]]$customdata <- yi / 1000  # value in k for hover
-  #       # Bold category name, show value in k, and hide the extra box
-  #       plt$x$data[[i]]$hovertemplate <- paste0(
-  #         "<b>%{fullData.name}</b>: %{customdata:.1f}k<extra></extra>"
-  #       )
-  #     }
-  #   }
-  #   
-  #   plt
-  # })
-  
   output$plot_r1  <- renderPlot({ gg_plot1() })
   output$plot_r2  <- renderPlot({ gg_plot2() })
   output$plot_r3  <- renderPlot({ gg_plot3() })
