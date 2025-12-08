@@ -1,6 +1,7 @@
 library(shiny)
 library(bslib)
 library(ggplot2)
+library(ggtext)
 library(plotly)
 data(penguins, package = "palmerpenguins")
 
@@ -223,8 +224,32 @@ server <- function(input, output) {
   
   # Connect plots
   output$plot_all <- renderPlotly({
-    ggplotly(gg_plot(), tooltip = c("x", "fill", "count"))
+    # Build the ggplot first
+    gp <- gg_plot()              # this is your reactive() that returns a ggplot
+    
+    # Convert to plotly
+    plt <- ggplotly(gp)          # do not pass tooltip=...; we’ll control via hovertemplate
+    
+    # 1) Use unified hover → single tooltip box per x (bar)
+    plt <- layout(plt, hovermode = "x unified")
+    
+    # 2) Format each stacked trace’s line in the unified tooltip
+    #    - Use the trace name (matches your fill labels) + y value
+    #    - Show values in 'k' using customdata (y/1000)
+    for (i in seq_along(plt$x$data)) {
+      yi <- plt$x$data[[i]]$y
+      if (!is.null(yi)) {
+        plt$x$data[[i]]$customdata <- yi / 1000  # value in k for hover
+        # Bold category name, show value in k, and hide the extra box
+        plt$x$data[[i]]$hovertemplate <- paste0(
+          "<b>%{fullData.name}</b>: %{customdata:.1f}k<extra></extra>"
+        )
+      }
+    }
+    
+    plt
   })
+  
   output$plot_r1  <- renderPlot({ gg_plot1() })
   output$plot_r2  <- renderPlot({ gg_plot2() })
   output$plot_r3  <- renderPlot({ gg_plot3() })
