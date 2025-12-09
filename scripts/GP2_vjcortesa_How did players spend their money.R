@@ -1,6 +1,7 @@
 # Load necessary libraries
 library(readxl)
 library(readr)
+library(openxlsx)
 # Load if using RStudio (interactive session)
 library(rstudioapi)
 # Load for database manipulation
@@ -14,6 +15,17 @@ library(tidyr)
 library(ggplot2)
 library(ggtext)
 
+# # Load required libraries
+# required_libs <- c("readr", "openxlsx", "rstudioapi")
+# for (lib in required_libs) {
+#   if (!requireNamespace(lib, quietly = TRUE)) {
+#     stop(paste("Package `", lib, "` not found. Please run `install.packages('", lib, "') to proceed", sep = ""))
+#   }
+# }
+# 
+# library(readr)
+# library(openxlsx)
+# library(rstudioapi)
 
 # Get the path of the current script (works in RStudio)
 getwd() # when you open Rstudio by clinking on .Rproj, default working directory is R-data-analysis-BEPs/
@@ -29,7 +41,7 @@ folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
 
 
 # Read all tables in the folder with the custom function
-csv_data_list <- read_all_csvs(folder_path, folder_name)
+csv_data_list <- read_all_csvs(folder_path, folder_name)$datalist
 # Create a combined excel with all database tables to have as a reference their initial configuration
 combine_csvs_to_excel(folder_path,folder_name) #avoid repeating read_all_csvs workflow within this function
 

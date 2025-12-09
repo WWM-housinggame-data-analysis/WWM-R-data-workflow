@@ -1,33 +1,9 @@
-combine_csvs_to_excel <- function(folder_path = "local path", folder_pattern = "csv_folder", output_prefix = "Dataset_") {
-  # Load required libraries
-  required_libs <- c("readr", "openxlsx", "rstudioapi")
-  for (lib in required_libs) {
-    if (!requireNamespace(lib, quietly = TRUE)) {
-      stop(paste("Package `", lib, "` not found. Please run `install.packages('", lib, "') to proceed", sep = ""))
-    }
-  }
+combine_csvs_to_excel <- function(folder_path = "local path", folder_pattern = "csv_folder", output_path = file.path("data", "combined-tables"), output_prefix = "Dataset_") {
   
-  library(readr)
-  library(openxlsx)
-  library(rstudioapi)
-  
-  # Get the current script directory
-  combined_path <- file.path("data", "combined-tables")
-
-  # Find the target folder matching the pattern
-  folders <- list.dirs(path = folder_path, full.names = TRUE, recursive = FALSE)
-  target_folder <- folders[grepl(folder_pattern, basename(folders))][1]
-  
-  if (is.na(target_folder)) {
-    stop(paste("No folder matching pattern '", folder_pattern, "' found.", sep = ""))
-  }
-  
-  # List CSV files
-  csv_files <- list.files(path = target_folder, pattern = "\\.csv$", full.names = TRUE)
-  
-  if (length(csv_files) == 0) {
-    stop("No CSV files found in the target folder.")
-  }
+  # Read all tables in the folder with the custom function
+  csv_reading <- read_all_csvs(folder_path, folder_name, output_datalist = FALSE)
+  target_folder <- csv_reading$foldername
+  csv_files <- csv_reading$filenames
   
   # Create workbook
   wb <- createWorkbook()
@@ -45,7 +21,7 @@ combine_csvs_to_excel <- function(folder_path = "local path", folder_pattern = "
   #output_filename <- paste0(output_prefix, "_", folder_base, "_", timestamp, ".xlsx")
   output_filename <- paste0(output_prefix, "_", folder_base, ".xlsx")
   #data_output_dir <- paste0(script_dir,"/data_output")
-  output_path <- file.path(combined_path, output_filename)
+  output_path <- file.path(output_path, output_filename)
   
   # Save workbook
   saveWorkbook(wb, output_path, overwrite = TRUE)
