@@ -34,142 +34,27 @@ getwd() # when you open Rstudio by clinking on .Rproj, default working directory
 function_path <- file.path("scripts", "functions","manage-data")
 source(file.path(function_path, "combine_csvs_to_excel.R"))
 source(file.path(function_path, "read_all_csvs.R"))
+source(file.path(function_path, "retrieve_dbtables.R"))
+source(file.path(function_path, "format_income_dist.R"))
+
 
 # Read the database folder to create accordingly the dataframe tables
 folder_path <- file.path("data", "database-tables") 
 folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
 
-
-# Read all tables in the folder with the custom function
-csv_data_list <- read_all_csvs(folder_path, folder_name)$datalist
 # Create a combined excel with all database tables to have as a reference their initial configuration
-combine_csvs_to_excel(folder_path,folder_name) #avoid repeating read_all_csvs workflow within this function
+#combine_csvs_to_excel(folder_path, folder_name) #avoid repeating read_all_csvs workflow within this function
+
+# retrieve matched database tables inside list
+list_income_dist <- retrieve_dbtables(folder_path, folder_name)
 
 # Assign each table to a variable in the global environment
 # Not ideal because makes the global environment crowded with unnecessary variables
 # list2env(csv_data_list, envir = .GlobalEnv)
 
-# Assign a table to a variable in the global environment
-gamesession <- csv_data_list[["gamesession"]]
-group <- csv_data_list[["group"]]
-groupround <- csv_data_list[["groupround"]]
-playerround <- csv_data_list[["playerround"]]
-player <- csv_data_list[["player"]]
+df_income_dist <- format_income_dist(list_income_dist$df_income_dist)
 
-# Rename the session name variable in the dataframe to avoid name overlap with the group name variable
-gamesession <- sqldf("SELECT * FROM gamesession")
-names(gamesession)[names(gamesession) == "name"] <- "gamesession_name"
 
-# Add to the group dataframe the gamesession_name by the group = gamesession id
-# Leftjoin Keeps only the rows that have matching values in both data frames
-group <- sqldf("
-  SELECT g.*, gs.gamesession_name
-  FROM [group] AS g
-  LEFT JOIN [gamesession] AS gs
-  ON g.gamesession_id = gs.id
-")
-
-# Add to groupround the group variables selection
-groupround <- sqldf("
-  SELECT gr.*, g.name, g.gamesession_id, g.gamesession_name, g.scenario_id
-  FROM [groupround] AS gr
-  LEFT JOIN [group] AS g
-  ON gr.group_id = g.id
-")
-
-# Rename the added columns in the dataframe to know from which table first come from
-names(groupround)[names(groupround) == "scenario_id"] <- "group_scenario_id"
-
-# Rename name variable in the groupround dataframe for variable naming consistency
-groupround <- sqldf("SELECT * FROM groupround")
-
-# Rename the added columns in the dataframe to know from which table first come from
-names(groupround)[names(groupround) == "name"] <- "group_name"
-
-# Add to playerround the groupround selection to filter per round, group and session id and names by playerround = groupround id
-playerround <- sqldf("
-  SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
-  FROM [playerround] AS pr
-  LEFT JOIN [groupround] AS gr
-  ON pr.groupround_id = gr.id
-")
-
-# Rename the added columns in the dataframe to know from which table first come from
-names(playerround)[names(playerround) == "round_number"] <- "groupround_round_number"
-names(playerround)[names(playerround) == "scenario_id"] <- "group_scenario_id"
-
-# Rename id with the table prefix to avoid id ambiguity
-#names(player)[names(player) == "id"] <- "player_id"
-names(playerround)[names(playerround) == "id"] <- "playerround_id"
-
-# Filter the playerround dataset for the income distribution
-
-# Select the variables for the income distribution plot
-var_income_dist <- c(
-  "playerround_id", "player_id", "groupround_id", "groupround_round_number",
-  "round_income", "living_costs", "paid_debt",
-  "profit_sold_house", "spent_savings_for_buying_house",
-  "cost_taxes", "mortgage_payment",
-  "cost_house_measures_bought", "cost_personal_measures_bought",
-  "cost_fluvial_damage", "cost_pluvial_damage",
-  "spendable_income"
-)
-
-# Collapse the column vector into a comma-separated string
-col_income_dist <- paste(var_income_dist, collapse = ", ")
-
-# Run the query to filter the playerround dataframe and add the player code
-df_income_dist <- sqldf(paste0("
-  SELECT ", col_income_dist, ", p.code
-  FROM playerround
-  LEFT JOIN player AS p
-  ON player_id = p.id
-"))
-
-# Rename columns added with the table prefix
-names(df_income_dist)[names(df_income_dist) == "code"] <- "p_code"
-
-# Run the query to filter the playerround dataframe and add the player code
-df_income_dist <- sqldf(paste0("SELECT * FROM df_income_dist ORDER BY p_code ASC;
-"))
-
-# Calculate the round costs to check the spendable income
-# "paid_debt" not used in the calculations because is taken already when the spendable income comes as a negative value
-# If either column has NA, the sum will also be NA unless the sum is done this way
-df_income_dist$calculated_costs <- rowSums(df_income_dist[, c("living_costs", 
-                                                        "cost_taxes",
-                                                        "spent_savings_for_buying_house",
-                                                        "mortgage_payment",
-                                                        "cost_house_measures_bought",
-                                                        "cost_personal_measures_bought",
-                                                        "cost_fluvial_damage",
-                                                        "cost_pluvial_damage"
-                                        )], na.rm = TRUE) 
-
-# Calculate the spendable income
-df_income_dist$calculated_spendable <- df_income_dist$spendable_income
-for (i in 1:nrow(df_income_dist)) {
-  if (df_income_dist$groupround_round_number[i] != "0") {
-    df_income_dist$calculated_spendable[i] <- sum(df_income_dist$calculated_spendable[i-1],
-                                                  df_income_dist$round_income[i],
-                                                  df_income_dist$profit_sold_house[i],
-                                               -df_income_dist$calculated_costs[i],
-                                               na.rm = TRUE)   }
-} 
-
-df_income_dist$calculated_difference_spendable <- df_income_dist$spendable_income - df_income_dist$calculated_spendable
-
-# Create a list with the tables used in the calculation
-list_income_dist <- list(
-  df_income_dist = df_income_dist,
-  gamesession = gamesession,
-  group = group,
-  groupround = groupround,
-  player = player,
-  playerround = playerround
-)
-
-# plot section ------------------------------------------------------------
 
 # trying script for the plot
 session_name <- folder_name
@@ -177,37 +62,11 @@ group <- "all"
 round <- "all"
 
 
-
-
-dataset <- df_income_dist
-# Calcule the reference dataset with all players average
-## mapply safely substracts ingnoring NAs in either column 
-## na.rm = TRUE remove or ignore NA (missing) values when performing calculations.
-dataset$income_minus_living<- mapply(
-  function(income, cost) sum(income, -cost, na.rm = TRUE),
-  dataset$round_income,
-  dataset$living_costs
-)
-
-dataset$profit_minus_spent_savings_house_moving <- mapply(
-  function(profit, spent) sum(profit, -spent, na.rm = TRUE),
-  dataset$profit_sold_house,
-  dataset$spent_savings_for_buying_house
-)
-
-#Reference dataset to draw area and line
-income_dist_plt_ref <- dataset %>%
-  group_by(round_income) %>% 
-  summarise(
-    ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
-    ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
-  )
-
 # Calculate the number of players per round income
 if (round != "all") {
-  income_dist_x <- dataset %>% filter(groupround_round_number == round)
+  income_dist_x <- df_income_dist %>% filter(groupround_round_number == round)
 } else {
-  income_dist_x <- dataset %>% filter(groupround_round_number == "0")
+  income_dist_x <- df_income_dist %>% filter(groupround_round_number == "0")
 }
 
 income_dist_x <- income_dist_x %>% count(round_income, name = "players_count")
@@ -224,38 +83,36 @@ for (i in 1:nrow(income_dist_x)) {
 }
 
 # Filter the dataset with all players plot
-plot_player_all <- data.frame(p_code = c("t1p1", "t1p2", "t1p3", "t1p4", "t1p5", "t1p6" , "t1p7"),
-                              selected = c(1, 1, 1, 1, 1, 1, 1))
+# plot_player_all <- data.frame(p_code = c("t1p1", "t1p2", "t1p3", "t1p4", "t1p5", "t1p6" , "t1p7"),
+#                               selected = c(1, 1, 1, 1, 1, 1, 1))
+# 
+# players <- plot_player_all
+# player_plot = "all"
 
-players <- plot_player_all 
-player_plot <- ""
+# player_plot <- ""
 
-for (i in 1:nrow(players)) {
-  if (players$selected[i] != "0") {
-    if (nchar(player_plot) == 0) {
-      player_plot <- players$p_code[i]
-      nplayer <- 1
-      fdataset <- dataset %>% filter(p_code == players$p_code[i])
-    } else {
-      player_plot <- paste(player_plot, "-", players$p_code[i])
-      nplayer <- nplayer +1
-      fdataset <- rbind(fdataset, dataset[dataset$p_code == players$p_code[i], ])
-    }
-  }
-}
-
-if (nplayer == nrow(players)) {
+# for (i in 1:nrow(players)) {
+#   if (players$selected[i] != "0") {
+#     if (nchar(player_plot) == 0) {
+#       player_plot <- players$p_code[i]
+#       nplayer <- 1
+#       fdataset <- dataset %>% filter(p_code == players$p_code[i])
+#     } else {
+#       player_plot <- paste(player_plot, "-", players$p_code[i])
+#       nplayer <- nplayer +1
+#       fdataset <- rbind(fdataset, dataset[dataset$p_code == players$p_code[i], ])
+#     }
+#   }
+# }
+# 
+# if (nplayer == nrow(players)) {
   player_plot = "all"
-}
+# }
 
 # Filter the dataset according to the player(s) to plot
-income_dist <- fdataset
+income_dist <- df_income_dist
 
-bar_groups <- c("playerround_id", "player_id", "groupround_id",
-               "groupround_round_number", "round_income", "p_code")
-income_dist <- income_dist %>% mutate_at(bar_groups, as.factor)
 
-income_dist <- income_dist %>% mutate_at(names(income_dist)[!(names(income_dist) %in% bar_groups)], as.numeric)
 
 # Plot title definition
 plot_title <- "How did players spend their money in average?"
@@ -264,7 +121,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 
 # Calculate the mean values per dataset variable
 income_dist_plt <- income_dist %>%
-  group_by(round_income) %>%
+  group_by(round_income_grp) %>%
   summarise(
     ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
     ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
@@ -279,6 +136,13 @@ income_dist_plt <- income_dist %>%
   ) %>%
   ungroup()
 
+#Reference dataset to draw area and line
+income_dist_plt_ref <- income_dist %>%
+  group_by(round_income) %>% 
+  summarise(
+    ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
+    ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
+  )
 
 # Adding an index to plot the area and bars together
 income_dist_plt_ref$Index <- seq_len(nrow(income_dist_plt_ref))
@@ -415,7 +279,7 @@ plot <- ggplot(income_dist_formatted) +
   geom_bar(data = ~ .x |>
              dplyr::filter(Cost_Type %in% bar_expenses_cols) |>
              dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, bar_expenses_cols)),
-           aes(x = round_income, y = Cost_Value, fill = Cost_Type),
+           aes(x = round_income_grp, y = Cost_Value, fill = Cost_Type),
            stat = "summary", fun = "mean", position = "stack",
            na.rm = TRUE, width = w) +
   
