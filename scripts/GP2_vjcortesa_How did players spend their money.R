@@ -62,25 +62,25 @@ group <- "all"
 round <- "all"
 
 
-# Calculate the number of players per round income
-if (round != "all") {
-  income_dist_x <- df_income_dist %>% filter(groupround_round_number == round)
-} else {
-  income_dist_x <- df_income_dist %>% filter(groupround_round_number == "0")
-}
-
-income_dist_x <- income_dist_x %>% count(round_income, name = "players_count")
-income_dist_x$round_income <- income_dist_x$round_income/1000
-income_dist_x$label <- c("Very Low", 
-                         "Low" , 
-                         "Low-average", 
-                         "High-average", 
-                         "High", 
-                         "Very High")
-
-for (i in 1:nrow(income_dist_x)) {
-  income_dist_x$label[i] <- paste(income_dist_x$round_income[i],"<br><img src='icons/Player.png' width='5'/>", income_dist_x$players_count[i])
-}
+# # Calculate the number of players per round income
+# if (round != "all") {
+#   income_dist_x <- df_income_dist %>% filter(groupround_round_number == round)
+# } else {
+#   income_dist_x <- df_income_dist %>% filter(groupround_round_number == "0")
+# }
+# 
+# income_dist_x <- income_dist_x %>% count(round_income, name = "players_count")
+# income_dist_x$round_income <- income_dist_x$round_income/1000
+# income_dist_x$label <- c("Very Low", 
+#                          "Low" , 
+#                          "Low-average", 
+#                          "High-average", 
+#                          "High", 
+#                          "Very High")
+# 
+# for (i in 1:nrow(income_dist_x)) {
+#   income_dist_x$label[i] <- paste(income_dist_x$round_income[i],"<br><img src='icons/Player.png' width='5'/>", income_dist_x$players_count[i])
+# }
 
 # Filter the dataset with all players plot
 # plot_player_all <- data.frame(p_code = c("t1p1", "t1p2", "t1p3", "t1p4", "t1p5", "t1p6" , "t1p7"),
@@ -120,7 +120,37 @@ plot_subtitle <- paste("Session:", session_name, "\nGroup:", group, "\nPlayer(s)
 plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", group, "Player_", player_plot,"Round_", round,".png")
 
 # Calculate the mean values per dataset variable
-income_dist_plt <- income_dist %>%
+# income_dist_ave1 <- income_dist %>%
+#   group_by(round_income_grp, p_code) %>%
+#   summarise(
+#     income_minus_living = sum(income_minus_living, na.rm = TRUE),
+#     profit_minus_spent_savings_house_moving = sum(profit_minus_spent_savings_house_moving, na.rm = TRUE),
+#     mortgage_payment = sum(mortgage_payment, na.rm = TRUE),
+#     cost_taxes = sum(cost_taxes, na.rm = TRUE),
+#     paid_debt = sum(paid_debt, na.rm = TRUE),
+#     cost_house_measures_bought = sum(cost_house_measures_bought, na.rm = TRUE),
+#     cost_personal_measures_bought = sum(cost_personal_measures_bought, na.rm = TRUE),
+#     cost_fluvial_damage = sum(cost_fluvial_damage, na.rm = TRUE),
+#     cost_pluvial_damage = sum(cost_pluvial_damage, na.rm = TRUE),
+#     spendable_income = sum(spendable_income, na.rm = TRUE)
+#   ) %>%
+#   ungroup() %>%
+#   group_by(round_income_grp) %>%
+#   summarise(
+#     income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
+#     profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
+#     mortgage_payment = round(mean(mortgage_payment, na.rm = TRUE), 2),
+#     cost_taxes = round(mean(cost_taxes, na.rm = TRUE), 2),
+#     paid_debt = round(mean(paid_debt, na.rm = TRUE), 2),
+#     cost_house_measures_bought = round(mean(cost_house_measures_bought, na.rm = TRUE), 2),
+#     cost_personal_measures_bought = round(mean(cost_personal_measures_bought, na.rm = TRUE), 2),
+#     cost_fluvial_damage  = round(mean(cost_fluvial_damage, na.rm = TRUE), 2),
+#     cost_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
+#     spendable_income = round(mean(spendable_income, na.rm = TRUE), 2)
+#   ) %>%
+#   ungroup()
+  
+income_dist_ave <- income_dist %>%
   group_by(round_income_grp) %>%
   summarise(
     ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
@@ -135,6 +165,21 @@ income_dist_plt <- income_dist %>%
     ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
   ) %>%
   ungroup()
+
+income_dist_n <- income_dist %>%
+  select(round_income_grp, p_code) %>%
+  group_by(round_income_grp) %>%
+  summarise(N = n()) %>%
+  ungroup()
+
+# income_dist_n1 <- income_dist %>%
+#   select(round_income_grp, p_code) %>%
+#   group_by(round_income_grp) %>%
+#   summarise(N = n_distinct(p_code)) %>%
+#   ungroup()
+
+income_dist_sumtable <- income_dist_n %>%
+                        inner_join(income_dist_ave, by = join_by(name))
 
 #Reference dataset to draw area and line
 income_dist_plt_ref <- income_dist %>%
