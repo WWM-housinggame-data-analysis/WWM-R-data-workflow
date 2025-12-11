@@ -140,7 +140,19 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     # Guard against empty states
     req(nrow(plot_data) > 0, length(stacked_vec) > 0)
     
-    xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
+    # Map each category to an image (URLs or local paths)
+    xlabels <- paste(sort(unique(plot_data$round_income))/1000, "k", sep="")
+    names(xlabels) <- paste(sort(unique(plot_data$round_income))/1000, "k", sep="")
+    xlabels[names(xlabels)] <- rep("https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow/blob/main/data/dependencies/imgs/Player.png", length(xlabels))
+
+    make_label <- function(key) {
+      url <- xlabels[[key]]
+      # You can tweak width/height and vertical alignment
+      sprintf("<div style='text-align:center'><img src='%s' width='28' style='vertical-align:-6px; margin-right:4px;", url)
+    }
+
+    # Named vector of labels^M
+    xlabels <- setNames(vapply(names(xlabels), make_label, character(1)), names(xlabels))
     
     
     # Filter and prepare just before plotting
