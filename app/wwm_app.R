@@ -4,6 +4,36 @@ library(ggplot2)
 library(plotly)
 library(dplyr)
 
+# Central colour/label dictionaries (names must match cost_type in data)
+bar_expenses_cols <- c("cost_personal_measures_bought", "cost_fluvial_damage",
+                       "cost_pluvial_damage", "cost_house_measures_bought",
+                       "paid_debt", "cost_taxes", "mortgage_payment",
+                       "profit_minus_spent_savings_house_moving")
+w = 0.9
+
+fill_values_all <- c(
+  "paid_debt"                         = "black",
+  "cost_personal_measures_bought"     = "#dfaba3",
+  "cost_house_measures_bought"        = "white",
+  "profit_minus_spent_savings_house_moving" = "#a3a3a3",
+  "mortgage_payment"                  = "#cccccc",
+  "cost_taxes"                        = "#dddddd",
+  "cost_fluvial_damage"               = "#79A2C5",
+  "cost_pluvial_damage"               = "#79BCC5"
+)
+
+
+fill_labels_all <- c(
+  "paid_debt"                         = "Debt",
+  "cost_personal_measures_bought"     = "Satisfaction",
+  "cost_house_measures_bought"        = "Measures",
+  "mortgage_payment"                  = "Mortgage",
+  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+  "cost_taxes"                        = "Taxes",
+  "cost_fluvial_damage"               = "River damage",
+  "cost_pluvial_damage"               = "Rain damage"
+)
+
 ui <- page_navbar(
   title = "WhereWeMove Dashboard",
   bg = "#2D89C8",
@@ -30,7 +60,7 @@ ui <- page_navbar(
             #   penguins[c("species", "island", "sex")],
             #   selected = "species"
             # ),
-            checkboxGroupInput("p_code", "Player:",
+            checkboxGroupInput("player", "Player:",
                                choices = c("All", as.character(unique(df_income_dist$p_code))),
                                selected = "All"),
             checkboxGroupInput("cost_type", "Cost_Types:",
@@ -97,35 +127,6 @@ ui <- page_navbar(
   )
 )
 
-# Central colour/label dictionaries (names must match cost_type in data)
-bar_expenses_cols <- c("cost_personal_measures_bought", "cost_fluvial_damage",
-                       "cost_pluvial_damage", "cost_house_measures_bought",
-                       "paid_debt", "cost_taxes", "mortgage_payment",
-                       "profit_minus_spent_savings_house_moving")
-
-fill_values_all <- c(
-  "paid_debt"                         = "black",
-  "cost_personal_measures_bought"     = "#dfaba3",
-  "cost_house_measures_bought"        = "white",
-  "profit_minus_spent_savings_house_moving" = "#a3a3a3",
-  "mortgage_payment"                  = "#cccccc",
-  "cost_taxes"                        = "#dddddd",
-  "cost_fluvial_damage"               = "#79A2C5",
-  "cost_pluvial_damage"               = "#79BCC5"
-)
-
-
-fill_labels_all <- c(
-  "paid_debt"                         = "Debt",
-  "cost_personal_measures_bought"     = "Satisfaction",
-  "cost_house_measures_bought"        = "Measures",
-  "mortgage_payment"                  = "Mortgage",
-  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-  "cost_taxes"                        = "Taxes",
-  "cost_fluvial_damage"               = "River damage",
-  "cost_pluvial_damage"               = "Rain damage"
-)
-
 # Reactive plot based on user input
 get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive) {
   
@@ -138,6 +139,8 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     
     # Guard against empty states
     req(nrow(plot_data) > 0, length(stacked_vec) > 0)
+    
+    xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
     
     
     # Filter and prepare just before plotting
@@ -162,9 +165,6 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
         n          = n(),
         .groups    = "drop"
       )
-    
-    
-    xlabels <- paste(paste(plot_data$round_income/1000, "k", sep=""), "<br><img src='data/dependencies/imgs/Player.png' width='5'/>")
     
     # Build plot on the aggregated data (geom_col)
     gp <- ggplot(summary_df) +
@@ -352,9 +352,12 @@ server <- function(input, output) {
   
   # Optional: inspect reactive rows
   output$debug <- renderPrint({
-    paste("Rows:", nrow(income_dist_reactive()))
+    paste(
+      paste("Rows:", nrow(income_dist_reactive())),
+      paste("Costs:", length(selected_players())),
+      sep = "\n")
   })
-  
+
   
   # Summaries (update based on color_by choice)
   output$summary_all <- renderPrint({ summary(grouped_data()) })
