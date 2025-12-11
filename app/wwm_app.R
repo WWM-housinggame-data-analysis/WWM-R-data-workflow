@@ -2,7 +2,7 @@ library(shiny)
 library(bslib)
 library(ggplot2)
 library(plotly)
-library(dplyr)
+data(penguins, package = "palmerpenguins")
 
 # Central colour/label dictionaries (names must match cost_type in data)
 bar_expenses_cols <- c("cost_personal_measures_bought", "cost_fluvial_damage",
@@ -144,32 +144,30 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     
     
     # Filter and prepare just before plotting
-    plot_data <- plot_data %>%
-      filter(p_code %in% selected_players_vec) %>%
-      droplevels() %>%
-      pivot_longer(cols = where(is.numeric), names_to = "cost_type", values_to = "cost_value") %>%
-      mutate(cost_type = factor(cost_type)) %>%
-      filter(cost_type %in% stacked_vec) %>%
-      droplevels() %>%
-      mutate(
-        cost_type  = forcats::fct_relevel(cost_type, stacked_vec),
-        cost_value = as.numeric(gsub(",", "", as.character(cost_value))) # safe numeric
+    plot_data <- plot_data |>
+      dplyr::filter( player_id %in% selected_players_vec) |> 
+      droplevels() |>
+      dplyr::filter(Cost_Type %in% stacked_vec) |>
+      droplevels() |>
+      dplyr::mutate(
+        Cost_Type  = forcats::fct_relevel(Cost_Type, stacked_vec),
+        Cost_Value = as.numeric(gsub(",", "", as.character(Cost_Value))) # safe numeric
       )
     
     
-    # Pre-aggregate: mean and count per bar segment (round_income × cost_type)
-    summary_df <- plot_data %>%
-      group_by(round_income_grp, cost_type) %>%
-      summarise(
-        mean_value = mean(cost_value, na.rm = TRUE),
-        n          = n(),
+    # Pre-aggregate: mean and count per bar segment (round_income × Cost_Type)
+    summary_df <- plot_data |>
+      dplyr::group_by(round_income, Cost_Type) |>
+      dplyr::summarise(
+        mean_value = mean(Cost_Value, na.rm = TRUE),
+        n          = dplyr::n(),
         .groups    = "drop"
       )
     
     # Build plot on the aggregated data (geom_col)
     gp <- ggplot(summary_df) +
       
-      geom_col(aes(x = round_income_grp, y = mean_value, fill = cost_type),
+      geom_col(aes(x = round_income, y = mean_value, fill = Cost_Type),
                position = "stack", na.rm = TRUE, width = w) +
       
       scale_fill_manual(
@@ -192,12 +190,12 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
 
 server <- function(input, output) {
   
-  income_dist_reactive <- reactive({df_income_dist})
+  income_dist_reactive <- reactive({income_dist_formatted})
   
   selected_players <- reactive({
     req(input$player)
     # remove the special label
-    req_types <- as.character(unique(income_dist_reactive()$p_code))
+    req_types <- as.character(unique(income_dist_formatted$player_id))
     # if All is selected OR none selected -> treat as all
     if ("All" %in% as.vector(input$player)) {
       req_types
@@ -219,41 +217,24 @@ server <- function(input, output) {
   })
   
   # Reactive dataset grouped by the chosen color_by variable
-  income_dist_ave <- reactive({income_dist_reactive() %>%
-    group_by(round_income_grp) %>%
-    summarise(
-      ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
-      ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
-      ave_mortgage = round(mean(mortgage_payment, na.rm = TRUE), 2),
-      ave_taxes = round(mean(cost_taxes, na.rm = TRUE), 2),
-      ave_debt = round(mean(paid_debt, na.rm = TRUE), 2),
-      ave_measures = round(mean(cost_house_measures_bought, na.rm = TRUE), 2),
-      ave_satisfaction = round(mean(cost_personal_measures_bought, na.rm = TRUE), 2),
-      ave_fluvial_damage  = round(mean(cost_fluvial_damage, na.rm = TRUE), 2),
-      ave_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
-      ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
-    ) %>%
-    ungroup()
-  })
-  
-  income_dist_n <- reactive({income_dist_reactive() %>%
-    select(round_income_grp, p_code) %>%
-    group_by(round_income_grp) %>%
-    summarise(N = n()) %>%
-    ungroup()
-  })
-  
-  grouped_data <- reactive({income_dist_n() %>%
-    inner_join(income_dist_ave(), by = join_by(round_income_grp))
+  grouped_data <- reactive({
+    income_dist_reactive() |>
+      dplyr::group_by(.data[[input$color_by]]) |>
+      dplyr::summarise(
+        count = dplyr::n(),
+        mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
+        mean_bill_depth  = mean(bill_depth_mm, na.rm = TRUE),
+        mean_body_mass   = mean(body_mass_g, na.rm = TRUE),
+        .groups = "drop"
+      )
   })
   
   
   gg_plot <- get_costs_barplot(income_dist_reactive, selected_costtypes, selected_players)
-  gg_plot1 <- get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)
-  gg_plot2 <- get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
-  gg_plot3 <- get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
+  gg_plot1 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)
+  gg_plot2 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)
+  gg_plot3 <- get_costs_barplot(reactive({income_dist_reactive() |> dplyr::filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)
   
-  # Connect plots
   output$plot_all <- renderPlotly({
     
     obj <- gg_plot()         # obj is list(plot, data)
@@ -264,8 +245,8 @@ server <- function(input, output) {
     plt <- ggplotly(gp)
     plt <- layout(plt, hovermode = "closest")
     
-    # We need per-trace (cost_type) vectors of value_k and n in the same order as trace points.
-    # Plotly creates one trace per cost_type.
+    # We need per-trace (Cost_Type) vectors of value_k and n in the same order as trace points.
+    # Plotly creates one trace per Cost_Type.
     # For each trace name (fullData.name), subset df and order by the x (round_income) factor
     # to match bar positions.
     
@@ -277,28 +258,28 @@ server <- function(input, output) {
       catname <- tr$name                 # equals legend label (fill_labels_all)
       xs      <- tr$x                    # x values for this trace
       
-      # Map legend label back to cost_type value. If you used labels, we need a reverse map:
+      # Map legend label back to Cost_Type value. If you used labels, we need a reverse map:
       # build it once outside and keep it around; for demo we rebuild quickly:
       # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
       rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
       
-      # If catname equals the label, translate to original cost_type:
+      # If catname equals the label, translate to original Cost_Type:
       # cost_type_value <- rev_map[catname]
-      # If you didn't customize labels, catname is directly the cost_type.
+      # If you didn't customize labels, catname is directly the Cost_Type.
       
       # If using labels, do:
       cost_type_value <- if (!is.na(rev_map[catname])) rev_map[catname] else catname
       
-      # For simplicity here, assume catname == cost_type (no label remap). If you used labels,
+      # For simplicity here, assume catname == Cost_Type (no label remap). If you used labels,
       # add the reverse mapping shown above.
       cost_type_value <- catname
       
-      # Subset summary data for this cost_type and order by x
-      sub <- df %>% filter(cost_type == cost_type_value)
+      # Subset summary data for this Cost_Type and order by x
+      sub <- df |> dplyr::filter(Cost_Type == cost_type_value)
       
       # Ensure the same x order
-      sub <- sub %>% mutate(round_income_grp = factor(round_income_grp, levels = x_order)) %>%
-        arrange(round_income_grp)
+      sub <- sub |> dplyr::mutate(round_income = factor(round_income, levels = x_order)) |>
+        dplyr::arrange(round_income)
       
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
@@ -316,7 +297,7 @@ server <- function(input, output) {
   })
   
   
-  
+  # # Connect plots
   # output$plot_all <- renderPlotly({
   #   
   #   # Build the ggplot first
