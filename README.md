@@ -17,6 +17,7 @@ Below you can find the folder structure of this repository
     ├── renv.lock                   <- Lock file for renv package management.
     ├──.gitignore                   <- Specifies files and directories to be ignored by Git.
     |
+    ├── app/                        <- Shiny dashboard application code.
     ├── data/                       <- Stores raw and processed datasets.
     |   ├── raw-dbtables/           <- Contains tables containing data from each game session downloaded from database.
     |   ├── combined-dbtables/      <- Contains combined database tables in Excel format from each game session for visual inspection.
@@ -29,9 +30,10 @@ Below you can find the folder structure of this repository
     |
     ├── man/                        <- Contains documentation for package functions, ensuring proper descriptions and metadata.
     ├── tests/                      <- Tests for scripts in `scripts/`
+    ├── renv/                       <- renv library for package management.
     ├── vignettes/                  <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the
     |                                  project effectively.
-    └── renv/                       <- renv library for package management.
+    └── .github/                    <- GitHub-specific files, including workflows for continuous integration and issue templates.
 
 
 Here we followed guidelines for structuring software projects from the following resources:
