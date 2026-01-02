@@ -12,18 +12,28 @@ Below you can find the folder structure of this repository
     ├── CITATION.cff                <- Citation file for the project.
     ├── CONTRIBUTING.md             <- Guidelines on how to contribute to this project 
     ├── README.md                   <- Top-level README for developers using this project.
-    ├──.gitignore                   <- Specifies files and directories to be ignored by Git.
-    ├── data/                       <- Stores raw and processed datasets.
-    ├── man/                        <- Contains documentation for package functions, ensuring proper descriptions and metadata.
-    ├── scripts/                    <- Contains R scripts for functions and analyses.
-    ├── tests/                      <- Tests for scripts in `scripts/`
-    ├── vignettes/                  <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the
-    |                                  project effectively.
-    |
     ├── WWM-R-data-workflow.Rproj   <- R project file for easy access in RStudio created upon R project creation in RStudio.
     ├── .Rprofile                   <- To activate renv when opening the project in RStudio.
     ├── renv.lock                   <- Lock file for renv package management.
-    └── renv/                       <- renv library for package management.
+    ├──.gitignore                   <- Specifies files and directories to be ignored by Git.
+    |
+    ├── app/                        <- Shiny dashboard application code.
+    ├── data/                       <- Stores raw and processed datasets.
+    |   ├── raw-dbtables/           <- Contains tables containing data from each game session downloaded from database.
+    |   ├── combined-dbtables/      <- Contains combined database tables in Excel format from each game session for visual inspection.
+    |   ├── dashboard-inputdata/    <- Contains data used for the dashboard.
+    |   └── dependencies/           <- Contains external data dependencies required for the project.
+    |
+    ├── scripts/                    <- Contains R scripts for functions and analyses.
+    |   ├── functions/              <- R scripts defining functions used in the project, e.g. analysis, dashboard.
+    |   └── analysis/               <- R scripts for data analysis and visualization.
+    |
+    ├── man/                        <- Contains documentation for package functions, ensuring proper descriptions and metadata.
+    ├── tests/                      <- Tests for scripts in `scripts/`
+    ├── renv/                       <- renv library for package management.
+    ├── vignettes/                  <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the
+    |                                  project effectively.
+    └── .github/                    <- GitHub-specific files, including workflows for continuous integration and issue templates.
 
 
 Here we followed guidelines for structuring software projects from the following resources:
