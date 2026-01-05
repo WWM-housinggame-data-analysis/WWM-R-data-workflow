@@ -3,7 +3,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   source(file.path(function_path, "process_dbtables.R"))
   
   # Read all tables in the folder with the custom function
-  csv_data_list <- read_all_csvs(folder_path, folder_name)$datalist
+  csv_data_list <- read_all_csvs(folder_path, folder_pattern)$datalist
   
   GP2_tables <- c("gamesession", "group", "groupround",
                   "playerround", "player","measuretype",
@@ -11,8 +11,10 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
                   "community","house","initialhousemeasure",
                   "question","questionitem","questionscore")
   
+  data_output_path <- file.path("data", "combined-dbtables")
+  
   # Build a new list with only the elements you want
-  GP2_data <- csv_list_2510[GP2_tables]
+  GP2_data <- csv_data_list[GP2_tables]
   names(GP2_data)
   
   # Assign a table to a variable in the global environment
@@ -253,6 +255,8 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   ORDER BY pr.player_code ASC
   ")
   
+  # playerround <- append_playerround_costmeas(playerround, dataset_date)
+  
   # Add to question score the question, question item and player_round tables relevant variables
   questionscore <- sqldf("
   SELECT 
@@ -297,11 +301,11 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   # CHANGES vjcortesa-5: # Updated the var_income_dist list with the variables added by vcortesa and annehuitema2003, except for the welfare level to be added in the plot function
   ## Add the new calculated columns for the measures costs
   new_vars <- c("calculated_costs_personal_measures", 
-                "calculated_costs_house_measures", 
-                "calculated_costs_measures_difference",
+                "calculated_costs_house_measures",
+                #"calculated_costs_measures_difference",
                 "satisfaction_total",
                 "welfaretype_id",
-                "total_damage_costs",
+                # "total_damage_costs",
                 "community_name", #instead of housing_area to keep variable naming consistent
                 "fluvial_house_delta",
                 "pluvial_house_delta"
@@ -339,6 +343,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   
   # Write to Excel with sheet names matching table names
   
+  github <- "joaoxg"
   tryCatch({
     write_xlsx(list_income_dist, file.path(data_output_path, paste0(github, "_G2_Income_dist_", dataset_date, ".xlsx")))
     message("File written successfully.")

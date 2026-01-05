@@ -61,7 +61,7 @@ ui <- page_navbar(
             #   selected = "species"
             # ),
             checkboxGroupInput("player", "Player:",
-                               choices = c("All", as.character(unique(df_income_dist$p_code))),
+                               choices = c("All", as.character(unique(df_income_dist$player_code))),
                                selected = "All"),
             checkboxGroupInput("cost_type", "Cost_Types:",
                                choices = c("All", bar_expenses_cols),
@@ -145,7 +145,7 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     
     # Filter and prepare just before plotting
     plot_data <- plot_data %>%
-      filter(p_code %in% selected_players_vec) %>%
+      filter(player_code %in% selected_players_vec) %>%
       droplevels() %>%
       pivot_longer(cols = where(is.numeric), names_to = "cost_type", values_to = "cost_value") %>%
       mutate(cost_type = factor(cost_type)) %>%
@@ -197,7 +197,7 @@ server <- function(input, output) {
   selected_players <- reactive({
     req(input$player)
     # remove the special label
-    req_types <- as.character(unique(income_dist_reactive()$p_code))
+    req_types <- as.character(unique(income_dist_reactive()$player_code))
     # if All is selected OR none selected -> treat as all
     if ("All" %in% as.vector(input$player)) {
       req_types
@@ -237,7 +237,7 @@ server <- function(input, output) {
   })
   
   income_dist_n <- reactive({income_dist_reactive() %>%
-    select(round_income_grp, p_code) %>%
+    select(round_income_grp, player_code) %>%
     group_by(round_income_grp) %>%
     summarise(N = n()) %>%
     ungroup()
