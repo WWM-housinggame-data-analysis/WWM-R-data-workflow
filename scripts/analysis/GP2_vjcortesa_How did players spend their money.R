@@ -8,6 +8,7 @@ library(rstudioapi)
 library(sqldf)
 # Load for data manipulation
 library(dplyr)
+library(stringr)
 # Load for excel manipulation
 library(writexl)
 # Load for data visualisation
@@ -39,7 +40,7 @@ source(file.path(function_path, "format_income_dist.R"))
 
 
 # Read the database folder to create accordingly the dataframe tables
-folder_path <- file.path("data", "database-tables") 
+folder_path <- file.path("data", "raw-dbtables") 
 folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
 
 # Create a combined excel with all database tables to have as a reference their initial configuration
@@ -52,9 +53,9 @@ list_income_dist <- retrieve_dbtables(folder_path, folder_name)
 # Not ideal because makes the global environment crowded with unnecessary variables
 # list2env(csv_data_list, envir = .GlobalEnv)
 
-df_income_dist <- format_income_dist(list_income_dist$df_income_dist)
-
-
+df_income_dist_2409 <- format_income_dist(list_income_dist_2409$df_income_dist)
+df_income_dist_2509 <- format_income_dist(list_income_dist_2509$df_income_dist)
+df_income_dist <- format_income_dist(list_income_dist_2510$df_income_dist)
 
 # trying script for the plot
 session_name <- folder_name
