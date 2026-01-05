@@ -1,7 +1,5 @@
 retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_folder") {
   
-  source(file.path(function_path, "process_dbtables.R"))
-  
   # Read all tables in the folder with the custom function
   csv_data_list <- read_all_csvs(folder_path, folder_pattern)$datalist
   
@@ -18,46 +16,30 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   names(GP2_data)
   
   # Assign a table to a variable in the global environment
-  gamesession <- GP2_data[["gamesession"]]
-  group <- GP2_data[["group"]]
-  groupround <- GP2_data[["groupround"]]
-  playerround <- GP2_data[["playerround"]]
-  player <- GP2_data[["player"]]
-  measuretype <- GP2_data[["measuretype"]]
-  personalmeasure <- GP2_data[["personalmeasure"]]
-  housemeasure <- GP2_data[["housemeasure"]]
-  housegroup <- GP2_data[["housegroup"]]
-  community <- GP2_data[["community"]]
-  house <- GP2_data[["house"]]
-  initialhousemeasure <- GP2_data[["initialhousemeasure"]]
-  question <- GP2_data[["question"]]
-  questionitem <- GP2_data[["questionitem"]]
-  questionscore <- GP2_data[["questionscore"]]
+  gamesession <- csv_data_list[["gamesession"]]
+  group <- csv_data_list[["group"]]
+  groupround <- csv_data_list[["groupround"]]
+  playerround <- csv_data_list[["playerround"]]
+  player <- csv_data_list[["player"]]
   
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   gamesession <- sqldf("SELECT * FROM gamesession")
   names(gamesession)[names(gamesession) == "name"] <- "gamesession_name"
   
-  # Extract the dataset date to name the data and figure outputs accordingly 
-  dataset_date <- str_extract(gamesession$gamesession_name, "\\d+")
-  dataset_output<- file.path(data_output_path,paste0("GP2_",dataset_date))
-  
   # Add to the group dataframe the gamesession_name by the group = gamesession id
   # Leftjoin Keeps only the rows that have matching values in both data frames
-  group <- sqldf("
-  SELECT g.*, gs.gamesession_name
-  FROM [group] AS g
-  LEFT JOIN [gamesession] AS gs
-  ON g.gamesession_id = gs.id
-  ")
+  group <- sqldf(" SELECT g.*, gs.gamesession_name
+                   FROM [group] AS g
+                   LEFT JOIN [gamesession] AS gs
+                   ON g.gamesession_id = gs.id
+                 ")
   
   # Add to groupround the group variables selection
-  groupround <- sqldf("
-  SELECT gr.*, g.name, g.gamesession_id, g.gamesession_name, g.scenario_id
-  FROM [groupround] AS gr
-  LEFT JOIN [group] AS g
-  ON gr.group_id = g.id
-  ")
+  groupround <- sqldf(" SELECT gr.*, g.name, g.gamesession_id, g.gamesession_name, g.scenario_id
+                        FROM [groupround] AS gr
+                        LEFT JOIN [group] AS g
+                        ON gr.group_id = g.id
+                      ")
   
   # Rename the added columns in the dataframe to know from which table first come from
   names(groupround)[names(groupround) == "scenario_id"] <- "group_scenario_id"
@@ -69,20 +51,21 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   names(groupround)[names(groupround) == "name"] <- "group_name"
   
   # Add to playerround the groupround selection to filter per round, group and session id and names by playerround = groupround id
-  playerround <- sqldf("
-  SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
-  FROM [playerround] AS pr
-  LEFT JOIN [groupround] AS gr
-  ON pr.groupround_id = gr.id
-  ")
+  playerround <- sqldf(" SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
+                         FROM [playerround] AS pr
+                         LEFT JOIN [groupround] AS gr
+                         ON pr.groupround_id = gr.id
+                       ")
   
   # Rename the added columns in the dataframe to know from which table first come from
   names(playerround)[names(playerround) == "round_number"] <- "groupround_round_number"
   names(playerround)[names(playerround) == "scenario_id"] <- "group_scenario_id"
   
   # Rename id with the table prefix to avoid id ambiguity
+  #names(player)[names(player) == "id"] <- "player_id"
   names(playerround)[names(playerround) == "id"] <- "playerround_id"
   
+<<<<<<< HEAD
   # Add to the playerround the p.code and welfaretype_id
   playerround <- sqldf("
   SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
@@ -284,12 +267,13 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   ")
   
   
+=======
+>>>>>>> main
   # Filter the playerround dataset for the income distribution
   
   # Select the variables for the income distribution plot
   var_income_dist <- c(
-    "gamesession_name", "group_name",
-    "playerround_id", "player_id", "player_code", "house_code", "groupround_id", "groupround_round_number",
+    "playerround_id", "player_id", "groupround_id", "groupround_round_number",
     "round_income", "living_costs", "paid_debt",
     "profit_sold_house", "spent_savings_for_buying_house",
     "cost_taxes", "mortgage_payment",
@@ -298,6 +282,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
     "spendable_income"
   )
   
+<<<<<<< HEAD
   # CHANGES vjcortesa-5: # Updated the var_income_dist list with the variables added by vcortesa and annehuitema2003, except for the welfare level to be added in the plot function
   ## Add the new calculated columns for the measures costs
   new_vars <- c("calculated_costs_personal_measures", 
@@ -312,18 +297,28 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   )
   var_income_dist <- c(var_income_dist, new_vars)
   
+=======
+>>>>>>> main
   # Collapse the column vector into a comma-separated string
   col_income_dist <- paste(var_income_dist, collapse = ", ")
   
-  # Run the query to filter the playerround dataframe with the var_income_dist 
-  df_income_dist <- sqldf(paste0("
-  SELECT ", col_income_dist, "
-  FROM playerround
-  "))
+  # Run the query to filter the playerround dataframe and add the player code
+  df_income_dist <- sqldf(paste0("SELECT ", col_income_dist, ", p.code
+                                  FROM playerround
+                                  LEFT JOIN player AS p
+                                  ON player_id = p.id
+                                 "))
   
-  # Step 3: Income distribution specification ---------------------------------------------------
-  # CHANGES vjcortesa-7: Added to the list_income_dist file the tables added in the code
+  # Rename columns added with the table prefix
+  names(df_income_dist)[names(df_income_dist) == "code"] <- "p_code"
+  
+  # Run the query to filter the playerround dataframe and add the player code
+  df_income_dist <- sqldf(paste0("SELECT * FROM df_income_dist
+                                  ORDER BY p_code, groupround_round_number ASC;
+                                 "))
+  
   # Create a list with the tables used in the calculation
+<<<<<<< HEAD
   list_income_dist <- list(
     df_income_dist = df_income_dist,
     playerround = playerround,
@@ -350,6 +345,15 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   }, error = function(e) {
     message("Error: ", e$message)
   })
+=======
+  list_income_dist <- list(df_income_dist = df_income_dist,
+                           gamesession = gamesession,
+                           group = group,
+                           groupround = groupround,
+                           player = player,
+                           playerround = playerround
+                           )
+>>>>>>> main
   
   return(list_income_dist)
   

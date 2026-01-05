@@ -47,9 +47,7 @@ folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
 #combine_csvs_to_excel(folder_path, folder_name) #avoid repeating read_all_csvs workflow within this function
 
 # retrieve matched database tables inside list
-list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
-list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")
-list_income_dist_2510 <- retrieve_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+list_income_dist <- retrieve_dbtables(folder_path, folder_name)
 
 # Assign each table to a variable in the global environment
 # Not ideal because makes the global environment crowded with unnecessary variables
@@ -58,8 +56,6 @@ list_income_dist_2510 <- retrieve_dbtables(folder_path, "housinggame_session_20_
 df_income_dist_2409 <- format_income_dist(list_income_dist_2409$df_income_dist)
 df_income_dist_2509 <- format_income_dist(list_income_dist_2509$df_income_dist)
 df_income_dist <- format_income_dist(list_income_dist_2510$df_income_dist)
-
-
 
 # trying script for the plot
 session_name <- folder_name
