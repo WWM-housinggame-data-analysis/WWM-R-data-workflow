@@ -8,6 +8,7 @@ library(rstudioapi)
 library(sqldf)
 # Load for data manipulation
 library(dplyr)
+library(stringr)
 # Load for excel manipulation
 library(writexl)
 # Load for data visualisation
@@ -39,20 +40,24 @@ source(file.path(function_path, "format_income_dist.R"))
 
 
 # Read the database folder to create accordingly the dataframe tables
-folder_path <- file.path("data", "database-tables") 
+folder_path <- file.path("data", "raw-dbtables") 
 folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
 
 # Create a combined excel with all database tables to have as a reference their initial configuration
 #combine_csvs_to_excel(folder_path, folder_name) #avoid repeating read_all_csvs workflow within this function
 
 # retrieve matched database tables inside list
-list_income_dist <- retrieve_dbtables(folder_path, folder_name)
+list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
+list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")
+list_income_dist_2510 <- retrieve_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 # Assign each table to a variable in the global environment
 # Not ideal because makes the global environment crowded with unnecessary variables
 # list2env(csv_data_list, envir = .GlobalEnv)
 
-df_income_dist <- format_income_dist(list_income_dist$df_income_dist)
+df_income_dist_2409 <- format_income_dist(list_income_dist_2409$df_income_dist)
+df_income_dist_2509 <- format_income_dist(list_income_dist_2509$df_income_dist)
+df_income_dist <- format_income_dist(list_income_dist_2510$df_income_dist)
 
 
 

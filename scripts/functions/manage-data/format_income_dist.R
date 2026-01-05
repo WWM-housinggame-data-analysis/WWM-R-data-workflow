@@ -1,7 +1,8 @@
 format_income_dist <- function(income_dist_dbtable) {
   
-  categ_vars <- c("playerround_id", "player_id", "groupround_id",
-                  "groupround_round_number", "p_code")
+  categ_vars <- c("gamesession_name", "group_name", "playerround_id", "player_id", "groupround_id",
+                  "groupround_round_number", "house_code", "player_code", "welfaretype_id",
+                  "community_name", "fluvial_house_delta", "pluvial_house_delta" )
   
   income_dist_formatted <- income_dist_dbtable %>% mutate_at(categ_vars, as.factor)
   
@@ -13,13 +14,38 @@ format_income_dist <- function(income_dist_dbtable) {
                            mutate_at(names(income_dist_formatted)[!(names(income_dist_formatted) %in% categ_vars)],
                                      as.numeric)
   
+  dataset_date <- str_extract(unique(income_dist_formatted$gamesession_name), "\\d+")
+
+  if (dataset_date == "2409") {
+    income_dist_formatted$calculated_costs_measures_difference <- income_dist_formatted$cost_house_measures_bought -
+      (income_dist_formatted$calculated_costs_personal_measures + income_dist_formatted$calculated_costs_house_measures)
+  } else {
+    income_dist_formatted$calculated_costs_measures_difference <- (income_dist_formatted$cost_house_measures_bought +  income_dist_formatted$cost_personal_measures_bought) -
+      (income_dist_formatted$calculated_costs_personal_measures + income_dist_formatted$calculated_costs_house_measures)
+  }
+
+  # CHANGES annehuitema2003-3: Added pluvial&fluvial costs as total_damage to df_income_dist
+  if (all(c("cost_fluvial_damage", "cost_pluvial_damage") %in% names(income_dist_formatted))) {
+    income_dist_formatted$total_damage_costs <- rowSums(
+      income_dist_formatted[, c("cost_fluvial_damage", "cost_pluvial_damage")],
+      na.rm = TRUE
+    )
+  } else {
+    warning("cost_fluvial_damage and/or cost_pluvial_damage missing in income_dist_formatted.")
+  }
+
   # Calculate the round costs to check the spendable income
   # "paid_debt" not used in the calculations because is taken already when the spendable income comes as a negative value
   # If either column has NA, the sum will also be NA unless the sum is done this way
   
-  cost_vars <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
-                 "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
-                 "cost_fluvial_damage", "cost_pluvial_damage")
+  cost_vars <- c("living_costs",
+                 "cost_taxes",
+                 "spent_savings_for_buying_house",
+                 "mortgage_payment",
+                 "cost_house_measures_bought",
+                 "cost_personal_measures_bought",
+                 "cost_fluvial_damage",
+                 "cost_pluvial_damage")
   
   income_dist_formatted$calculated_costs <- rowSums(income_dist_formatted[, cost_vars], na.rm = TRUE) 
   
