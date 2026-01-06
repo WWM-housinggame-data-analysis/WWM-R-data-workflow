@@ -3,15 +3,8 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   source(file.path(function_path, "process_dbtables.R"))
   
   # Read all tables in the folder with the custom function
-  csv_data_list <- read_all_csvs(folder_path, folder_pattern)$datalist
+  csv_data_list <- read_all_csvs(folder_path, folder_pattern)
   
-  GP2_tables <- c("gamesession", "group", "groupround",
-                  "playerround", "player","measuretype",
-                  "personalmeasure","housemeasure", "housegroup",
-                  "community","house","initialhousemeasure",
-                  "question","questionitem","questionscore")
-  
-  data_output_path <- file.path("data", "combined-dbtables")
   
   # Build a new list with only the elements you want
   GP2_data <- csv_data_list[GP2_tables]
