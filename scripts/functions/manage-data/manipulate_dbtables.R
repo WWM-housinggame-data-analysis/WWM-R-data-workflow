@@ -1,3 +1,70 @@
+
+select_sort_sqldf <- function(dbtable, selected_cols) {
+  
+  if (missing(selected_cols) == FALSE && identical(selected_cols = names(dbtable)) == FALSE) {
+    dbtable <- sqldf(paste0("SELECT ", selected_cols, " FROM ", deparse(substitute(dbtable))))
+  } else {
+    dbtable <- sqldf(paste0("SELECT * FROM ", deparse(substitute(dbtable))))
+  }
+  
+  return(dbtable)
+}
+
+left_join_sqldf <- function(dbtable1, dbtable2, kept_dbtable2_vars, match_dbtable1_cols, match_dbtable2_cols, dbtable2_col_asindex) {
+  if (missing(dbtable2_col_asindex)) {
+    select_statement <- paste0("SELECT dbtable1.*,", paste(paste0("dbtable2.", kept_dbtable2_vars), collapse = ", "))
+  } else {
+    kept_dbtable2_vars <- kept_dbtable2_vars[kept_dbtable2_vars != dbtable2_col_asindex]
+    select_statement <- paste0("SELECT dbtable2.", dbtable2_col_asindex,  ", dbtable1.*,", paste(paste0("dbtable2.", kept_dbtable2_vars), collapse = ", "))
+  }
+  for_statement <- paste0("FROM [", deparse(substitute(dbtable1)), "] AS dbtable1")
+  left_join_statement <- paste0("LEFT JOIN [", deparse(substitute(dbtable2)), "] AS dbtable2")
+  on_statement <- paste0("ON ", paste(paste(paste0("dbtable1.", match_dbtable1_cols), paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "))
+  
+  dbtable <- sqldf(paste0(select_statement,
+                         for_statement,
+                         left_join_statement,
+                         on_statement
+                        )
+                  )
+  
+  return(dbtable)
+                   
+}
+
+rename_var_sqldf <- function(dbtable, current_colnames, new_colnames) {
+  
+  stopifnot(is.character(current_colnames))
+  
+  stopifnot(is.character(new_colnames))
+  
+  if (length(current_colnames) != length(new_colnames)) {
+    stop("current_colnames and new_colnames need to have the same length")
+  }
+  
+  cols <- names(dbtable)
+  
+  cols <- cols[cols != current_colnames]  # exclude the column you want to rename
+  
+  dbtable <- sqldf(paste0(
+    "SELECT ", paste(cols, collapse = ", "), ", ", paste(paste(current_colnames, new_colnames, sep = " AS "), collapse = ", "),
+    " FROM " , deparse(substitute(dbtable))
+  ))
+  
+  return(dbtable)
+}
+
+order_sqldf <- function(dbtable, order_col, asc = TRUE) {
+  if (asc) {
+    dbtable <- sqldf(paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", order_col, " ASC"))
+  } else {
+    dbtable <- sqldf(paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", order_col, " DESC"))
+  }
+  return(dbtable)
+}
+  
+
+
 retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_folder") {
   
   source(file.path(function_path, "process_dbtables.R"))
