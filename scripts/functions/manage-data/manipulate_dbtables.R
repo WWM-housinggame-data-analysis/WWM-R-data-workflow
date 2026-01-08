@@ -70,13 +70,14 @@ rename_cols_sqlquery <- function(dbtable, current_colnames, new_colnames, rename
   return(sqlquery)
 }
 
-order_sqldf <- function(dbtable, order_col, asc = TRUE) {
+sort_dbtable_sqlquery <- function(dbtable, sorting_col, asc = TRUE) {
   if (asc) {
-    dbtable <- sqldf(paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", order_col, " ASC"))
+    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sorting_col, " ASC")
+    
   } else {
-    dbtable <- sqldf(paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", order_col, " DESC"))
+    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sorting_col, " DESC")
   }
-  return(dbtable)
+  return(sqlquery)
 }
   
 
@@ -153,33 +154,46 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
  
   
   # Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id
-  playerround_df <- sqldf("
-  SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
-  FROM [playerround_df] AS pr
-  LEFT JOIN [groupround_df] AS gr
-  ON pr.groupround_id = gr.id
-  ")
+  # playerround_df <- sqldf("
+  # SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
+  # FROM [playerround_df] AS pr
+  # LEFT JOIN [groupround_df] AS gr
+  # ON pr.groupround_id = gr.id
+  # ")
   
-  rename_cols_sqlquery(groupround_df, "round_number", "groupround_round_number")
-  left_join_sqlquery(playerround_df, "groupround_id", groupround_df, "id",
-                     kept_dbtable2_vars = c("name", "gamesession_id", "gamesession_name", "scenario_id"))
+  groupround_df <- sqldf(rename_cols_sqlquery(groupround_df, "round_number", "groupround_round_number"))
+  
+  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "id", "playerround_id", renamed_cols_first = TRUE))
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "groupround_id", groupround_df, "id",
+                                             kept_dbtable2_vars = c("groupround_round_number", "group_id",
+                                                                    "group_name", "gamesession_id",
+                                                                    "gamesession_name", "group_scenario_id")))
   
   
-  # Rename the added columns in the dataframe to know from which table first come from
-  names(playerround_df)[names(playerround_df) == "round_number"] <- "groupround_round_number"
-  names(playerround_df)[names(playerround_df) == "scenario_id"] <- "group_scenario_id"
+  # # Rename the added columns in the dataframe to know from which table first come from
+  # names(playerround_df)[names(playerround_df) == "round_number"] <- "groupround_round_number"
+  # names(playerround_df)[names(playerround_df) == "scenario_id"] <- "group_scenario_id"
   
   # Rename id with the table prefix to avoid id ambiguity
-  names(playerround_df)[names(playerround_df) == "id"] <- "playerround_id"
+  # names(playerround_df)[names(playerround_df) == "id"] <- "playerround_id"
   
   # Add to the playerround_df the p.code and welfaretype_id
-  playerround_df <- sqldf("
-  SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
-  FROM [playerround_df] AS pr
-  LEFT JOIN [player_df] AS p
-  ON pr.player_id = p.id
-  ORDER BY player_code ASC
-  ")
+  # playerround_df <- sqldf("
+  # SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
+  # FROM [playerround_df] AS pr
+  # LEFT JOIN [player_df] AS p
+  # ON pr.player_id = p.id
+  # ORDER BY player_code ASC
+  # ")
+  
+  player_df <- sqldf(rename_cols_sqlquery(player_df, "code", "player_code"))
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "player_id", player_df, "id",
+                                             kept_dbtable2_vars = c("player_code", "welfaretype_id")))
+  
+  playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
+  
   
   # Added house query to get community area into the playerround_df table
   house_df <- sqldf("
