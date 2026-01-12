@@ -47,7 +47,7 @@ source(file.path(function_path, "format_income_dist.R"))
 # Data Workflow ----
 
 # Read all tables in the database folder to create accordingly the dataframe tables inside list
-list_income_dist <- retrieve_all_dbtables(folder_path, "housinggame")
+list_income_dist <- retrieve_all_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
 list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")

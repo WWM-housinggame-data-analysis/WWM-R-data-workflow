@@ -44,7 +44,7 @@ retrieve_housemeasure_cumulative <- function(housemeasure) {
     summarise(
       # sum only cost_absolute where initialhousemeasure == FALSE
       calculated_costs_house_measures = sum(
-        ifelse(initialhousemeasure, 0, cost_absolute)
+        ifelse(is_initialhousemeasure, 0, cost_absolute)
       ),
       total_bought_measures = first(cost_house_measures_bought), # keep the round’s value
       .groups = "drop"
