@@ -148,6 +148,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
   #names(gamesession_df)[names(gamesession_df) == "name"] <- "gamesession_name"
   gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
+  gamesession_df <- sqldf(select_sqlquery(gamesession_df, c("id", "gamesession_name", names(gamesession_df)[names(gamesession_df) %in% c("id", "gamesession_name") == FALSE])))
   
   # Extract the dataset date to name the data and figure outputs accordingly 
   dataset_date <- str_extract(gamesession_df$gamesession_name, "\\d+")
