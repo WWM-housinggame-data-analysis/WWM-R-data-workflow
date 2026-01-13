@@ -147,7 +147,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
   #names(gamesession_df)[names(gamesession_df) == "name"] <- "gamesession_name"
-  gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name", renamed_cols_first = T))
+  gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
   
   # Extract the dataset date to name the data and figure outputs accordingly 
   dataset_date <- str_extract(gamesession_df$gamesession_name, "\\d+")
@@ -586,9 +586,12 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
     
     questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, c("answer_name", "answercode_plus_name"), c("answer_option", "answer_plus_option")))
     
+    questionscore_df <- sqldf(select_sqlquery(questionscore_df, c("answer_id", "answer", "late_answer", "answer_option", "answer_plus_option",
+                                                                  "question_id", "question_name", "question_description", "playerround_id")))
     
     questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, "playerround_id", playerround_df, "playerround_id",
                                                  kept_dbtable2_vars = c("groupround_round_number", "player_code", "group_name", "gamesession_name")))
+    
     
     return(questionscore_df)
   }
