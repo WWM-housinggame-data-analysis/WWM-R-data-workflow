@@ -54,20 +54,31 @@ rename_cols_sqlquery <- function(dbtable, current_colnames, new_colnames, rename
     stop("current_colnames and new_colnames need to have the same length")
   }
   
-  colnames <- names(dbtable)
+  match_colnames <- ifelse(names(dbtable) %in% current_colnames == FALSE, NA, names(dbtable))
   
-  colnames <- colnames[colnames %in% current_colnames == FALSE]  # exclude the column you want to rename
+  new_colnames <- new_colnames[match(match_colnames, current_colnames)[!is.na(match(match_colnames, current_colnames))]]
   
-  if (renamed_cols_first) {
-    sqlquery <- paste0("SELECT ", paste(paste(current_colnames, new_colnames, sep = " AS "), collapse = ", "), ", ", paste(colnames, collapse = ", "),
-                       " FROM " , deparse(substitute(dbtable)))
-  } else {
-    sqlquery <- paste0("SELECT ", paste(colnames, collapse = ", "), ", ", paste(paste(current_colnames, new_colnames, sep = " AS "), collapse = ", "),
-                       " FROM " , deparse(substitute(dbtable)))
-  }
+  match_colnames[is.na(match_colnames) == FALSE] <- new_colnames
+  
+  current_colnames <- names(dbtable)
+  
+  new_colnames <- match_colnames
   
   
+  rename_statement <- paste(mapply(function(old_cols, new_cols) {
+                                    if (!is.na(old_cols) && !is.na(new_cols)) {
+                                      paste(old_cols, new_cols, sep = " AS ")
+                                   } else if (!is.na(old_cols)) {
+                                      old_cols
+                                   } else {
+                                      stop("No valid column name found")
+                                   }
+                                  }, current_colnames, new_colnames),
+                            collapse = ", ")
   
+  
+  sqlquery <- paste0("SELECT ", rename_statement, " FROM " , deparse(substitute(dbtable)))
+
   return(sqlquery)
 }
 

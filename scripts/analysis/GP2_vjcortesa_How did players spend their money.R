@@ -21,15 +21,15 @@ library(ggtext)
 # Set defaults ----
 # Set all default variables or global options and all the path variables at the top of the code.
 
-function_path <- file.path("scripts", "functions","manage-data")
-folder_path <- file.path("data", "raw-dbtables")
-data_output_path <- file.path("data", "combined-dbtables")
+FUNCTION_PATH <- file.path("scripts", "functions","manage-data")
+INPUTDATA_PATH <- file.path("data", "raw-dbtables")
+OUTPUTDATA_PATH <- file.path("data", "combined-dbtables")
 
-GP2_tables <- c("gamesession", "group", "groupround",
-                "playerround", "player","measuretype",
-                "personalmeasure","housemeasure", "housegroup",
-                "community","house","initialhousemeasure",
-                "question","questionitem","questionscore")
+SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
+                       "playerround", "player","measuretype",
+                       "personalmeasure","housemeasure", "housegroup",
+                       "community","house","initialhousemeasure",
+                       "question","questionitem","questionscore")
 
 # Source files ----
 
@@ -38,16 +38,16 @@ GP2_tables <- c("gamesession", "group", "groupround",
 getwd()
 
 # Load required functions
-source(file.path(function_path, "combine_csvs_to_excel.R"))
-source(file.path(function_path, "list_upload_dbtables.R"))
-source(file.path(function_path, "retrieve_dbtables.R"))
-source(file.path(function_path, "format_income_dist.R"))
+#source(file.path(function_path, "combine_csvs_to_excel.R"))
+source(file.path(FUNCTION_PATH, "list_upload_dbtables.R"))
+#source(file.path(function_path, "retrieve_dbtables.R"))
+#source(file.path(function_path, "format_income_dist.R"))
 
 
 # Data Workflow ----
 
 # Read all tables in the database folder to create accordingly the dataframe tables inside list
-list_income_dist <- retrieve_all_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+list_income_dist <- upload_selected_dbtables(INPUTDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
 list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")

@@ -50,7 +50,7 @@ list_all_dbtables <- function(folder_path, subfolder_pattern) {
 
  
 # Retrieve all tables into a named list
-retrieve_all_dbtables <- function(folder_path, subfolder_pattern) {
+upload_all_dbtables <- function(folder_path, subfolder_pattern) {
   
   dbtable_filenames <- list_all_dbtables(folder_path, subfolder_pattern)
 
@@ -63,4 +63,22 @@ retrieve_all_dbtables <- function(folder_path, subfolder_pattern) {
   }
   
   return(dbtables) 
+}
+
+# Retrieve all tables into a named list
+upload_selected_dbtables <- function(folder_path, subfolder_pattern) {
+  
+  dbtable_filenames <- list_all_dbtables(folder_path, subfolder_pattern)
+  
+  dbtables_list <- dbtable_filenames
+  
+  for (subfolder in names(dbtable_filenames)) {
+    dbtables_list[[subfolder]] <- lapply(dbtable_filenames[[subfolder]], readr::read_csv)
+    
+    names(dbtables_list[[subfolder]]) <- tools::file_path_sans_ext(basename(dbtable_filenames[[subfolder]]))
+    
+    dbtables_list[[subfolder]] <- dbtables_list[[subfolder]][names(dbtables_list[[subfolder]]) %in% SELECTED_DBTABLES == TRUE]
+  }
+  
+  return(dbtables_list) 
 }

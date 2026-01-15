@@ -1,32 +1,19 @@
 retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_folder") {
   
-  source(file.path(function_path, "process_dbtables.R"))
-  source(file.path(function_path, "sql_query_library.R"))
-  
-  # Read all tables in the folder with the custom function
-  csv_data_list <- read_all_csvs(folder_path, folder_pattern)
+  source(file.path(FUNCTION_PATH, "process_dbtables.R"))
+  source(file.path(FUNCTION_PATH, "sql-query-dbtables.R"))
   
   
-  # Build a new list with only the elements you want
-  GP2_data <- csv_data_list[GP2_tables]
-  names(GP2_data)
+  unpack_list <- function(my_list, suffix = "_new") {
+    if (is.null(names(my_list))) {
+      names(my_list) <- paste0("obj", seq_along(my_list))
+    }
+    named_list <- setNames(my_list, paste0(names(my_list), suffix))
+    list2env(named_list, envir = parent.frame())
+  }
   
-  # Assign a table to a variable in the global environment
-  gamesession_df <- GP2_data[["gamesession"]]
-  group_df <- GP2_data[["group"]]
-  groupround_df <- GP2_data[["groupround"]]
-  playerround_df <- GP2_data[["playerround"]]
-  player_df <- GP2_data[["player"]]
-  measuretype_df <- GP2_data[["measuretype"]]
-  personalmeasure_df <- GP2_data[["personalmeasure"]]
-  housemeasure_df <- GP2_data[["housemeasure"]]
-  housegroup_df <- GP2_data[["housegroup"]]
-  community_df <- GP2_data[["community"]]
-  house_df <- GP2_data[["house"]]
-  initialhousemeasure_df <- GP2_data[["initialhousemeasure"]]
-  question_df <- GP2_data[["question"]]
-  questionitem_df <- GP2_data[["questionitem"]]
-  questionscore_df <- GP2_data[["questionscore"]]
+  # Unpack into global environment
+  unpack_list(list_income_dist, "_df")
   
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
