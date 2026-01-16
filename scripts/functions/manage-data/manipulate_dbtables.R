@@ -18,12 +18,9 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
   #names(gamesession_df)[names(gamesession_df) == "name"] <- "gamesession_name"
-  gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
-  gamesession_df <- sqldf(select_sqlquery(gamesession_df, c("id", "gamesession_name", names(gamesession_df)[names(gamesession_df) %in% c("id", "gamesession_name") == FALSE])))
   
-  # Extract the dataset date to name the data and figure outputs accordingly 
-  dataset_date <- str_extract(gamesession_df$gamesession_name, "\\d+")
-  dataset_output<- file.path(data_output_path,paste0("GP2_",dataset_date))
+  gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
+  
   
   # Add to the group dataframe the gamesession_name by the group_df = gamesession_df id
   # Leftjoin Keeps only the rows that have matching values in both data frames
@@ -86,6 +83,36 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   
   house_df <- manipulate_house(house_df, community_df)
   
+  
+  # Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id
+  # playerround_df <- sqldf("
+  # SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
+  # FROM [playerround_df] AS pr
+  # LEFT JOIN [groupround_df] AS gr
+  # ON pr.groupround_id = gr.id
+  # ")
+  
+  # Rename id with the table prefix to avoid id ambiguity
+  # names(playerround_df)[names(playerround_df) == "id"] <- "playerround_id"
+  
+  # Add to the playerround_df the p.code and welfaretype_id
+  # playerround_df <- sqldf("
+  # SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
+  # FROM [playerround_df] AS pr
+  # LEFT JOIN [player_df] AS p
+  # ON pr.player_id = p.id
+  # ORDER BY player_code ASC
+  # ")
+  
+  # playerround_df <- sqldf("
+  # SELECT pr.*, hg.code AS house_code, h.community_name
+  # FROM [playerround_df] AS pr
+  # LEFT JOIN [housegroup_df] AS hg
+  # ON pr.final_housegroup_id = hg.id
+  # LEFT JOIN [house_df] AS h
+  # ON hg.code = h.code
+  # ORDER BY pr.player_code ASC
+  # ")
   
   manipulate_playerround <- function(playerround_df, groupround_df, player_df, house_df, housegroup_df) {
     
@@ -292,46 +319,11 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   housemeasure_df <- manipulate_housemeasure(housemeasure_df, housegroup_df, playerround_df, measuretype_df, initialhousemeasure_df)
   
   
-  
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
   #exclude the costs of the housemeasures that came implemented in the house when bought
   
   housemeasure_cumulative <- retrieve_housemeasure_cumulative(housemeasure_df)
   
-  
-  # Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id
-  # playerround_df <- sqldf("
-  # SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [groupround_df] AS gr
-  # ON pr.groupround_id = gr.id
-  # ")
-  
-  # # Rename the added columns in the dataframe to know from which table first come from
-  # names(playerround_df)[names(playerround_df) == "round_number"] <- "groupround_round_number"
-  # names(playerround_df)[names(playerround_df) == "scenario_id"] <- "group_scenario_id"
-  
-  # Rename id with the table prefix to avoid id ambiguity
-  # names(playerround_df)[names(playerround_df) == "id"] <- "playerround_id"
-  
-  # Add to the playerround_df the p.code and welfaretype_id
-  # playerround_df <- sqldf("
-  # SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [player_df] AS p
-  # ON pr.player_id = p.id
-  # ORDER BY player_code ASC
-  # ")
-  
-  # playerround_df <- sqldf("
-  # SELECT pr.*, hg.code AS house_code, h.community_name
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [housegroup_df] AS hg
-  # ON pr.final_housegroup_id = hg.id
-  # LEFT JOIN [house_df] AS h
-  # ON hg.code = h.code
-  # ORDER BY pr.player_code ASC
-  # ")
   
   #Add to playerround_df the calculated costs of measures
   # playerround_df <- sqldf("
@@ -529,6 +521,10 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
     player = player_df,
     gamesession = gamesession_df
   )
+  
+  # Extract the dataset date to name the data and figure outputs accordingly 
+  dataset_date <- str_extract(gamesession_df$gamesession_name, "\\d+")
+  dataset_output<- file.path(data_output_path,paste0("GP2_",dataset_date))
   
   # Write to Excel with sheet names matching table names
   
