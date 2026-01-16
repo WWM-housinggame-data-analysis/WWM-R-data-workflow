@@ -31,6 +31,10 @@ SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
                        "community","house","initialhousemeasure",
                        "question","questionitem","questionscore")
 
+INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
+                           "groupround_id", "groupround_round_number", "welfaretype_id", "community_name")
+
+
 # Source files ----
 
 # Get the path of the current script

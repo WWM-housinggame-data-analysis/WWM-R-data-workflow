@@ -1,19 +1,19 @@
-retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_folder") {
+preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   
   source(file.path(FUNCTION_PATH, "process_dbtables.R"))
   source(file.path(FUNCTION_PATH, "sql-query-dbtables.R"))
   
   
-  unpack_list <- function(my_list, suffix = "_new") {
-    if (is.null(names(my_list))) {
-      names(my_list) <- paste0("obj", seq_along(my_list))
+  unpack_dbtable_list <- function(dblist, suffix = "_df") {
+    if (any(SELECTED_DBTABLES %in% names(dblist) == FALSE)) {
+      stop("Missing dbtables needed for preprocessing")
     }
-    named_list <- setNames(my_list, paste0(names(my_list), suffix))
-    list2env(named_list, envir = parent.frame())
+    dblist <- setNames(dblist, paste0(names(dblist), suffix))
+    list2env(dblist, envir = parent.frame())
   }
   
   # Unpack into global environment
-  unpack_list(list_income_dist, "_df")
+  unpack_dbtable_list(income_dist_list, "_df")
   
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
@@ -349,7 +349,7 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
     
     # Move to tests/test_welfare levels ----
     
-    # CHANGES annehuitema2003-3: Added pluvial&fluvial costs as total_damage to playerround_df and df_income_dist
+    # CHANGES annehuitema2003-3: Added pluvial&fluvial costs as total_damage to playerround_df and income_dist_df
     # Map numeric welfaretype_id to welfare text levels
     #converts numeric welfare IDs into human‑readable ordered categories
     # Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
@@ -468,45 +468,51 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
   # Filter the playerround_df dataset for the income distribution
   
   # Select the variables for the income distribution plot
-  var_income_dist <- c(
-    "gamesession_name", "group_name",
-    "playerround_id", "player_id", "player_code", "house_code", "groupround_id", "groupround_round_number",
-    "round_income", "living_costs", "paid_debt",
-    "profit_sold_house", "spent_savings_for_buying_house",
-    "cost_taxes", "mortgage_payment",
-    "cost_house_measures_bought", "cost_personal_measures_bought",
-    "cost_fluvial_damage", "cost_pluvial_damage",
-    "spendable_income"
-  )
-  
   # CHANGES vjcortesa-5: # Updated the var_income_dist list with the variables added by vcortesa and annehuitema2003, except for the welfare level to be added in the plot function
   ## Add the new calculated columns for the measures costs
-  new_vars <- c("calculated_costs_personal_measures", 
-                "calculated_costs_house_measures",
-                #"calculated_costs_measures_difference",
-                "satisfaction_total",
-                "welfaretype_id",
-                # "total_damage_costs",
-                "community_name", #instead of housing_area to keep variable naming consistent
-                "fluvial_house_delta",
-                "pluvial_house_delta"
-  )
-  var_income_dist <- c(var_income_dist, new_vars)
   
-  # Collapse the column vector into a comma-separated string
-  col_income_dist <- paste(var_income_dist, collapse = ", ")
+  income_dist_cols <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
+                       "groupround_id", "groupround_round_number", "round_income", "living_costs", "paid_debt",
+                       "profit_sold_house", "spent_savings_for_buying_house", "cost_taxes", "mortgage_payment",
+                       "cost_house_measures_bought", "cost_personal_measures_bought", "cost_fluvial_damage", "cost_pluvial_damage",
+                       "spendable_income", "calculated_costs_personal_measures", "calculated_costs_house_measures", #"calculated_costs_measures_difference",
+                       "satisfaction_total", "welfaretype_id", # "total_damage_costs",
+                       "community_name", "fluvial_house_delta", "pluvial_house_delta")
+  
+  
+  
   
   # Run the query to filter the playerround_df dataframe with the var_income_dist 
-  df_income_dist <- sqldf(paste0("
-  SELECT ", col_income_dist, "
-  FROM playerround_df
-  "))
+  income_dist_df <- sqldf(select_sqlquery(playerround_df, income_dist_cols))
+  
+  income_dist_df <- income_dist_df %>% mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
+  
+  income_dist_df[,"income_grp"] <- factor(income_dist_df$round_income)
+  
+  income_dist_categcols <- c(categ_vars, "round_income_grp")
+  
+  income_dist_df <- income_dist_df %>%
+    mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, "income_grp"))], as.numeric)
+  
+  income_dist_df <- calculate_costs_measures_difference(income_dist_df)
+  
+  income_dist_df <- calculate_total_damage_costs(income_dist_df)
+  
+  income_dist_df <- calculate_total_costs(income_dist_df)
+  
+  income_dist_df <- calculate_spendable_income(income_dist_df)
+  
+  income_dist_df[, "income_minus_living"] <- rowSums(cbind(income_dist_df[, "round_income"],
+                                                           -income_dist_df[ ,"living_costs"]), na.rm = TRUE)
+  
+  income_dist_df[, "profit_minus_spent_savings_house_moving"] <- rowSums(cbind(income_dist_df[, "profit_sold_house"],
+                                                                               -income_dist_df[ ,"spent_savings_for_buying_house"]), na.rm = TRUE)
   
   # Step 3: Income distribution specification ---------------------------------------------------
-  # CHANGES vjcortesa-7: Added to the list_income_dist file the tables added in the code
+  # CHANGES vjcortesa-7: Added to the income_dist_list file the tables added in the code
   # Create a list with the tables used in the calculation
-  list_income_dist <- list(
-    df_income_dist = df_income_dist,
+  income_dist_list <- list(
+    income_dist_df = income_dist_df,
     playerround = playerround_df,
     measuretype = measuretype_df,
     personalmeasure = personalmeasure_df,
@@ -522,20 +528,16 @@ retrieve_dbtables <- function(folder_path = "local path", folder_pattern = "csv_
     gamesession = gamesession_df
   )
   
-  # Extract the dataset date to name the data and figure outputs accordingly 
-  dataset_date <- str_extract(gamesession_df$gamesession_name, "\\d+")
-  dataset_output<- file.path(data_output_path,paste0("GP2_",dataset_date))
-  
   # Write to Excel with sheet names matching table names
   
-  github <- "joaoxg"
   tryCatch({
-    write_xlsx(list_income_dist, file.path(data_output_path, paste0(github, "_G2_Income_dist_", dataset_date, ".xlsx")))
+    write_xlsx(income_dist_list, file.path(OUTPUTDATA_PATH,
+                                           paste0(format(as.Date(Sys.Date()), "%Y%m%d",
+                                                         tail(str_split(names(list_income_dist), pattern = "/")[[1]], n = 1), ".xlsx"))))
     message("File written successfully.")
   }, error = function(e) {
     message("Error: ", e$message)
   })
   
-  return(list_income_dist)
-  
+  return(income_dist_list)
 }
