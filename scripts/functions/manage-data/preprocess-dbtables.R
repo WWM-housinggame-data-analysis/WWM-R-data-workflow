@@ -528,16 +528,5 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
     gamesession = gamesession_df
   )
   
-  # Write to Excel with sheet names matching table names
-  
-  tryCatch({
-    write_xlsx(income_dist_list, file.path(OUTPUTDATA_PATH,
-                                           paste0(format(as.Date(Sys.Date()), "%Y%m%d",
-                                                         tail(str_split(names(list_income_dist), pattern = "/")[[1]], n = 1), ".xlsx"))))
-    message("File written successfully.")
-  }, error = function(e) {
-    message("Error: ", e$message)
-  })
-  
   return(income_dist_list)
 }

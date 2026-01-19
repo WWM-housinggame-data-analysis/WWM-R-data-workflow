@@ -82,3 +82,47 @@ upload_selected_dbtables <- function(folder_path, subfolder_pattern) {
   
   return(dbtables_list) 
 }
+
+# Write to Excel with sheet names matching table names
+
+WORKFLOW_STAGES <- c("raw", "preprocessed")
+names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
+
+
+export_excel <- function(dbtable_list, dbtable_folderpath, preprocessed = TRUE) {
+  
+  session_name <- tail(str_split(dbtable_folderpath, pattern = "/")[[1]], n = 1)
+  
+  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+  
+  if (preprocessed == TRUE && "income_dist_df" %in% names(dbtable_list) == TRUE) {
+    
+    parent_path <- PREPRDATA_PATH
+    
+  } else if (preprocessed == TRUE && "income_dist_df" %in% names(dbtable_list) == FALSE) {
+    
+    stop(paste0("Expected table named '", "income_dist_df", "' not found in table list"))
+         
+  } else if (preprocessed == FALSE && "income_dist_df" %in% names(dbtable_list) == TRUE) {
+    
+    stop(paste0("Non-expected table named '", "income_dist_df", "' found in table list"))
+         
+  } else if (preprocessed == FALSE && "income_dist_df" %in% names(dbtable_list) == FALSE) {
+    
+    parent_path = RAWDATA_PATH
+  }
+  
+  workflow_stage <- WORKFLOW_STAGES[names(WORKFLOW_STAGES) %in% parent_path]
+  
+  tryCatch({
+    write_xlsx(dbtable_list,
+               file.path(parent_path,
+                         paste0(paste(session_name, timestamp, workflow_stage, sep = "-"), ".xlsx")))
+    
+    message("File written successfully.")
+    
+  }, error = function(e) {
+    
+    message("Error: ", e$message)
+  })
+}
