@@ -64,11 +64,9 @@ gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame_ses
 
 income_dist_list <- list()
 
-for (session_path in names(list_income_dist)) {
-  income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]], gamesession_data_list[[session_path]])
+for (session_path in names(gamesession_data_list)) {
+  income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
 }
-
-income_dist_list <- income_dist_list[[session_path]]
 
 
 # trying script for the plot

@@ -18,17 +18,21 @@ report_missing_cols <- function(df, cols) {
   }
 }
 
+# CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
+#calculate the costs of the personal measures bough
+retrieve_personalmeasure_calculated_costs <- function(personalmeasure) {
+  
+  personalmeasure$calculated_costs <- rowSums(cbind(personalmeasure$cost_absolute,
+                                                 (personalmeasure$cost_percentage_income / 100) * personalmeasure$round_income,
+                                                 (personalmeasure$cost_percentage_house / 100) * personalmeasure$last_sold_price),
+                                           na.rm = TRUE)
+  
+  return(personalmeasure)
+}
+
 retrieve_personalmeasure_cumulative <- function(personalmeasure) {
-  
-  # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
-  #calculate the costs of the personal measures bough
-  personalmeasure$calculated_costs <- 
-    personalmeasure$cost_absolute + 
-    (personalmeasure$cost_percentage_income/100)*personalmeasure$round_income + 
-    (personalmeasure$cost_percentage_house/100)*personalmeasure$last_sold_price
-  
-  
-  head(personalmeasure)
+
+
   #calculate the cumulative of the personal measures to compare it against the cost of house measures bought
   personalmeasure_cumulative <- personalmeasure %>%
     arrange(player_code, groupround_round_number) %>%   # ensure proper order

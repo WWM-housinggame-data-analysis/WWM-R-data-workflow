@@ -1,4 +1,4 @@
-preprocess_dbtables <- function(dbtable_list, inputdata_path) {
+preprocess_dbtables <- function(dbtable_list) {
   
   source(file.path(FUNCTION_PATH, "sql-query-dbtables.R"))
   source(file.path(FUNCTION_PATH, "format-add-cols.R"))
@@ -203,6 +203,8 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   }
   
   personalmeasure_df <- manipulate_personalmeasure(personalmeasure_df, playerround_df, housegroup_df, measuretype_df)
+  
+  personalmeasure_df <- retrieve_personalmeasure_calculated_costs(personalmeasure_df)
     
   
   # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
@@ -392,6 +394,10 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   }
   
   playerround_df <- manipulate2_playerround(playerround_df, housemeasure_cumulative, personalmeasure_cumulative)
+  
+  playerround_df <- calculate_costs_measures_difference(playerround_df)
+  
+  playerround_df <- calculate_total_damage_costs(playerround_df)
     
 
   # questionitem_df <- sqldf("
@@ -475,8 +481,8 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
                        "groupround_id", "groupround_round_number", "round_income", "living_costs", "paid_debt",
                        "profit_sold_house", "spent_savings_for_buying_house", "cost_taxes", "mortgage_payment",
                        "cost_house_measures_bought", "cost_personal_measures_bought", "cost_fluvial_damage", "cost_pluvial_damage",
-                       "spendable_income", "calculated_costs_personal_measures", "calculated_costs_house_measures", #"calculated_costs_measures_difference",
-                       "satisfaction_total", "welfaretype_id", # "total_damage_costs",
+                       "spendable_income", "calculated_costs_personal_measures", "calculated_costs_house_measures", "calculated_costs_measures_difference",
+                       "satisfaction_total", "welfaretype_id", "total_damage_costs",
                        "community_name", "fluvial_house_delta", "pluvial_house_delta")
   
   
@@ -493,10 +499,6 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   
   income_dist_df <- income_dist_df %>%
     mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, "income_grp"))], as.numeric)
-  
-  income_dist_df <- calculate_costs_measures_difference(income_dist_df)
-  
-  income_dist_df <- calculate_total_damage_costs(income_dist_df)
   
   income_dist_df <- calculate_total_costs(income_dist_df)
   
