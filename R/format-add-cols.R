@@ -157,7 +157,7 @@ calculate_spendable_income <- function(income_dist_df) {
       rowSums(cbind(income_dist_df[which(income_dist_df[, "groupround_round_number"] %in% 0 == FALSE) - 1, "calculated_spendable"],
                     income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "round_income"],
                     income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "profit_sold_house"],
-                    income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "calculated_costs"]), na.rm = TRUE)
+                    -income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "calculated_costs"]), na.rm = TRUE)
   }
   
   

@@ -1,11 +1,11 @@
 preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   
   source(file.path(FUNCTION_PATH, "sql-query-dbtables.R"))
-  source(file.path(FUNCTION_PATH, "format-add-collumns.R"))
+  source(file.path(FUNCTION_PATH, "format-add-cols.R"))
   
   
   unpack_dbtable_list <- function(dblist, suffix = "_df") {
-    if (any(SELECTED_DBTABLES %in% names(dblist) == FALSE)) {
+    if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {
       stop("Missing dbtables needed for preprocessing")
     }
     dblist <- setNames(dblist, paste0(names(dblist), suffix))
@@ -13,7 +13,7 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   }
   
   # Unpack into global environment
-  unpack_dbtable_list(income_dist_list, "_df")
+  unpack_dbtable_list(dbtable_list, "_df")
   
   # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
@@ -489,7 +489,7 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
   
   income_dist_df[,"income_grp"] <- factor(income_dist_df$round_income)
   
-  income_dist_categcols <- c(categ_vars, "round_income_grp")
+  income_dist_categcols <- c(INCOME_DIST_CATEGCOLS, "round_income_grp")
   
   income_dist_df <- income_dist_df %>%
     mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, "income_grp"))], as.numeric)
@@ -509,9 +509,9 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
                                                                                -income_dist_df[ ,"spent_savings_for_buying_house"]), na.rm = TRUE)
   
   # Step 3: Income distribution specification ---------------------------------------------------
-  # CHANGES vjcortesa-7: Added to the income_dist_list file the tables added in the code
+  # CHANGES vjcortesa-7: Added to the dbtable_list file the tables added in the code
   # Create a list with the tables used in the calculation
-  income_dist_list <- list(
+  dbtable_list <- list(
     income_dist_df = income_dist_df,
     playerround = playerround_df,
     measuretype = measuretype_df,
@@ -528,5 +528,5 @@ preprocess_dbtables <- function(dbtable_list, inputdata_path) {
     gamesession = gamesession_df
   )
   
-  return(income_dist_list)
+  return(dbtable_list)
 }

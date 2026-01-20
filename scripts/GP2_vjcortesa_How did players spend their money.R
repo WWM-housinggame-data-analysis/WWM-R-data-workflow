@@ -23,7 +23,7 @@ library(ggtext)
 
 FUNCTION_PATH <- file.path("R")
 RAWDATA_PATH <- file.path("data", "raw-dbtables")
-PREPRDATA_PATH <- file.path("data", "combined-dbtables")
+PREPRDATA_PATH <- file.path("data", "preprocessed-dbtables")
 
 SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
                        "playerround", "player","measuretype",
@@ -42,14 +42,14 @@ INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "
 getwd()
 
 # Load required functions
-source(file.path(FUNCTION_PATH, "list-upload-dbtables.R"))
+source(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R"))
 source(file.path(FUNCTION_PATH, "preprocess-dbtables.R"))
 
 
 # Data Workflow ----
 
 # Read all tables in the database folder to create accordingly the dataframe tables inside list
-list_income_dist <- upload_selected_dbtables(INPUTDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 # list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
 # list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")
@@ -62,8 +62,13 @@ list_income_dist <- upload_selected_dbtables(INPUTDATA_PATH, "housinggame_sessio
 # Not ideal because makes the global environment crowded with unnecessary variables
 # list2env(csv_data_list, envir = .GlobalEnv)
 
-list_income_dist <- preprocess_dbtables(list_income_dist)
+income_dist_list <- list()
 
+for (session_path in names(list_income_dist)) {
+  income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]], gamesession_data_list[[session_path]])
+}
+
+income_dist_list <- income_dist_list[[session_path]]
 
 
 # trying script for the plot
