@@ -1,64 +1,72 @@
-# Load necessary libraries
+# Load necessary libraries ----
 library(readxl)
 library(readr)
 library(openxlsx)
-# Load if using RStudio (interactive session)
-library(rstudioapi)
-# Load for database manipulation
+
+## Load for database manipulation
 library(sqldf)
-# Load for data manipulation
+
+## Load for data manipulation
 library(dplyr)
 library(stringr)
-# Load for excel manipulation
-library(writexl)
-# Load for data visualisation
 library(tidyr)
+
+## Load for excel manipulation
+library(writexl)
+
+## Load for data visualisation
 library(ggplot2)
 library(ggtext)
 
-# # Load required libraries
-# required_libs <- c("readr", "openxlsx", "rstudioapi")
-# for (lib in required_libs) {
-#   if (!requireNamespace(lib, quietly = TRUE)) {
-#     stop(paste("Package `", lib, "` not found. Please run `install.packages('", lib, "') to proceed", sep = ""))
-#   }
-# }
-# 
-# library(readr)
-# library(openxlsx)
-# library(rstudioapi)
+# Set defaults ----
+# Set all default variables or global options and all the path variables at the top of the code.
 
-# Get the path of the current script (works in RStudio)
-getwd() # when you open Rstudio by clinking on .Rproj, default working directory is R-data-analysis-BEPs/
+FUNCTION_PATH <- file.path("R")
+RAWDATA_PATH <- file.path("data", "raw-dbtables")
+PREPRDATA_PATH <- file.path("data", "preprocessed-dbtables")
+
+SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
+                       "playerround", "player","measuretype",
+                       "personalmeasure","housemeasure", "housegroup",
+                       "community","house","initialhousemeasure",
+                       "question","questionitem","questionscore")
+
+INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
+                           "groupround_id", "groupround_round_number", "welfaretype_id", "community_name")
+
+
+# Source files ----
+
+# Get the path of the current script
+## when you open Rstudio by clinking on .Rproj, default working directory is folder where .Rproj is stored
+getwd()
 
 # Load required functions
-function_path <- file.path("scripts", "functions","manage-data")
-source(file.path(function_path, "combine_csvs_to_excel.R"))
-source(file.path(function_path, "read_all_csvs.R"))
-source(file.path(function_path, "retrieve_dbtables.R"))
-source(file.path(function_path, "format_income_dist.R"))
+source(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R"))
+source(file.path(FUNCTION_PATH, "preprocess-dbtables.R"))
 
 
-# Read the database folder to create accordingly the dataframe tables
-folder_path <- file.path("data", "raw-dbtables") 
-folder_name <- "251007-housinggame-session-20-verzekeraars-masterclass"
+# Data Workflow ----
+
+# Read all tables in the database folder to create accordingly the dataframe tables inside list
+gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+
+# list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
+# list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")
+# list_income_dist_2510 <- retrieve_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 # Create a combined excel with all database tables to have as a reference their initial configuration
 #combine_csvs_to_excel(folder_path, folder_name) #avoid repeating read_all_csvs workflow within this function
-
-# retrieve matched database tables inside list
-list_income_dist_2409 <- retrieve_dbtables(folder_path, "housinggame_session_16_240924_EPA_IntroDays_Ommen")
-list_income_dist_2509 <- retrieve_dbtables(folder_path, "housinggame_session_19_250923_EPA_IntroDays_Overasselt")
-list_income_dist_2510 <- retrieve_dbtables(folder_path, "housinggame_session_20_251007_VerzekeraarsMasterClass")
 
 # Assign each table to a variable in the global environment
 # Not ideal because makes the global environment crowded with unnecessary variables
 # list2env(csv_data_list, envir = .GlobalEnv)
 
-df_income_dist_2409 <- format_income_dist(list_income_dist_2409$df_income_dist)
-df_income_dist_2509 <- format_income_dist(list_income_dist_2509$df_income_dist)
-df_income_dist <- format_income_dist(list_income_dist_2510$df_income_dist)
+income_dist_list <- list()
 
+for (session_path in names(gamesession_data_list)) {
+  income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
+}
 
 
 # trying script for the plot
@@ -126,7 +134,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 
 # Calculate the mean values per dataset variable
 # income_dist_ave1 <- income_dist %>%
-#   group_by(round_income_grp, p_code) %>%
+#   group_by(income_grp, p_code) %>%
 #   summarise(
 #     income_minus_living = sum(income_minus_living, na.rm = TRUE),
 #     profit_minus_spent_savings_house_moving = sum(profit_minus_spent_savings_house_moving, na.rm = TRUE),
@@ -140,7 +148,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 #     spendable_income = sum(spendable_income, na.rm = TRUE)
 #   ) %>%
 #   ungroup() %>%
-#   group_by(round_income_grp) %>%
+#   group_by(income_grp) %>%
 #   summarise(
 #     income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
 #     profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
@@ -156,7 +164,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 #   ungroup()
   
 income_dist_ave <- income_dist %>%
-  group_by(round_income_grp) %>%
+  group_by(income_grp) %>%
   summarise(
     ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
     ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
@@ -172,14 +180,14 @@ income_dist_ave <- income_dist %>%
   ungroup()
 
 income_dist_n <- income_dist %>%
-  select(round_income_grp, p_code) %>%
-  group_by(round_income_grp) %>%
+  select(income_grp, p_code) %>%
+  group_by(income_grp) %>%
   summarise(N = n()) %>%
   ungroup()
 
 # income_dist_n1 <- income_dist %>%
-#   select(round_income_grp, p_code) %>%
-#   group_by(round_income_grp) %>%
+#   select(income_grp, p_code) %>%
+#   group_by(income_grp) %>%
 #   summarise(N = n_distinct(p_code)) %>%
 #   ungroup()
 
@@ -329,7 +337,7 @@ plot <- ggplot(income_dist_formatted) +
   geom_bar(data = ~ .x |>
              dplyr::filter(Cost_Type %in% bar_expenses_cols) |>
              dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, bar_expenses_cols)),
-           aes(x = round_income_grp, y = Cost_Value, fill = Cost_Type),
+           aes(x = income_grp, y = Cost_Value, fill = Cost_Type),
            stat = "summary", fun = "mean", position = "stack",
            na.rm = TRUE, width = w) +
   
