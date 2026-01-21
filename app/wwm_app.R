@@ -45,7 +45,7 @@ EXPENSE_BARCOLS <- c("cost_personal_measures_bought", "cost_fluvial_damage",
                        "cost_pluvial_damage", "cost_house_measures_bought",
                        "paid_debt", "cost_taxes", "mortgage_payment",
                        "profit_minus_spent_savings_house_moving")
-w = 0.9
+
 
 fill_values_all <- c(
   "paid_debt"                         = "black",
@@ -81,7 +81,7 @@ source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here(file.path(FUNCTION_PATH, "plot-data.R")))
-source(here(file.path(FUNCTION_PATH, "interact-data")))
+source(here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 
 # Data Workflow ----
@@ -248,7 +248,7 @@ server <- function(input, output) {
   #   ungroup()
   # })
   
-  income_dist_n <- reactive({retrieve_n_table(plot_data)})
+  income_dist_n <- reactive({retrieve_n_table(income_dist_reactive())})
   
   # income_dist_n <- reactive({income_dist_reactive() %>%
   #   select(income_grp, player_code) %>%
@@ -262,10 +262,10 @@ server <- function(input, output) {
   })
   
   
-  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_players)})
-  gg_plot1 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players)})
-  gg_plot2 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players)})
-  gg_plot3 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players)})
+  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
+  gg_plot1 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
+  gg_plot2 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
+  gg_plot3 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
   
   # Connect plots
   output$plot_all <- renderPlotly({

@@ -1,3 +1,5 @@
+w = 0.9
+
 # Build plot on the aggregated data (geom_col)
 create_barplot <- function(summary_df, stacked_vec, fill_values_all, fill_labels_all, xlabels) {
   gp <- ggplot(summary_df) +
@@ -22,7 +24,7 @@ create_barplot <- function(summary_df, stacked_vec, fill_values_all, fill_labels
 }
 
 # Reactive plot based on user input
-get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive) {
+get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive, fill_values_all, fill_labels_all) {
     
     # Pull the latest data and selection from the reactives
     plot_data   <- input_data_reactive()
@@ -35,7 +37,7 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
     
     
-    plot_data <- retrieve_pivot_table(plot_data)
+    plot_data <- retrieve_pivot_table(plot_data, selected_players_vec, stacked_vec)
     
     summary_df <- retrieve_summary_table(plot_data)
     

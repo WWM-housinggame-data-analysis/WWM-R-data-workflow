@@ -3,7 +3,7 @@ TABLE_TYPE <- ".csv"
 list_all_subfolders <- function(folder_path, subfolder_pattern) {
 
   # List all subfolders inside the main folder
-  subfolders <- list.dirs(path = folder_path, full.names = TRUE, recursive = FALSE)
+  subfolders <- list.dirs(path = here(folder_path), full.names = TRUE, recursive = FALSE)
   
   # Filter subfolders that matches your pattern
   subfolders <- subfolders[grepl(subfolder_pattern, basename(subfolders))]
@@ -31,7 +31,7 @@ list_all_dbtables <- function(folder_path, subfolder_pattern) {
     
     i <- length(dbtable_filenames) + 1
     
-    dbtable_filenames[[i]] <- list.files(path = subfolder, pattern = paste("\\", TABLE_TYPE, "$", sep = ""), full.names = TRUE)
+    dbtable_filenames[[i]] <- list.files(path = here(subfolder), pattern = paste("\\", TABLE_TYPE, "$", sep = ""), full.names = TRUE)
     
     names(dbtable_filenames)[i] <- subfolder
     
@@ -116,8 +116,8 @@ export_excel <- function(dbtable_list, dbtable_folderpath, preprocessed = TRUE) 
   
   tryCatch({
     write_xlsx(dbtable_list,
-               file.path(parent_path,
-                         paste0(paste(session_name, timestamp, workflow_stage, sep = "-"), ".xlsx")))
+               here(file.path(parent_path,
+                              paste0(paste(session_name, timestamp, workflow_stage, sep = "-"), ".xlsx"))))
     
     message("File written successfully.")
     

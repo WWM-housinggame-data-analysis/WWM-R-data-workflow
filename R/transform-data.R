@@ -1,6 +1,6 @@
 # Filter and prepare just before plotting
 
-pivot_data <- function(plot_data) {
+retrieve_pivot_table <- function(plot_data, selected_players_vec, stacked_vec) {
   plot_data <- plot_data %>%
     filter(player_code %in% selected_players_vec) %>%
     droplevels() %>%
@@ -19,7 +19,7 @@ pivot_data <- function(plot_data) {
 retrieve_summary_table <- function(plot_data) {
   
   summary_df <- plot_data %>%
-    group_by(round_income_grp, cost_type) %>%
+    group_by(income_grp, cost_type) %>%
     summarise(
       mean_value = mean(cost_value, na.rm = TRUE),
       n          = n(),

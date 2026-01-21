@@ -1,7 +1,7 @@
 preprocess_dbtables <- function(dbtable_list) {
   
-  source(file.path(FUNCTION_PATH, "sql-query-dbtables.R"))
-  source(file.path(FUNCTION_PATH, "format-add-cols.R"))
+  source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
+  source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
   
   
   unpack_dbtable_list <- function(dblist, suffix = "_df") {
