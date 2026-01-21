@@ -112,29 +112,24 @@ ui <- page_navbar(
         bg = "white",
         accordion(
           multiple = FALSE,   # only one open at a time
-          accordion_panel("1: Where players live"),
-          accordion_panel(
-            "2: Player spending",
-            # varSelectInput(
-            #   "color_by", "Color by",
-            #   penguins[c("species", "island", "sex")],
-            #   selected = "species"
-            # ),
-            # varSelectInput(
-            #   "table_by", "Table",
-            #   penguins[c("species", "island", "sex")],
-            #   selected = "species"
-            # ),
-            checkboxGroupInput("player", "Player:",
-                               choices = c("All", as.character(unique(income_dist_df$player_code))),
-                               selected = "All"),
+          
+          accordion_panel("1: Where players live",
+                          varSelectInput("selected_table", "Table:",
+                                         c("All", as.character(unique(income_dist_df$group_name))),
+                                         selected = "All")
+          ),
+          
+          accordion_panel("2: Where players live"),
+          
+          accordion_panel("3: Player spending",
+                          
             checkboxGroupInput("cost_type", "Cost_Types:",
                                choices = c("All", EXPENSE_BARCOLS),
                                selected = "All")
           ),
-          accordion_panel("3: Selected measures"),
-          accordion_panel("4: Flood in gameplay"),
-          accordion_panel("5: Damage & satisfaction")
+          accordion_panel("4: Selected measures"),
+          accordion_panel("5: Flood in gameplay"),
+          accordion_panel("6: Damage & satisfaction")
         )
       ),
       
@@ -200,34 +195,13 @@ server <- function(input, output) {
   
   income_dist_reactive <- reactive({income_dist_df})
   
-  selected_players <- reactive({filter_selected_categs(input$player, as.character(unique(income_dist_reactive()$player_code)))})
+  selected_tables <- reactive({filter_selected_categs(input$selected_table, as.character(unique(income_dist_reactive()$group_name)))})
   
-  # selected_players <- reactive({
-  #   req(input$player)
-  #   # remove the special label
-  #   req_types <- as.character(unique(income_dist_reactive()$player_code))
-  #   # if All is selected OR none selected -> treat as all
-  #   if ("All" %in% as.vector(input$player)) {
-  #     req_types
-  #   } else {
-  #     intersect(input$player, req_types)
-  #   }
-  # })
+  selected_players <- as.character(unique(income_dist_reactive()$player_code))
   
   selected_costtypes <- reactive({filter_selected_categs(input$cost_type, EXPENSE_BARCOLS)})
   
-  # selected_costtypes <- reactive({
-  #   req(input$cost_type)
-  #   # remove the special label
-  #   req_types <- EXPENSE_BARCOLS
-  #   # if All is selected OR none selected -> treat as all
-  #   if ("All" %in% as.vector(input$cost_type)) {
-  #     req_types
-  #   } else {
-  #     intersect(input$cost_type, req_types)
-  #   }
-  # })
-  
+
   # Reactive dataset grouped by the chosen color_by variable
   income_dist_ave <- reactive({retrieve_average_table(income_dist_reactive())})
   
