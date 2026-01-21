@@ -134,7 +134,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 
 # Calculate the mean values per dataset variable
 # income_dist_ave1 <- income_dist %>%
-#   group_by(round_income_grp, p_code) %>%
+#   group_by(income_grp, p_code) %>%
 #   summarise(
 #     income_minus_living = sum(income_minus_living, na.rm = TRUE),
 #     profit_minus_spent_savings_house_moving = sum(profit_minus_spent_savings_house_moving, na.rm = TRUE),
@@ -148,7 +148,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 #     spendable_income = sum(spendable_income, na.rm = TRUE)
 #   ) %>%
 #   ungroup() %>%
-#   group_by(round_income_grp) %>%
+#   group_by(income_grp) %>%
 #   summarise(
 #     income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
 #     profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
@@ -164,7 +164,7 @@ plot_name <- paste("IncomeDistribution_","Session_",session_name, "Group_", grou
 #   ungroup()
   
 income_dist_ave <- income_dist %>%
-  group_by(round_income_grp) %>%
+  group_by(income_grp) %>%
   summarise(
     ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
     ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
@@ -180,14 +180,14 @@ income_dist_ave <- income_dist %>%
   ungroup()
 
 income_dist_n <- income_dist %>%
-  select(round_income_grp, p_code) %>%
-  group_by(round_income_grp) %>%
+  select(income_grp, p_code) %>%
+  group_by(income_grp) %>%
   summarise(N = n()) %>%
   ungroup()
 
 # income_dist_n1 <- income_dist %>%
-#   select(round_income_grp, p_code) %>%
-#   group_by(round_income_grp) %>%
+#   select(income_grp, p_code) %>%
+#   group_by(income_grp) %>%
 #   summarise(N = n_distinct(p_code)) %>%
 #   ungroup()
 
@@ -337,7 +337,7 @@ plot <- ggplot(income_dist_formatted) +
   geom_bar(data = ~ .x |>
              dplyr::filter(Cost_Type %in% bar_expenses_cols) |>
              dplyr::mutate(Cost_Type = forcats::fct_relevel(Cost_Type, bar_expenses_cols)),
-           aes(x = round_income_grp, y = Cost_Value, fill = Cost_Type),
+           aes(x = income_grp, y = Cost_Value, fill = Cost_Type),
            stat = "summary", fun = "mean", position = "stack",
            na.rm = TRUE, width = w) +
   
