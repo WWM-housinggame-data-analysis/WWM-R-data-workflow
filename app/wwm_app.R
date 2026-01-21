@@ -195,9 +195,7 @@ server <- function(input, output) {
   
   income_dist_reactive <- reactive({income_dist_df})
   
-  selected_tables <- reactive({filter_selected_categs(input$selected_table, as.character(unique(income_dist_reactive()$group_name)))})
-  
-  selected_players <- as.character(unique(income_dist_reactive()$player_code))
+  selected_table <- reactive({filter_selected_categs(input$selected_table, as.character(unique(income_dist_reactive()$group_name)))})
   
   selected_costtypes <- reactive({filter_selected_categs(input$cost_type, EXPENSE_BARCOLS)})
   
@@ -236,10 +234,10 @@ server <- function(input, output) {
   })
   
   
-  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
-  gg_plot1 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
-  gg_plot2 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
-  gg_plot3 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_players, fill_values_all, fill_labels_all)})
+  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
+  gg_plot1 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
+  gg_plot2 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
+  gg_plot3 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
   
   # Connect plots
   output$plot_all <- renderPlotly({
@@ -285,8 +283,22 @@ server <- function(input, output) {
       sub <- df %>% filter(cost_type == cost_type_value)
       
       # Ensure the same x order
-      sub <- sub %>% mutate(income_grp = factor(income_grp, levels = x_order)) %>%
-        arrange(income_grp)
+      if (all(selected_table %in% as.character(unique(plot_data$group_name)))) {
+        
+        sub <- sub %>% mutate(income_grp = factor(income_grp, levels = x_order)) %>%
+          arrange(income_grp)
+        
+      } else if (any(selected_table %in% as.character(unique(plot_data$group_name))) && length(selected_table) == 1) {
+        
+        sub <- sub %>% mutate(player_code = factor(player_code, levels = x_order)) %>%
+          arrange(player_code)
+        
+      } else {
+        
+        stop("Unexpected number of tables selected. Either all or a single table is expected.")
+        
+      }
+
       
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
@@ -344,7 +356,7 @@ server <- function(input, output) {
   output$debug <- renderPrint({
     paste(
       paste("Rows:", nrow(income_dist_reactive())),
-      paste("Costs:", length(selected_players())),
+      paste("Costs:", length(selected_table())),
       sep = "\n")
   })
 
