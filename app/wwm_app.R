@@ -18,6 +18,7 @@ library(writexl)
 library(ggplot2)
 library(ggtext)
 
+library(here)
 library(shiny)
 library(bslib)
 library(plotly)
@@ -76,8 +77,11 @@ fill_labels_all <- c(
 getwd()
 
 # Load required functions
-source(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R"))
-source(file.path(FUNCTION_PATH, "preprocess-dbtables.R"))
+source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
+source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
+source(here(file.path(FUNCTION_PATH, "transform-data.R")))
+source(here(file.path(FUNCTION_PATH, "plot-data.R")))
+source(here(file.path(FUNCTION_PATH, "interact-data")))
 
 
 # Data Workflow ----
@@ -91,7 +95,7 @@ for (session_path in names(gamesession_data_list)) {
   income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
 }
 
-income_dist_data <- income_dist_list[[session_path]][["income_dist_df"]]
+income_dist_df <- income_dist_list[[session_path]][["income_dist_df"]]
 
 # Shiny App ----
 
@@ -122,7 +126,7 @@ ui <- page_navbar(
             #   selected = "species"
             # ),
             checkboxGroupInput("player", "Player:",
-                               choices = c("All", as.character(unique(df_income_dist$player_code))),
+                               choices = c("All", as.character(unique(income_dist_df$player_code))),
                                selected = "All"),
             checkboxGroupInput("cost_type", "Cost_Types:",
                                choices = c("All", EXPENSE_BARCOLS),
@@ -194,7 +198,7 @@ ui <- page_navbar(
 
 server <- function(input, output) {
   
-  income_dist_reactive <- reactive({df_income_dist})
+  income_dist_reactive <- reactive({income_dist_df})
   
   selected_players <- reactive({filter_selected_categs(input$player, as.character(unique(income_dist_reactive()$player_code)))})
   
@@ -301,7 +305,7 @@ server <- function(input, output) {
       
       # For simplicity here, assume catname == cost_type (no label remap). If you used labels,
       # add the reverse mapping shown above.
-      cost_type_value <- catname
+      #cost_type_value <- catname
       
       # Subset summary data for this cost_type and order by x
       sub <- df %>% filter(cost_type == cost_type_value)
@@ -313,13 +317,15 @@ server <- function(input, output) {
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
       
-      plt$x$data[[i]]$customdata <- cbind(value_k, n_vec)
-      plt$x$data[[i]]$hovertemplate <- paste0(
-        "<b>%{fullData.name}</b><br>",
-        "Mean: %{customdata[0]:.2f}k<br>",
-        "N: %{customdata[1]}",
-        "<extra></extra>"
-      )
+      plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], list(value_k = value_k, n_vec = n_vec))
+        
+      # plt$x$data[[i]]$customdata <- cbind(value_k, n_vec)
+      # plt$x$data[[i]]$hovertemplate <- paste0(
+      #   "<b>%{fullData.name}</b><br>",
+      #   "Mean: %{customdata[0]:.2f}k<br>",
+      #   "N: %{customdata[1]}",
+      #   "<extra></extra>"
+      # )
     }
     
     plt
