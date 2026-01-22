@@ -1,10 +1,10 @@
 w = 0.9
 
 # Build plot on the aggregated data (geom_col)
-create_barplot <- function(summary_df, stacked_vec, fill_values_all, fill_labels_all, xlabels) {
+create_barplot <- function(summary_df, stacked_vec, fill_values_all, fill_labels_all, group_col, xlabels) {
   gp <- ggplot(summary_df) +
     
-    geom_col(aes(x = income_grp, y = mean_value, fill = cost_type),
+    geom_col(aes(x = .data[[group_col]], y = mean_value, fill = cost_type),
              position = "stack", na.rm = TRUE, width = w) +
     
     scale_fill_manual(
@@ -24,24 +24,45 @@ create_barplot <- function(summary_df, stacked_vec, fill_values_all, fill_labels
 }
 
 # Reactive plot based on user input
-get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_players_reactive, fill_values_all, fill_labels_all) {
+get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_table_reactive, fill_values_all, fill_labels_all) {
     
     # Pull the latest data and selection from the reactives
     plot_data   <- input_data_reactive()
     stacked_vec <- stacked_vars_reactive()
-    selected_players_vec <-selected_players_reactive()
+    selected_table <- selected_table_reactive()
     
     # Guard against empty states
     req(nrow(plot_data) > 0, length(stacked_vec) > 0)
     
-    xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
+    if (all(as.character(unique(plot_data$group_name)) %in% selected_table)) {
+      
+      xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
+      
+      group_col <- "income_grp"
+      
+    } else if (any(as.character(unique(plot_data$group_name)) %in% selected_table) && length(selected_table) == 1) {
+      
+      plot_data <- plot_data %>%
+        filter(group_name %in% selected_table) %>%
+        droplevels()
+      
+      xlabels <- sort(unique(plot_data$player_code))
+      
+      group_col <- "player_code"
+      
+    } else {
+      
+      stop("Unexpected number of tables selected. Either all or a single table is expected.")
+      
+    }
     
+    selected_players <- as.character(unique(plot_data$player_code))
     
-    plot_data <- retrieve_pivot_table(plot_data, selected_players_vec, stacked_vec)
+    plot_data <- retrieve_pivot_table(plot_data, selected_players, stacked_vec)
     
-    summary_df <- retrieve_summary_table(plot_data)
+    summary_df <- retrieve_summary_table(plot_data, group_col)
     
-    create_barplot(summary_df, stacked_vec, fill_values_all, fill_labels_all, xlabels)
+    create_barplot(summary_df, stacked_vec, fill_values_all, fill_labels_all, group_col, xlabels)
   
 }
 

@@ -16,10 +16,10 @@ retrieve_pivot_table <- function(plot_data, selected_players_vec, stacked_vec) {
 }
 
 # Pre-aggregate: mean and count per bar segment (round_income × cost_type)
-retrieve_summary_table <- function(plot_data) {
+retrieve_summary_table <- function(plot_data, group_col) {
   
   summary_df <- plot_data %>%
-    group_by(income_grp, cost_type) %>%
+    group_by(across(all_of(c(group_col, "cost_type")))) %>%
     summarise(
       mean_value = mean(cost_value, na.rm = TRUE),
       n          = n(),
