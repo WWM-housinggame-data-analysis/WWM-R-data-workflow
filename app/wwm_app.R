@@ -113,8 +113,8 @@ ui <- page_navbar(
         accordion(
           multiple = FALSE,   # only one open at a time
           
-          accordion_panel("1: Where players live",
-                          varSelectInput("selected_table", "Table:",
+          accordion_panel("1: Select Table",
+                          selectInput("selected_table", "Table:",
                                          c("All", as.character(unique(income_dist_df$group_name))),
                                          selected = "All")
           ),
@@ -283,12 +283,12 @@ server <- function(input, output) {
       sub <- df %>% filter(cost_type == cost_type_value)
       
       # Ensure the same x order
-      if (all(selected_table %in% as.character(unique(plot_data$group_name)))) {
+      if (all(as.character(unique(income_dist_reactive()$group_name)) %in% selected_table())) {
         
         sub <- sub %>% mutate(income_grp = factor(income_grp, levels = x_order)) %>%
           arrange(income_grp)
         
-      } else if (any(selected_table %in% as.character(unique(plot_data$group_name))) && length(selected_table) == 1) {
+      } else if (any(as.character(unique(income_dist_reactive()$group_name)) %in% selected_table()) && length(selected_table) == 1) {
         
         sub <- sub %>% mutate(player_code = factor(player_code, levels = x_order)) %>%
           arrange(player_code)

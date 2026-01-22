@@ -34,13 +34,13 @@ get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, select
     # Guard against empty states
     req(nrow(plot_data) > 0, length(stacked_vec) > 0)
     
-    if (all(selected_table %in% as.character(unique(plot_data$group_name)))) {
+    if (all(as.character(unique(plot_data$group_name)) %in% selected_table)) {
       
       xlabels <- paste(sort(unique(plot_data$round_income/1000)), "k", sep="")
       
       group_col <- "income_grp"
       
-    } else if (any(selected_table %in% as.character(unique(plot_data$group_name))) && length(selected_table) == 1) {
+    } else if (any(as.character(unique(plot_data$group_name)) %in% selected_table) && length(selected_table) == 1) {
       
       plot_data <- plot_data %>%
         filter(group_name %in% selected_table) %>%
