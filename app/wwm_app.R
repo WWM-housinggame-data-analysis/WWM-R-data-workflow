@@ -48,27 +48,27 @@ EXPENSE_BARCOLS <- c("cost_personal_measures_bought", "cost_fluvial_damage",
 
 
 fill_values_all <- c(
-  "paid_debt"                         = "black",
-  "cost_personal_measures_bought"     = "#dfaba3",
-  "cost_house_measures_bought"        = "white",
-  "profit_minus_spent_savings_house_moving" = "#a3a3a3",
-  "mortgage_payment"                  = "#cccccc",
-  "cost_taxes"                        = "#dddddd",
-  "cost_fluvial_damage"               = "#79A2C5",
-  "cost_pluvial_damage"               = "#79BCC5"
-)
+  "ave_income_minus_living" = "#E1BB70",
+  "ave_debt" = "black",
+  "ave_satisfaction" = "#dfaba3",
+  "ave_measures" = "#433E5E",
+  "ave_profit_minus_spent_savings_house_moving" =  "#a3a3a3",
+  "ave_mortgage" = "#cccccc",
+  "ave_taxes" = "#dddddd",
+  "ave_fluvial_damage" = "#79A2C5",
+  "ave_pluvial_damage" = "#79BCC5")
 
 
 fill_labels_all <- c(
-  "paid_debt"                         = "Debt",
-  "cost_personal_measures_bought"     = "Satisfaction",
-  "cost_house_measures_bought"        = "Measures",
-  "mortgage_payment"                  = "Mortgage",
-  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-  "cost_taxes"                        = "Taxes",
-  "cost_fluvial_damage"               = "River damage",
-  "cost_pluvial_damage"               = "Rain damage"
-)
+  "ave_income_minus_living" = "Income - Living costs",
+  "ave_debt" = "Debt",
+  "ave_satisfaction" = "Satisfaction",
+  "ave_measures" = "Measures",
+  "ave_mortgage" = "Mortgage",
+  "ave_profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+  "ave_taxes" = "Taxes",
+  "ave_fluvial_damage" = "River damage",
+  "ave_pluvial_damage" = "Rain damage")
 
 # Source files ----
 
@@ -201,43 +201,31 @@ server <- function(input, output) {
   
 
   # Reactive dataset grouped by the chosen color_by variable
-  income_dist_ave <- reactive({retrieve_average_table(income_dist_reactive())})
+  group_col <- reactive({update_group_col(income_dist_reactive(), selected_table())})
   
-  # income_dist_ave <- reactive({income_dist_reactive() %>%
-  #   group_by(income_grp) %>%
-  #   summarise(
-  #     ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
-  #     ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
-  #     ave_mortgage = round(mean(mortgage_payment, na.rm = TRUE), 2),
-  #     ave_taxes = round(mean(cost_taxes, na.rm = TRUE), 2),
-  #     ave_debt = round(mean(paid_debt, na.rm = TRUE), 2),
-  #     ave_measures = round(mean(cost_house_measures_bought, na.rm = TRUE), 2),
-  #     ave_satisfaction = round(mean(cost_personal_measures_bought, na.rm = TRUE), 2),
-  #     ave_fluvial_damage  = round(mean(cost_fluvial_damage, na.rm = TRUE), 2),
-  #     ave_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
-  #     ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
-  #   ) %>%
-  #   ungroup()
-  # })
   
-  income_dist_n <- reactive({retrieve_n_table(income_dist_reactive())})
-  
-  # income_dist_n <- reactive({income_dist_reactive() %>%
-  #   select(income_grp, player_code) %>%
-  #   group_by(income_grp) %>%
-  #   summarise(N = n()) %>%
-  #   ungroup()
-  # })
-  
-  grouped_data <- reactive({income_dist_n() %>%
-    inner_join(income_dist_ave(), by = join_by(income_grp))
+  plot_data <- reactive({
+    
+    if (identical(group_col(), "player_code")) {
+      
+      income_dist_reactive() %>% filter(group_name %in% selected_table) %>% droplevels()
+      
+    } else {
+      income_dist_reactive()
+    }
   })
   
+  income_dist_ave <- reactive({retrieve_average_table(plot_data(), group_col())})
   
-  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
-  gg_plot1 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 1)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
-  gg_plot2 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 2)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
-  gg_plot3 <- reactive({get_costs_barplot(reactive({income_dist_reactive() %>% filter(groupround_round_number %in% 3)}), selected_costtypes, selected_table, fill_values_all, fill_labels_all)})
+  income_dist_n <- reactive({retrieve_n_table(plot_data(), group_col())})
+  
+  grouped_data <- reactive({income_dist_n() %>% inner_join(income_dist_ave(), by = join_by(across(all_of(group_col()))))})
+  
+  
+  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "All", fill_values_all, fill_labels_all)})
+  gg_plot1 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "1", fill_values_all, fill_labels_all)})
+  gg_plot2 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "2", fill_values_all, fill_labels_all)})
+  gg_plot3 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "3", fill_values_all, fill_labels_all)})
   
   # Connect plots
   output$plot_all <- renderPlotly({
@@ -283,69 +271,20 @@ server <- function(input, output) {
       sub <- df %>% filter(cost_type == cost_type_value)
       
       # Ensure the same x order
-      if (all(as.character(unique(income_dist_reactive()$group_name)) %in% selected_table())) {
-        
-        sub <- sub %>% mutate(income_grp = factor(income_grp, levels = x_order)) %>%
-          arrange(income_grp)
-        
-      } else if (any(as.character(unique(income_dist_reactive()$group_name)) %in% selected_table()) && length(selected_table) == 1) {
-        
-        sub <- sub %>% mutate(player_code = factor(player_code, levels = x_order)) %>%
-          arrange(player_code)
-        
-      } else {
-        
-        stop("Unexpected number of tables selected. Either all or a single table is expected.")
-        
-      }
-
+      sub <- sub %>%
+        mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
+        arrange(.data[[group_col()]])
       
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
       
       plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], list(value_k = value_k, n_vec = n_vec))
-        
-      # plt$x$data[[i]]$customdata <- cbind(value_k, n_vec)
-      # plt$x$data[[i]]$hovertemplate <- paste0(
-      #   "<b>%{fullData.name}</b><br>",
-      #   "Mean: %{customdata[0]:.2f}k<br>",
-      #   "N: %{customdata[1]}",
-      #   "<extra></extra>"
-      # )
+
     }
     
     plt
   })
   
-  
-  
-  # output$plot_all <- renderPlotly({
-  #   
-  #   # Build the ggplot first
-  #   gp <- gg_plot()              # this is your reactive() that returns a ggplot
-  #   
-  #   # Convert to plotly
-  #   plt <- ggplotly(gp)          # do not pass tooltip=...; we’ll control via hovertemplate
-  #   
-  #   # 1) Use unified hover → single tooltip box per x (bar)
-  #   plt <- layout(plt, hovermode = "x unified")
-  #   
-  #   # 2) Format each stacked trace’s line in the unified tooltip
-  #   #    - Use the trace name (matches your fill labels) + y value
-  #   #    - Show values in 'k' using customdata (y/1000)
-  #   for (i in seq_along(plt$x$data)) {
-  #     yi <- plt$x$data[[i]]$y
-  #     if (!is.null(yi)) {
-  #       plt$x$data[[i]]$customdata <- yi / 1000  # value in k for hover
-  #       # Bold category name, show value in k, and hide the extra box
-  #       plt$x$data[[i]]$hovertemplate <- paste0(
-  #         "<b>%{fullData.name}</b>: %{customdata:.1f}k<extra></extra>"
-  #       )
-  #     }
-  #   }
-  #   
-  #   plt
-  # })
   
   output$plot_r1  <- renderPlot({ gg_plot1() })
   output$plot_r2  <- renderPlot({ gg_plot2() })
@@ -373,4 +312,5 @@ server <- function(input, output) {
   output$table_r2  <- renderTable({ grouped_data() })
   output$table_r3  <- renderTable({ grouped_data() })
 }
+
 shinyApp(ui, server)
