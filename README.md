@@ -19,16 +19,13 @@ Below you can find the folder structure of this repository
     |
     ├── app/                        <- Shiny dashboard application code.
     ├── data/                       <- Stores raw and processed datasets.
-    |   ├── raw-dbtables/           <- Contains tables containing data from each game session downloaded from database.
-    |   ├── combined-dbtables/      <- Contains combined database tables in Excel format from each game session for visual inspection.
-    |   ├── dashboard-inputdata/    <- Contains data used for the dashboard.
+    |   ├── raw-dbtables/           <- Contains tables containing data from each game session downloaded from database. Also in excel format for visual inspection.
+    |   ├── preprocessed-dbtables/      <- Contains preprocessed database tables fit for shiny dashboard. Also in Excel format for visual inspection.
     |   └── dependencies/           <- Contains external data dependencies required for the project.
     |
-    ├── scripts/                    <- Contains R scripts for functions and analyses.
-    |   ├── functions/              <- R scripts defining functions used in the project, e.g. analysis, dashboard.
-    |   └── analysis/               <- R scripts for data analysis and visualization.
-    |
+    ├── scripts/                    <- Contains R scripts for data analysis and visualization.
     ├── man/                        <- Contains documentation for package functions, ensuring proper descriptions and metadata.
+    ├── R/                          <- R scripts for package functions  used in the project, e.g. analysis, dashboard.
     ├── tests/                      <- Tests for scripts in `scripts/`
     ├── renv/                       <- renv library for package management.
     ├── vignettes/                  <- Contains long-form documentation and examples using R Markdown to guide users in utilizing the
