@@ -48,14 +48,14 @@ retrieve_average_table <- function(plot_data, group_col) {
 
 retrieve_n_table <- function(plot_data, group_col) {
   
-  if (all.equal(group_col, "player_code")) {
+  if (identical(group_col, "player_code")) {
     n_data <- plot_data %>%
       select(player_code) %>%
       summarise(N = n())
     
   } else {
     n_data <- plot_data %>%
-      select(across(all_of(c(group.col, "player_code")))) %>%
+      select(all_of(c(group_col, "player_code"))) %>%
       group_by(.data[[group_col]]) %>%
       summarise(N = n())
   }

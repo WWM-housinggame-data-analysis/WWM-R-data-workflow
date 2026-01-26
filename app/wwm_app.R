@@ -42,33 +42,28 @@ INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("cost_personal_measures_bought", "cost_fluvial_damage",
-                       "cost_pluvial_damage", "cost_house_measures_bought",
-                       "paid_debt", "cost_taxes", "mortgage_payment",
-                       "profit_minus_spent_savings_house_moving")
+                     "cost_pluvial_damage", "paid_debt", "cost_taxes",
+                     "mortgage_payment", "profit_minus_spent_savings_house_moving")
 
 
 fill_values_all <- c(
-  "ave_income_minus_living" = "#E1BB70",
-  "ave_debt" = "black",
-  "ave_satisfaction" = "#dfaba3",
-  "ave_measures" = "#433E5E",
-  "ave_profit_minus_spent_savings_house_moving" =  "#a3a3a3",
-  "ave_mortgage" = "#cccccc",
-  "ave_taxes" = "#dddddd",
-  "ave_fluvial_damage" = "#79A2C5",
-  "ave_pluvial_damage" = "#79BCC5")
+  "paid_debt" = "black", #"ave_income_minus_living" = "#E1BB70", "ave_satisfaction" = "#dfaba3",
+  "cost_personal_measures_bought" = "#433E5E",
+  "profit_minus_spent_savings_house_moving" =  "#a3a3a3",
+  "mortgage_payment" = "#cccccc",
+  "cost_taxes" = "#dddddd",
+  "cost_fluvial_damage" = "#79A2C5",
+  "cost_pluvial_damage" = "#79BCC5")
 
 
 fill_labels_all <- c(
-  "ave_income_minus_living" = "Income - Living costs",
-  "ave_debt" = "Debt",
-  "ave_satisfaction" = "Satisfaction",
-  "ave_measures" = "Measures",
-  "ave_mortgage" = "Mortgage",
-  "ave_profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-  "ave_taxes" = "Taxes",
-  "ave_fluvial_damage" = "River damage",
-  "ave_pluvial_damage" = "Rain damage")
+  "paid_debt" = "Debt", #"ave_satisfaction" = "Satisfaction", "ave_income_minus_living" = "Income - Living costs",
+  "cost_personal_measures_bought" = "Measures",
+  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
+  "mortgage_payment" = "Mortgage",
+  "cost_taxes" = "Taxes",
+  "cost_fluvial_damage" = "River damage",
+  "cost_pluvial_damage" = "Rain damage")
 
 # Source files ----
 
@@ -236,6 +231,53 @@ server <- function(input, output) {
     stacked_vec <- obj$barfill
     
     plt <- ggplotly(gp)
+    
+    
+    output$debug <- renderPrint({
+      unique(vapply(plt$x$data, function(tr) tr$name %||% "", character(1)))
+    })
+    
+    seen <- character()
+    
+    for (i in seq_along(plt$x$data)) {
+      tr <- plt$x$data[[i]]
+      
+      nm <- tr$name %||% ""
+      
+      # Remove leading "(" and trailing ")"
+      nm <- gsub("^\\(|\\)$", "", nm)
+      
+      # Remove trailing ", 1" (or ",1") if present
+      nm <- sub(",\\s*\\d+$", "", nm)
+      
+      tr$name <- nm
+      
+      
+      if (tr$type == "scatter") {
+        # LINE: Round income - costs
+        tr$legendgroup <- "income"
+        tr$legendgrouptitle <- list(text = "Round Spendable Income")
+        tr$legendrank <- 1
+      } else {
+        # BARS: costs
+        tr$legendgroup <- "costs"
+        tr$legendgrouptitle <- list(text = "Round costs")
+        tr$legendrank <- 2
+      }
+      
+      
+      # show only one legend entry per name
+      if (nm %in% seen) {
+        tr$showlegend <- FALSE
+      } else {
+        tr$showlegend <- TRUE
+        seen <- c(seen, nm)
+      }
+      
+      plt$x$data[[i]] <- tr
+    }
+    
+    
     plt <- layout(plt, hovermode = "closest")
     
     # We need per-trace (cost_type) vectors of value_k and n in the same order as trace points.
