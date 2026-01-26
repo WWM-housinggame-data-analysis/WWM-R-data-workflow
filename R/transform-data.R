@@ -28,7 +28,7 @@ retrieve_summary_table <- function(plot_data, group_col) {
 }
 
 retrieve_average_table <- function(plot_data, group_col) {
-  plot_data %>%
+  ave_data <- plot_data %>%
     group_by(.data[[group_col]]) %>%
     summarise(
       ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
@@ -42,20 +42,22 @@ retrieve_average_table <- function(plot_data, group_col) {
       ave_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
       ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
     )
+  
+  return(ave_data)
 }
 
 retrieve_n_table <- function(plot_data, group_col) {
   
   if (all.equal(group_col, "player_code")) {
-    plot_data %>%
+    n_data <- plot_data %>%
       select(player_code) %>%
       summarise(N = n())
     
   } else {
-    plot_data %>%
+    n_data <- plot_data %>%
       select(across(all_of(c(group.col, "player_code")))) %>%
       group_by(.data[[group_col]]) %>%
       summarise(N = n())
   }
-
+  return(n_data)
 }
