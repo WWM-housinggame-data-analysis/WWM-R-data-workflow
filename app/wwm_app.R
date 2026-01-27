@@ -65,6 +65,13 @@ fill_labels_all <- c(
   "cost_fluvial_damage" = "River damage",
   "cost_pluvial_damage" = "Rain damage")
 
+WELFARE_LABELS <- c("60k" = "Very Low",
+                    "75k" = "Low",
+                    "90k" = "Low-average",
+                    "110k" = "High-average", 
+                    "130k" = "High", 
+                    "190k" = "Very High")
+
 # Source files ----
 
 # Get the path of the current script
@@ -198,18 +205,6 @@ server <- function(input, output) {
   # Reactive dataset grouped by the chosen color_by variable
   group_col <- reactive({update_group_col(income_dist_reactive(), selected_table())})
   
-  
-  plot_data <- reactive({
-    
-    if (identical(group_col(), "player_code")) {
-      
-      income_dist_reactive() %>% filter(group_name %in% selected_table) %>% droplevels()
-      
-    } else {
-      income_dist_reactive()
-    }
-  })
-  
   income_dist_ave <- reactive({retrieve_average_table(plot_data(), group_col())})
   
   income_dist_n <- reactive({retrieve_n_table(plot_data(), group_col())})
@@ -217,10 +212,10 @@ server <- function(input, output) {
   grouped_data <- reactive({income_dist_n() %>% inner_join(income_dist_ave(), by = join_by(across(all_of(group_col()))))})
   
   
-  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "All", fill_values_all, fill_labels_all)})
-  gg_plot1 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "1", fill_values_all, fill_labels_all)})
-  gg_plot2 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "2", fill_values_all, fill_labels_all)})
-  gg_plot3 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "3", fill_values_all, fill_labels_all)})
+  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "All", fill_values_all, fill_labels_all)})
+  gg_plot1 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "1", fill_values_all, fill_labels_all)})
+  gg_plot2 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "2", fill_values_all, fill_labels_all)})
+  gg_plot3 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "3", fill_values_all, fill_labels_all)})
   
   # Connect plots
   output$plot_all <- renderPlotly({
@@ -232,12 +227,11 @@ server <- function(input, output) {
     
     plt <- ggplotly(gp)
     
+    seen <- character()
     
     output$debug <- renderPrint({
       unique(vapply(plt$x$data, function(tr) tr$name %||% "", character(1)))
     })
-    
-    seen <- character()
     
     for (i in seq_along(plt$x$data)) {
       tr <- plt$x$data[[i]]
@@ -285,18 +279,36 @@ server <- function(input, output) {
     # For each trace name (fullData.name), subset df and order by the x (round_income) factor
     # to match bar positions.
     
-    # Get x positions order as they appear in the first trace
-    x_order <- plt$x$data[[1]]$x
+    # # Get x positions order as they appear in the first trace
+    # x_order <- plt$x$data[[1]]$x
+    
+    
+    # find first BAR trace for x order (safer than [[1]])
+    bar_idx <- which(vapply(plt$x$data, function(tr) tr$type %||% "", character(1)) == "bar")[1]
+    x_order <- plt$x$data[[bar_idx]]$x
+    
+    
+    # reverse mapping label -> cost_type (if you used fill_labels_all)
+    rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
+    
+                                                                             
     
     for (i in seq_along(plt$x$data)) {
       tr      <- plt$x$data[[i]]
-      catname <- tr$name                 # equals legend label (fill_labels_all)
-      xs      <- tr$x                    # x values for this trace
+      # catname <- tr$name                 # equals legend label (fill_labels_all)
+      # xs      <- tr$x                    # x values for this trace
+      
+      
+      # Only add cost hover to bar traces
+      if ((tr$type %||% "") != "bar") next
+      
+      catname <- tr$name %||% ""
+      
       
       # Map legend label back to cost_type value. If you used labels, we need a reverse map:
       # build it once outside and keep it around; for demo we rebuild quickly:
       # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
-      rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
+      # rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
       
       # If catname equals the label, translate to original cost_type:
       # cost_type_value <- rev_map[catname]
@@ -309,13 +321,20 @@ server <- function(input, output) {
       # add the reverse mapping shown above.
       #cost_type_value <- catname
       
-      # Subset summary data for this cost_type and order by x
-      sub <- df %>% filter(cost_type == cost_type_value)
+      # # Subset summary data for this cost_type and order by x
+      # sub <- df %>% filter(cost_type == cost_type_value)
+      # 
+      # # Ensure the same x order
+      # sub <- sub %>%
+      #   mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
+      #   arrange(.data[[group_col()]])
       
-      # Ensure the same x order
-      sub <- sub %>%
-        mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
-        arrange(.data[[group_col()]])
+      
+      sub <- df %>%
+        filter(cost_type == cost_type_value) %>%
+        mutate(xlabels = factor(xlabels, levels = x_order)) %>%
+        arrange(xlabels)
+                
       
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
@@ -340,7 +359,6 @@ server <- function(input, output) {
       paste("Costs:", length(selected_table())),
       sep = "\n")
   })
-
   
   # Summaries (update based on color_by choice)
   output$summary_all <- renderPrint({ summary(grouped_data()) })
