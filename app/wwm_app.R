@@ -89,7 +89,7 @@ source(here(file.path(FUNCTION_PATH, "interact-data.R")))
 # Data Workflow ----
 
 # Read all tables in the database folder to create accordingly the dataframe tables inside list
-gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame")
 
 income_dist_list <- list()
 
@@ -97,7 +97,9 @@ for (session_path in names(gamesession_data_list)) {
   income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
 }
 
-income_dist_df <- income_dist_list[[session_path]][["income_dist_df"]]
+gamesession_paths <- names(income_dist_list)
+names(gamesession_paths) <- sapply(strsplit(names(income_dist_list), split = "/", fixed = TRUE), function(parts) tail(parts, 1))
+
 
 # Shiny App ----
 
@@ -115,23 +117,29 @@ ui <- page_navbar(
         accordion(
           multiple = FALSE,   # only one open at a time
           
-          accordion_panel("1: Select Table",
+          accordion_panel("1: Select Game Session",
+                          selectInput("selected_gamesession", "Session:",
+                                      names(gamesession_paths),
+                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+          ),
+          
+          accordion_panel("2: Select Table",
                           selectInput("selected_table", "Table:",
                                          c("All", as.character(unique(income_dist_df$group_name))),
                                          selected = "All")
           ),
           
-          accordion_panel("2: Where players live"),
+          accordion_panel("3: Where players live"),
           
-          accordion_panel("3: Player spending",
+          accordion_panel("4: Player spending",
                           
             checkboxGroupInput("cost_type", "Cost_Types:",
                                choices = c("All", EXPENSE_BARCOLS),
                                selected = "All")
           ),
-          accordion_panel("4: Selected measures"),
-          accordion_panel("5: Flood in gameplay"),
-          accordion_panel("6: Damage & satisfaction")
+          accordion_panel("5: Selected measures"),
+          accordion_panel("6: Flood in gameplay"),
+          accordion_panel("7: Damage & satisfaction")
         )
       ),
       
@@ -195,7 +203,7 @@ ui <- page_navbar(
 
 server <- function(input, output) {
   
-  income_dist_reactive <- reactive({income_dist_df})
+  income_dist_reactive <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
   
   selected_table <- reactive({filter_selected_categs(input$selected_table, as.character(unique(income_dist_reactive()$group_name)))})
   
