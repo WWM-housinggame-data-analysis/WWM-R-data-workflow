@@ -118,29 +118,56 @@ ui <- page_navbar(
           multiple = FALSE,   # only one open at a time
           
           accordion_panel("1: Select Game Session",
+                          
+                          # Input + small reset button
+                          layout_columns(col_widths = c(9, 3),
+      
                           selectInput("selected_gamesession", "Session:",
                                       names(gamesession_paths),
-                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
+                          
+                          actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
           ),
           
           accordion_panel("2: Select Table",
+                          
+                          layout_columns(col_widths = c(9, 3),
+                          
                           selectInput("selected_table", "Table:",
                                          c("All", as.character(unique(income_dist_df$group_name))),
-                                         selected = "All")
+                                         selected = "All"),
+                          actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
           ),
           
           accordion_panel("3: Where players live"),
           
           accordion_panel("4: Player spending",
                           
-            checkboxGroupInput("cost_type", "Cost_Types:",
-                               choices = c("All", EXPENSE_BARCOLS),
-                               selected = "All")
+                          
+                          # checkboxGroupInput and its reset
+                          layout_columns(col_widths = c(9, 3),
+                                         
+                                         checkboxGroupInput("cost_type", "Cost_Types:",
+                                                            choices = c("All", EXPENSE_BARCOLS),
+                                                            selected = "All"),
+                                         actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
           ),
+          
           accordion_panel("5: Selected measures"),
           accordion_panel("6: Flood in gameplay"),
           accordion_panel("7: Damage & satisfaction")
+        ),
+        
+        
+        # Optional: a global reset all button for the whole sidebar
+        div(
+          class = "mt-3",
+          actionButton("reset_all_filters", "Reset all filters", class = "btn-warning")
         )
+        
       ),
       
       mainPanel(
@@ -201,7 +228,32 @@ ui <- page_navbar(
 
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
+  # Reset only the session selectInput
+  observeEvent(input$reset_session, {
+    # Clear to empty; for selectize inputs, character(0) or NULL works
+    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+  })
+  
+  # Reset only the table selectInput
+  observeEvent(input$reset_table, {
+    updateSelectInput(session, "selected_table", selected = "All")
+  })
+  
+  # Reset only the checkboxGroupInput
+  observeEvent(input$reset_cost, {
+    # If your "All" is a semantic choice, reselect it:
+    updateCheckboxGroupInput(session, "cost_type", selected = "All")
+  })
+  
+  # Optional: global "Reset all filters"
+  observeEvent(input$reset_all_filters, {
+    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+    updateSelectInput(session, "selected_table",      selected = "All")
+    updateCheckboxGroupInput(session, "cost_type",    selected = "All")
+  })
+
   
   income_dist_reactive <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
   
