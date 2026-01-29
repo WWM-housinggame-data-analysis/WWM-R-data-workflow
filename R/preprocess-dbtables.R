@@ -1,8 +1,13 @@
+# Set all default variables or global options and all the path variables at the top of the code.
+
+FUNCTION_PATH <- file.path("R")
+
+# Load required functions
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
+source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
+
 preprocess_dbtables <- function(dbtable_list) {
-  
-  source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
-  source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
-  
   
   unpack_dbtable_list <- function(dblist, suffix = "_df") {
     if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {

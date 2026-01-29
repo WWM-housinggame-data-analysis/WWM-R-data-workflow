@@ -1,3 +1,11 @@
+# Set all default variables or global options and all the path variables at the top of the code.
+
+FUNCTION_PATH <- file.path("R")
+
+# Load required functions
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+
+
 TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
 
 PREV_COST_COLS <- c("cost_house_measures_bought", "cost_personal_measures_bought")
