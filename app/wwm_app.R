@@ -135,7 +135,7 @@ ui <- page_navbar(
                           layout_columns(col_widths = c(9, 3),
                           
                           selectInput("selected_table", "Table:",
-                                         c("All", as.character(unique(income_dist_df$group_name))),
+                                         c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass"]]][["income_dist_df"]]$group_name))),
                                          selected = "All"),
                           actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm")
                           )
@@ -431,6 +431,11 @@ server <- function(input, output, session) {
   output$table_r1  <- renderTable({ grouped_data() })
   output$table_r2  <- renderTable({ grouped_data() })
   output$table_r3  <- renderTable({ grouped_data() })
+  
+  observe({
+    updateSelectInput(session, "selected_table",
+                      choices = c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]$group_name))),
+    )})
 }
 
 shinyApp(ui, server)
