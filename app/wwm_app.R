@@ -65,6 +65,13 @@ fill_labels_all <- c(
   "cost_fluvial_damage" = "River damage",
   "cost_pluvial_damage" = "Rain damage")
 
+WELFARE_LABELS <- c("60k" = "Very Low",
+                    "75k" = "Low",
+                    "90k" = "Low-average",
+                    "110k" = "High-average", 
+                    "130k" = "High", 
+                    "190k" = "Very High")
+
 # Source files ----
 
 # Get the path of the current script
@@ -82,7 +89,7 @@ source(here(file.path(FUNCTION_PATH, "interact-data.R")))
 # Data Workflow ----
 
 # Read all tables in the database folder to create accordingly the dataframe tables inside list
-gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame_session_20_251007_VerzekeraarsMasterClass")
+gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame")
 
 income_dist_list <- list()
 
@@ -90,7 +97,9 @@ for (session_path in names(gamesession_data_list)) {
   income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
 }
 
-income_dist_df <- income_dist_list[[session_path]][["income_dist_df"]]
+gamesession_paths <- names(income_dist_list)
+names(gamesession_paths) <- sapply(strsplit(names(income_dist_list), split = "/", fixed = TRUE), function(parts) tail(parts, 1))
+
 
 # Shiny App ----
 
@@ -108,24 +117,57 @@ ui <- page_navbar(
         accordion(
           multiple = FALSE,   # only one open at a time
           
-          accordion_panel("1: Select Table",
-                          selectInput("selected_table", "Table:",
-                                         c("All", as.character(unique(income_dist_df$group_name))),
-                                         selected = "All")
-          ),
-          
-          accordion_panel("2: Where players live"),
-          
-          accordion_panel("3: Player spending",
+          accordion_panel("1: Select Game Session",
                           
-            checkboxGroupInput("cost_type", "Cost_Types:",
-                               choices = c("All", EXPENSE_BARCOLS),
-                               selected = "All")
+                          # Input + small reset button
+                          layout_columns(col_widths = c(9, 3),
+      
+                          selectInput("selected_gamesession", "Session:",
+                                      names(gamesession_paths),
+                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
+                          
+                          actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
           ),
-          accordion_panel("4: Selected measures"),
-          accordion_panel("5: Flood in gameplay"),
-          accordion_panel("6: Damage & satisfaction")
+          
+          accordion_panel("2: Select Table",
+                          
+                          layout_columns(col_widths = c(9, 3),
+                          
+                          selectInput("selected_table", "Table:",
+                                         c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass"]]][["income_dist_df"]]$group_name))),
+                                         selected = "All"),
+                          actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
+          ),
+          
+          accordion_panel("3: Where players live"),
+          
+          accordion_panel("4: Player spending",
+                          
+                          
+                          # checkboxGroupInput and its reset
+                          layout_columns(col_widths = c(9, 3),
+                                         
+                                         checkboxGroupInput("cost_type", "Cost_Types:",
+                                                            choices = c("All", EXPENSE_BARCOLS),
+                                                            selected = "All"),
+                                         actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm")
+                          )
+          ),
+          
+          accordion_panel("5: Selected measures"),
+          accordion_panel("6: Flood in gameplay"),
+          accordion_panel("7: Damage & satisfaction")
+        ),
+        
+        
+        # Optional: a global reset all button for the whole sidebar
+        div(
+          class = "mt-3",
+          actionButton("reset_all_filters", "Reset all filters", class = "btn-warning")
         )
+        
       ),
       
       mainPanel(
@@ -186,9 +228,34 @@ ui <- page_navbar(
 
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-  income_dist_reactive <- reactive({income_dist_df})
+  # Reset only the session selectInput
+  observeEvent(input$reset_session, {
+    # Clear to empty; for selectize inputs, character(0) or NULL works
+    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+  })
+  
+  # Reset only the table selectInput
+  observeEvent(input$reset_table, {
+    updateSelectInput(session, "selected_table", selected = "All")
+  })
+  
+  # Reset only the checkboxGroupInput
+  observeEvent(input$reset_cost, {
+    # If your "All" is a semantic choice, reselect it:
+    updateCheckboxGroupInput(session, "cost_type", selected = "All")
+  })
+  
+  # Optional: global "Reset all filters"
+  observeEvent(input$reset_all_filters, {
+    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+    updateSelectInput(session, "selected_table",      selected = "All")
+    updateCheckboxGroupInput(session, "cost_type",    selected = "All")
+  })
+
+  
+  income_dist_reactive <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
   
   selected_table <- reactive({filter_selected_categs(input$selected_table, as.character(unique(income_dist_reactive()$group_name)))})
   
@@ -198,18 +265,6 @@ server <- function(input, output) {
   # Reactive dataset grouped by the chosen color_by variable
   group_col <- reactive({update_group_col(income_dist_reactive(), selected_table())})
   
-  
-  plot_data <- reactive({
-    
-    if (identical(group_col(), "player_code")) {
-      
-      income_dist_reactive() %>% filter(group_name %in% selected_table) %>% droplevels()
-      
-    } else {
-      income_dist_reactive()
-    }
-  })
-  
   income_dist_ave <- reactive({retrieve_average_table(plot_data(), group_col())})
   
   income_dist_n <- reactive({retrieve_n_table(plot_data(), group_col())})
@@ -217,10 +272,10 @@ server <- function(input, output) {
   grouped_data <- reactive({income_dist_n() %>% inner_join(income_dist_ave(), by = join_by(across(all_of(group_col()))))})
   
   
-  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "All", fill_values_all, fill_labels_all)})
-  gg_plot1 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "1", fill_values_all, fill_labels_all)})
-  gg_plot2 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "2", fill_values_all, fill_labels_all)})
-  gg_plot3 <- reactive({get_costs_barplot(income_dist_reactive, income_dist_ave, selected_costtypes, selected_table, game_round = "3", fill_values_all, fill_labels_all)})
+  gg_plot <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "All", fill_values_all, fill_labels_all)})
+  gg_plot1 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "1", fill_values_all, fill_labels_all)})
+  gg_plot2 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "2", fill_values_all, fill_labels_all)})
+  gg_plot3 <- reactive({get_costs_barplot(income_dist_reactive, selected_costtypes, selected_table, game_round = "3", fill_values_all, fill_labels_all)})
   
   # Connect plots
   output$plot_all <- renderPlotly({
@@ -232,12 +287,11 @@ server <- function(input, output) {
     
     plt <- ggplotly(gp)
     
+    seen <- character()
     
     output$debug <- renderPrint({
       unique(vapply(plt$x$data, function(tr) tr$name %||% "", character(1)))
     })
-    
-    seen <- character()
     
     for (i in seq_along(plt$x$data)) {
       tr <- plt$x$data[[i]]
@@ -285,18 +339,36 @@ server <- function(input, output) {
     # For each trace name (fullData.name), subset df and order by the x (round_income) factor
     # to match bar positions.
     
-    # Get x positions order as they appear in the first trace
-    x_order <- plt$x$data[[1]]$x
+    # # Get x positions order as they appear in the first trace
+    # x_order <- plt$x$data[[1]]$x
+    
+    
+    # find first BAR trace for x order (safer than [[1]])
+    bar_idx <- which(vapply(plt$x$data, function(tr) tr$type %||% "", character(1)) == "bar")[1]
+    x_order <- plt$x$data[[bar_idx]]$x
+    
+    
+    # reverse mapping label -> cost_type (if you used fill_labels_all)
+    rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
+    
+                                                                             
     
     for (i in seq_along(plt$x$data)) {
       tr      <- plt$x$data[[i]]
-      catname <- tr$name                 # equals legend label (fill_labels_all)
-      xs      <- tr$x                    # x values for this trace
+      # catname <- tr$name                 # equals legend label (fill_labels_all)
+      # xs      <- tr$x                    # x values for this trace
+      
+      
+      # Only add cost hover to bar traces
+      if ((tr$type %||% "") != "bar") next
+      
+      catname <- tr$name %||% ""
+      
       
       # Map legend label back to cost_type value. If you used labels, we need a reverse map:
       # build it once outside and keep it around; for demo we rebuild quickly:
       # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
-      rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
+      # rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
       
       # If catname equals the label, translate to original cost_type:
       # cost_type_value <- rev_map[catname]
@@ -309,13 +381,20 @@ server <- function(input, output) {
       # add the reverse mapping shown above.
       #cost_type_value <- catname
       
-      # Subset summary data for this cost_type and order by x
-      sub <- df %>% filter(cost_type == cost_type_value)
+      # # Subset summary data for this cost_type and order by x
+      # sub <- df %>% filter(cost_type == cost_type_value)
+      # 
+      # # Ensure the same x order
+      # sub <- sub %>%
+      #   mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
+      #   arrange(.data[[group_col()]])
       
-      # Ensure the same x order
-      sub <- sub %>%
-        mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
-        arrange(.data[[group_col()]])
+      
+      sub <- df %>%
+        filter(cost_type == cost_type_value) %>%
+        mutate(xlabels = factor(xlabels, levels = x_order)) %>%
+        arrange(xlabels)
+                
       
       value_k <- sub$mean_value / 1000
       n_vec   <- sub$n
@@ -340,7 +419,6 @@ server <- function(input, output) {
       paste("Costs:", length(selected_table())),
       sep = "\n")
   })
-
   
   # Summaries (update based on color_by choice)
   output$summary_all <- renderPrint({ summary(grouped_data()) })
@@ -353,6 +431,11 @@ server <- function(input, output) {
   output$table_r1  <- renderTable({ grouped_data() })
   output$table_r2  <- renderTable({ grouped_data() })
   output$table_r3  <- renderTable({ grouped_data() })
+  
+  observe({
+    updateSelectInput(session, "selected_table",
+                      choices = c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]$group_name))),
+    )})
 }
 
 shinyApp(ui, server)

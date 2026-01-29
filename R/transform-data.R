@@ -22,7 +22,9 @@ retrieve_summary_table <- function(plot_data, group_col) {
       mean_value = mean(cost_value, na.rm = TRUE),
       n          = n(),
       .groups    = "drop"
-    )
+    ) %>%
+    as.data.frame()
+  
   
   return(summary_df)
 }
@@ -41,7 +43,8 @@ retrieve_average_table <- function(plot_data, group_col) {
       ave_fluvial_damage  = round(mean(cost_fluvial_damage, na.rm = TRUE), 2),
       ave_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
       ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
-    )
+    ) %>%
+    as.data.frame()
   
   return(ave_data)
 }

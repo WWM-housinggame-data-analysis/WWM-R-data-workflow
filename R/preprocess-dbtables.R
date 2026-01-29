@@ -493,7 +493,7 @@ preprocess_dbtables <- function(dbtable_list) {
   
   income_dist_df <- income_dist_df %>% mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
   
-  income_dist_df <- income_dist_df %>% mutate(!!"income_grp" := factor(.data[["round_income"]]))
+  income_dist_df <- income_dist_df %>% mutate(!!"income_grp" := factor(paste0(.data[["round_income"]]/1000, "k", sep=""), levels = names(WELFARE_LABELS)))
   
   income_dist_df <- income_dist_df %>%
     mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, "income_grp"))], as.numeric)
