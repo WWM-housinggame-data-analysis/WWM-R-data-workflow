@@ -9,12 +9,10 @@ w = 0.9
 INTERM_ROUNDS <- as.character(1:3)
 
 # Build plot on the aggregated data (geom_col)
-create_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all) {
+create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all) {
   
   stopifnot(is.data.frame(summary_df))
   stopifnot(is.data.frame(ave_data))
-  
-  ave_data$series <- "Round income - costs"
   
   gp <- ggplot() +
     
@@ -47,79 +45,7 @@ create_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, f
   return(list(plot = gp, data = summary_df, barfill = stacked_vec))
 }
 
-# Reactive plot based on user input
-get_costs_barplot <- function(input_data_reactive, stacked_vars_reactive, selected_table_reactive, game_round, fill_values_all, fill_labels_all) {
-  
-  # Pull the latest data and selection from the reactives
-  plot_data <- input_data_reactive()
-  stacked_vec <- stacked_vars_reactive()
-  selected_table <- selected_table_reactive()
-  
-  # Guard against empty states
-  req(nrow(plot_data) > 0, length(stacked_vec) > 0)
-  
-  group_col <- update_group_col(plot_data, selected_table)
-  
-  if (identical(group_col, "player_code")) {
-    plot_data <- plot_data %>% filter(group_name %in% selected_table) %>% droplevels()
-  }
 
-  if (game_round %in% INTERM_ROUNDS) {
-    plot_data <- plot_data %>% filter(groupround_round_number %in% game_round) %>% droplevels()
-    ave_data <- ave_data %>% filter(groupround_round_number %in% game_round) %>% droplevels()
-  }
-  
-  
-  # Build xlabels on the row-level data
-  if (identical(group_col, "income_grp")) {
-    
-    plot_data <- plot_data %>%
-      mutate(
-        xlabels = factor(
-          paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))],
-                .data[[group_col]], sep = "<br>"),
-          levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = "<br>")
-        )
-      )
-    
-  } else if (identical(group_col, "player_code")) {
-    
-    plot_data <- plot_data %>%
-      mutate(
-        xlabels = factor(
-          paste(.data[[group_col]], .data[["income_grp"]], sep = "<br>"),
-          levels = paste(.data[["player_code"]][match(names(WELFARE_LABELS), .data[["income_grp"]])], names(WELFARE_LABELS), sep = "<br>")
-        )
-      )
-  }
-  
-
-  
-  ave_data <- retrieve_average_table(plot_data, group_col)
-  
-  
-  # Attach xlabels to ave_data via lookup from plot_data
-  label_lookup <- plot_data %>%
-    select(all_of(group_col), xlabels) %>%
-    distinct()
-  
-  ave_data <- ave_data %>%
-    mutate(series = "Round income - costs") %>%
-    left_join(label_lookup, by = setNames(group_col, group_col)) %>%
-    mutate(xlabels = factor(xlabels, levels = levels(plot_data$xlabels))) %>%
-    arrange(xlabels)
-  
-  
-  
-  selected_players <- as.character(unique(plot_data$player_code))
-  
-  plot_data <- retrieve_pivot_table(plot_data, stacked_vec)
-  
-  summary_df <- retrieve_summary_table(plot_data, "xlabels")
-  
-  create_barplot(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all)
-  
-}
 
 create_hovering <- function(data_fill, hovering_datalist) {
 
