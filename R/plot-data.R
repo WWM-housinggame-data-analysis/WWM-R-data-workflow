@@ -6,7 +6,7 @@ FUNCTION_PATH <- file.path("R")
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 
 # Build plot on the aggregated data (geom_col)
-create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all) {
+create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all, scale_factor) {
   
   stopifnot(is.data.frame(summary_df))
   stopifnot(is.data.frame(ave_data))
@@ -17,12 +17,16 @@ create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_al
              position = "stack", na.rm = TRUE, width = BAR_WIDTH) +
     
     geom_line(data = ave_data,
-      aes(x = .data[["xlabels"]], y = ave_Spendable, color = series, group = 1),
+      aes(x = .data[["xlabels"]], y = ave_satisfaction_scaled, color = series, group = 1),
       linewidth = 1.2) +
+    
+    geom_point(data = ave_data,
+              aes(x = .data[["xlabels"]], y = ave_satisfaction_scaled, color = series, group = 1),
+              size = 2) +
     
     scale_color_manual(
       values = c(
-        "Round income - costs" = "black")
+        "Average total satisfaction" = "darkgreen")
     ) +
     
     scale_fill_manual(
@@ -31,7 +35,12 @@ create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_al
     ) +
              
     scale_y_continuous(labels = function(y) y / K_FACTOR,
-                       name = "Game Currency (k)") +
+                       name = "Game Currency (k)",
+                       
+                       sec.axis = sec_axis(
+                         ~ . / scale_factor,
+                         name = "Average total satisfaction"
+                       )) +
       
     scale_x_discrete(name = "Round income (k) \n Players per class") +
     labs(x = NULL, fill = NULL, color = NULL) +

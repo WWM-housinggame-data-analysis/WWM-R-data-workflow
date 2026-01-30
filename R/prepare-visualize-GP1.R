@@ -30,14 +30,31 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
     
   }
   
-  ave_data <- retrieve_average_vector(plot_data, "xlabels", "spendable_income", "ave_Spendable")
+  ave_data <- retrieve_average_vector(plot_data, "xlabels", "satisfaction_total", "ave_satisfaction")
   
-  ave_data <- ave_data %>% mutate(series = "Round income - costs")
+  ave_data <- ave_data %>% mutate(series = "Average total satisfaction")
   
   plot_data <- retrieve_pivot_table(plot_data, stacked_vec)
   
   summary_df <- retrieve_summary_table(plot_data, "xlabels")
   
-  create_GP1_barplot(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all)
+  bar_total <- plot_data %>%
+    group_by(xlabels) %>%
+    summarise(
+      colsum = sum(cost_value),
+      .groups    = "drop"
+    ) %>%
+    as.data.frame
+  
+  max_cost <- max(bar_total$colsum,        na.rm = TRUE)
+  max_sat  <- max(ave_data$ave_satisfaction, na.rm = TRUE)
+  
+  if (!is.finite(max_cost) || max_cost == 0) max_cost <- 1
+  if (!is.finite(max_sat)  || max_sat  == 0) max_sat  <- 1
+  
+  scale_factor <- max_cost / max_sat
+  ave_data$ave_satisfaction_scaled <- ave_data$ave_satisfaction * scale_factor
+  
+  create_GP1_barplot(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all, scale_factor)
   
 }

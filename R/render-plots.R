@@ -157,7 +157,7 @@ render_plots <- function(obj) {
   
   for (i in seq_along(plt$x$data)) {
     
-    result_list <- convert2plotly_legend(plt$x$data[[i]], "Round Spendable Income", "Round costs", seen_colnames, rev_map)
+    result_list <- convert2plotly_legend(plt$x$data[[i]], "Average total satisfaction", "Round costs", seen_colnames, rev_map)
     
     plt$x$data[[i]] <- result_list$plotted_col_metadata
     
