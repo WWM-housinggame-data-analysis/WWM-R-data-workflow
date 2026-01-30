@@ -34,9 +34,11 @@ structure_legend <- function(plotted_col_metadata, line1_legendname, bars_legend
 }
 
 
-convert2plotly_legend <- function(plotted_col_metadata, line1_legendname, bars_legendname, seen_colnames) {
+convert2plotly_legend <- function(plotted_col_metadata, line1_legendname, bars_legendname, seen_colnames, rev_map) {
   
   plotted_col_metadata$name <- trim_colname(plotted_col_metadata$name)
+  
+  plotted_col_metadata$name <- if (plotted_col_metadata$name %in% rev_map) names(rev_map[rev_map %in% plotted_col_metadata$name]) else plotted_col_metadata$name
   
   plotted_col_metadata <- structure_legend(plotted_col_metadata, line1_legendname, bars_legendname)
   
@@ -53,17 +55,17 @@ convert2plotly_legend <- function(plotted_col_metadata, line1_legendname, bars_l
     
   }
   
-  return(plotted_col_metadata)
+  return(list(plotted_col_metadata = plotted_col_metadata, seen_colnames = seen_colnames))
 }
 
-retrieve_barplot_xlabels <- function(plot_metadata, plot_type = "bar") {
+retrieve_xlabel_order <- function(plot_metadata, plot_type = "bar") {
   
   # find first BAR trace for x order (safer than [[1]])
   barplot_metadata_finder <- vapply(plot_metadata, function(metadata) metadata$type %||% "", character(1)) == plot_type
   
-  barplot_xlabels <- plot_metadata[which(barplot_metadata_finder)[1]]$x
+  xlabel_order <- plot_metadata[[which(barplot_metadata_finder)[1]]]$x
   
-  return(barplot_xlabels)
+  return(xlabel_order)
 }
 
 design_hovering <- function(plotted_col_metadata, hovering_sumstats) {
@@ -107,7 +109,7 @@ create_hovering <- function(plotted_col_metadata, pivoted_df, stacked_colgroup, 
     
     # Map plotted_colname to original df collumn name:
     
-    stacked_colname <- if (!is.na(rev_map[stacked_colname])) rev_map[stacked_colname] else stacked_colname
+    stacked_colname <- if (stacked_colname %in% names(rev_map)) rev_map[names(rev_map) %in% stacked_colname] else stacked_colname
     
     
     # Subset summary data for this cost_type and order by x and Ensure the same x order
@@ -145,17 +147,21 @@ render_plots <- function(obj) {
   # For each trace name (fullData.name), subset df and order by the x (round_income) factor
   # to match bar positions.
   
-  xlabels_levels <- retrieve_barplot_xlabels(plt$x$data)
+  xlabels_levels <- retrieve_xlabel_order(plt$x$data)
   
   # Map legend label back to cost_type value. If you used labels, we need a reverse map:
   # build it once outside and keep it around; for demo we rebuild quickly:
   # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
   # reverse mapping label -> cost_type (if you used fill_labels_all)
-  rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
+  rev_map <- setNames(names(fill_labels_all[names(fill_labels_all) %in% stacked_vec]), fill_labels_all[names(fill_labels_all) %in% stacked_vec])
   
   for (i in seq_along(plt$x$data)) {
     
-    plt$x$data[[i]] <- convert2plotly_legend(plt$x$data[[i]], "Round Spendable Income", "Round costs", seen_colnames)
+    result_list <- convert2plotly_legend(plt$x$data[[i]], "Round Spendable Income", "Round costs", seen_colnames, rev_map)
+    
+    plt$x$data[[i]] <- result_list$plotted_col_metadata
+    
+    seen_colnames <- result_list$seen_colnames
     
     plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], df, "cost_type", stacked_vec, rev_map, xlabels_levels)
     
