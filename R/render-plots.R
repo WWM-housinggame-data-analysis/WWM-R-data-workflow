@@ -1,5 +1,7 @@
 trim_colname <- function(nm) {
   
+  nm <- nm %||% ""
+  
   # Remove leading "(" and trailing ")"
   nm <- gsub("^\\(|\\)$", "", nm)
   
@@ -21,7 +23,7 @@ structure_legend <- function(plotted_col_metadata, line1_legendname, bars_legend
     
   } else if (plotted_col_metadata$type == "bar") {
     
-    plotted_col_metadata$legendgroup <- "costs"
+    plotted_col_metadata$legendgroup <- "bars"
     
     plotted_col_metadata$legendgrouptitle <- list(text = bars_legendname)
     
@@ -32,37 +34,26 @@ structure_legend <- function(plotted_col_metadata, line1_legendname, bars_legend
 }
 
 
-convert2plotly_legend <- function(plt, line1_legendname, bars_legendname) {
+convert2plotly_legend <- function(plotted_col_metadata, line1_legendname, bars_legendname, seen_colnames) {
   
-  seen_colnames <- character()
+  plotted_col_metadata$name <- trim_colname(plotted_col_metadata$name)
   
-  for (i in seq_along(plt$x$data)) {
+  plotted_col_metadata <- structure_legend(plotted_col_metadata, line1_legendname, bars_legendname)
+  
+  # show only one legend entry per name
+  if (plotted_col_metadata$name %in% seen_colnames) {
     
-    plotted_col_metadata <- plt$x$data[[i]]
+    plotted_col_metadata$showlegend <- FALSE
     
-    plotted_colname <- plotted_col_metadata$name %||% ""
+  } else {
     
-    plotted_col_metadata$name <- trim_colname(plotted_colname)
+    plotted_col_metadata$showlegend <- TRUE
     
-    plotted_col_metadata <- structure_legend(plotted_col_metadata, line1_legendname, bars_legendname)
+    seen_colnames <- c(seen_colnames, plotted_col_metadata$name)
     
-    # show only one legend entry per name
-    if (plotted_colname %in% seen_colnames) {
-      
-      plotted_col_metadata$showlegend <- FALSE
-      
-    } else {
-      
-      plotted_col_metadata$showlegend <- TRUE
-      
-      seen_colnames <- c(seen_colnames, plotted_colname)
-      
-    }
-    
-    plt$x$data[[i]] <- plotted_col_metadata
   }
   
-  return(plt)
+  return(plotted_col_metadata)
 }
 
 retrieve_barplot_xlabels <- function(plot_metadata, plot_type = "bar") {
@@ -103,7 +94,49 @@ design_hovering <- function(plotted_col_metadata, hovering_sumstats) {
   
 }
 
-create_hovering <- function(plt, pivoted_df, stacked_colgroup, stacked_vec){
+create_hovering <- function(plotted_col_metadata, pivoted_df, stacked_colgroup, stacked_vec, rev_map, xlabels_levels){
+  
+  # Only add cost hover to bar traces
+  if ((plotted_col_metadata$type %||% "") != "bar") {
+    
+    return(plotted_col_metadata)
+    
+  } else {
+    
+    stacked_colname <- plotted_col_metadata$name %||% ""
+    
+    # Map plotted_colname to original df collumn name:
+    
+    stacked_colname <- if (!is.na(rev_map[stacked_colname])) rev_map[stacked_colname] else stacked_colname
+    
+    
+    # Subset summary data for this cost_type and order by x and Ensure the same x order
+    
+    sub <- pivoted_df %>%
+      filter(.data[[stacked_colgroup]] == stacked_colname) %>%
+      mutate(xlabels = factor(xlabels, levels = xlabels_levels)) %>%
+      arrange(xlabels)
+    
+    
+    value_k <- sub$mean_value / K_FACTOR
+    n_vec   <- sub$n
+    
+    plotted_col_metadata <- design_hovering(plotted_col_metadata, list(value_k = value_k, n_vec = n_vec))
+    
+    return(plotted_col_metadata)
+  }
+}
+
+render_plots <- function(obj) {
+  
+  # obj is list(plot, data)
+  gp  <- obj$plot
+  df  <- obj$data          # summary_df with mean_value & n
+  stacked_vec <- obj$barfill
+  
+  plt <- ggplotly(gp)
+  
+  seen_colnames <- character()
   
   plt <- layout(plt, hovermode = "closest")
   
@@ -122,49 +155,11 @@ create_hovering <- function(plt, pivoted_df, stacked_colgroup, stacked_vec){
   
   for (i in seq_along(plt$x$data)) {
     
-    plotted_col_metadata <- plt$x$data[[i]]
+    plt$x$data[[i]] <- convert2plotly_legend(plt$x$data[[i]], "Round Spendable Income", "Round costs", seen_colnames)
     
-    # Only add cost hover to bar traces
-    if ((plotted_col_metadata$type %||% "") != "bar") next
-    
-    stacked_colname <- plotted_col_metadata$name %||% ""
-    
-    # Map plotted_colname to original df collumn name:
-    
-    df_colname <- if (!is.na(rev_map[stacked_colname])) rev_map[stacked_colname] else stacked_colname
-    
-    
-    # Subset summary data for this cost_type and order by x and Ensure the same x order
-
-    sub <- pivoted_df %>%
-      filter(.data[[stacked_colgroup]] == df_colname) %>%
-      mutate(xlabels = factor(xlabels, levels = xlabels_levels)) %>%
-      arrange(xlabels)
-    
-    
-    value_k <- sub$mean_value / K_FACTOR
-    n_vec   <- sub$n
-    
-    plt$x$data[[i]] <- design_hovering(plotted_col_metadata, list(value_k = value_k, n_vec = n_vec))
+    plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], df, "cost_type", stacked_vec, rev_map, xlabels_levels)
     
   }
-  
-  return(plt)
-}
-
-
-render_plots <- function(obj) {
-  
-  # obj is list(plot, data)
-  gp  <- obj$plot
-  df  <- obj$data          # summary_df with mean_value & n
-  stacked_vec <- obj$barfill
-  
-  plt <- ggplotly(gp)
-  
-  plt <- convert2plotly_legend(plt, "Round Spendable Income", "Round costs")
-  
-  plt <- create_hovering(plt, df, "cost_type", stacked_vec)
   
   plt
 }       

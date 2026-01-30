@@ -48,3 +48,6 @@ WELFARE_LABELS <- c("60k" = "Very Low",
                     "190k" = "Very High")
 
 K_FACTOR <- 1000
+
+BAR_WIDTH = 0.9
+INTERM_ROUNDS <- as.character(1:3)

@@ -17,16 +17,12 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
   
   
   # Build xlabels on the row-level data
-  if (identical(group_col, "income_grp")) {
-    
-    plot_data <- create_GP1_xlabels(plot_data, group_col)
-    
-  } else if (identical(group_col, "player_code")) {
+  if (identical(group_col, "player_code")) {
     
     plot_data <- plot_data %>% filter(group_name %in% selected_table) %>% droplevels()
-    
-    plot_data <- create_GP1_xlabels(plot_data, group_col)
   }
+  
+  plot_data <- create_GP1_xlabels(plot_data, group_col)
   
   if (game_round %in% INTERM_ROUNDS) {
     

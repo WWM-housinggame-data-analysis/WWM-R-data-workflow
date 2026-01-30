@@ -144,7 +144,7 @@ ui <- page_navbar(
           accordion_panel(
             "Round 1",
             tabsetPanel(type = "tabs",
-                        tabPanel("Plot", plotOutput("plot_r1")),
+                        tabPanel("Plot", plotlyOutput("plot_r1")),
                         tabPanel("Summary", verbatimTextOutput("summary_r1")),
                         tabPanel("Table", tableOutput("table_r1"))
             )
@@ -152,7 +152,7 @@ ui <- page_navbar(
           accordion_panel(
             "Round 2",
             tabsetPanel(type = "tabs",
-                        tabPanel("Plot", plotOutput("plot_r2")),
+                        tabPanel("Plot", plotlyOutput("plot_r2")),
                         tabPanel("Summary", verbatimTextOutput("summary_r2")),
                         tabPanel("Table", tableOutput("table_r2"))
             )
@@ -160,7 +160,7 @@ ui <- page_navbar(
           accordion_panel(
             "Round 3",
             tabsetPanel(type = "tabs",
-                        tabPanel("Plot", plotOutput("plot_r3")),
+                        tabPanel("Plot", plotlyOutput("plot_r3")),
                         tabPanel("Summary", verbatimTextOutput("summary_r3")),
                         tabPanel("Table", tableOutput("table_r3"))
             )
@@ -241,140 +241,10 @@ server <- function(input, output, session) {
     unique(vapply(ggplotly(gg_plot$plot)$plt$x$data, function(tr) tr$name %||% "", character(1)))
   })
   
-  # output$debug <- renderPrint({
-  #   unique(vapply(plt$x$data, function(plotted_col_metadata) plotted_col_metadata$name %||% "", character(1)))
-  # })
-  
   output$plot_all <- renderPlotly({render_plots(gg_plot())})
-  #   
-  #   
-  #   obj <- gg_plot()         # obj is list(plot, data)
-  #   gp  <- obj$plot
-  #   df  <- obj$data          # summary_df with mean_value & n
-  #   stacked_vec <- obj$barfill
-  #   
-  #   plt <- ggplotly(gp)
-  #   
-  #   seen <- character()
-  #   
-
-  #   
-  #   for (i in seq_along(plt$x$data)) {
-  #     tr <- plt$x$data[[i]]
-  #     
-  #     nm <- tr$name %||% ""
-  #     
-  #     # Remove leading "(" and trailing ")"
-  #     nm <- gsub("^\\(|\\)$", "", nm)
-  #     
-  #     # Remove trailing ", 1" (or ",1") if present
-  #     nm <- sub(",\\s*\\d+$", "", nm)
-  #     
-  #     tr$name <- nm
-  #     
-  #     
-  #     if (tr$type == "scatter") {
-  #       # LINE: Round income - costs
-  #       tr$legendgroup <- "income"
-  #       tr$legendgrouptitle <- list(text = "Round Spendable Income")
-  #       tr$legendrank <- 1
-  #     } else {
-  #       # BARS: costs
-  #       tr$legendgroup <- "costs"
-  #       tr$legendgrouptitle <- list(text = "Round costs")
-  #       tr$legendrank <- 2
-  #     }
-  #     
-  #     
-  #     # show only one legend entry per name
-  #     if (nm %in% seen) {
-  #       tr$showlegend <- FALSE
-  #     } else {
-  #       tr$showlegend <- TRUE
-  #       seen <- c(seen, nm)
-  #     }
-  #     
-  #     plt$x$data[[i]] <- tr
-  #   }
-  #   
-  #   
-  #   plt <- layout(plt, hovermode = "closest")
-  #   
-  #   # We need per-trace (cost_type) vectors of value_k and n in the same order as trace points.
-  #   # Plotly creates one trace per cost_type.
-  #   # For each trace name (fullData.name), subset df and order by the x (round_income) factor
-  #   # to match bar positions.
-  #   
-  #   # # Get x positions order as they appear in the first trace
-  #   # x_order <- plt$x$data[[1]]$x
-  #   
-  #   
-  #   # find first BAR trace for x order (safer than [[1]])
-  #   bar_idx <- which(vapply(plt$x$data, function(tr) tr$type %||% "", character(1)) == "bar")[1]
-  #   x_order <- plt$x$data[[bar_idx]]$x
-  #   
-  #   
-  #   # reverse mapping label -> cost_type (if you used fill_labels_all)
-  #   rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
-  #   
-  #                                                                            
-  #   
-  #   for (i in seq_along(plt$x$data)) {
-  #     tr      <- plt$x$data[[i]]
-  #     # catname <- tr$name                 # equals legend label (fill_labels_all)
-  #     # xs      <- tr$x                    # x values for this trace
-  #     
-  #     
-  #     # Only add cost hover to bar traces
-  #     if ((tr$type %||% "") != "bar") next
-  #     
-  #     catname <- tr$name %||% ""
-  #     
-  #     
-  #     # Map legend label back to cost_type value. If you used labels, we need a reverse map:
-  #     # build it once outside and keep it around; for demo we rebuild quickly:
-  #     # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
-  #     # rev_map <- setNames(names(fill_labels_all[stacked_vec]), fill_labels_all[stacked_vec])
-  #     
-  #     # If catname equals the label, translate to original cost_type:
-  #     # cost_type_value <- rev_map[catname]
-  #     # If you didn't customize labels, catname is directly the cost_type.
-  #     
-  #     # If using labels, do:
-  #     cost_type_value <- if (!is.na(rev_map[catname])) rev_map[catname] else catname
-  #     
-  #     # For simplicity here, assume catname == cost_type (no label remap). If you used labels,
-  #     # add the reverse mapping shown above.
-  #     #cost_type_value <- catname
-  #     
-  #     # # Subset summary data for this cost_type and order by x
-  #     # sub <- df %>% filter(cost_type == cost_type_value)
-  #     # 
-  #     # # Ensure the same x order
-  #     # sub <- sub %>%
-  #     #   mutate(across(all_of(group_col()), ~ factor(.x, levels = x_order))) %>%
-  #     #   arrange(.data[[group_col()]])
-  #     
-  #     
-  #     sub <- df %>%
-  #       filter(cost_type == cost_type_value) %>%
-  #       mutate(xlabels = factor(xlabels, levels = x_order)) %>%
-  #       arrange(xlabels)
-  #               
-  #     
-  #     value_k <- sub$mean_value / 1000
-  #     n_vec   <- sub$n
-  #     
-  #     plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], list(value_k = value_k, n_vec = n_vec))
-  # 
-  #   }
-  #   
-  #   plt
-  
-  
-  output$plot_r1  <- renderPlot({ gg_plot1() })
-  output$plot_r2  <- renderPlot({ gg_plot2() })
-  output$plot_r3  <- renderPlot({ gg_plot3() })
+  output$plot_r1  <- renderPlotly({render_plots(gg_plot1())})
+  output$plot_r2  <- renderPlotly({render_plots(gg_plot2())})
+  output$plot_r3  <- renderPlotly({render_plots(gg_plot3())})
   
   
   # Optional: inspect reactive rows

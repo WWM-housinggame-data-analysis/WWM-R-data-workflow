@@ -5,9 +5,6 @@ FUNCTION_PATH <- file.path("R")
 # Load required functions
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 
-w = 0.9
-INTERM_ROUNDS <- as.character(1:3)
-
 # Build plot on the aggregated data (geom_col)
 create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all) {
   
@@ -17,7 +14,7 @@ create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_al
   gp <- ggplot() +
     
     geom_col(data = summary_df, aes(x = .data[["xlabels"]], y = mean_value, fill = cost_type, group = cost_type),
-             position = "stack", na.rm = TRUE, width = w) +
+             position = "stack", na.rm = TRUE, width = BAR_WIDTH) +
     
     geom_line(data = ave_data,
       aes(x = .data[["xlabels"]], y = ave_Spendable, color = series, group = 1),
