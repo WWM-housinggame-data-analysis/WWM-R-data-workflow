@@ -1,3 +1,10 @@
+# Set all default variables or global options and all the path variables at the top of the code.
+
+FUNCTION_PATH <- file.path("R")
+
+# Load required functions
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+
 TABLE_TYPE <- ".csv"
 
 list_all_subfolders <- function(folder_path, subfolder_pattern) {
