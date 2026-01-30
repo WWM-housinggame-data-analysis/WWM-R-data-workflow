@@ -46,3 +46,5 @@ WELFARE_LABELS <- c("60k" = "Very Low",
                     "110k" = "High-average", 
                     "130k" = "High", 
                     "190k" = "Very High")
+
+K_FACTOR <- 1000

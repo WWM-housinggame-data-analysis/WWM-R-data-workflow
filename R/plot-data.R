@@ -33,7 +33,7 @@ create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_al
       labels = fill_labels_all[names(fill_labels_all) %in% stacked_vec]
     ) +
              
-    scale_y_continuous(labels = function(y) y / 1000,
+    scale_y_continuous(labels = function(y) y / K_FACTOR,
                        name = "Game Currency (k)") +
       
     scale_x_discrete(name = "Round income (k) \n Players per class") +
@@ -43,34 +43,4 @@ create_GP1_barplot <- function(summary_df, ave_data, stacked_vec, fill_values_al
     theme(axis.text.x = element_markdown(angle = 0, hjust = 0.5)) ##takes rich html
   
   return(list(plot = gp, data = summary_df, barfill = stacked_vec))
-}
-
-
-
-create_hovering <- function(data_fill, hovering_datalist) {
-
-  data_fill$customdata <- do.call(cbind, hovering_datalist)
-  
-  data_fill$hovertemplate <- "<b>%{fullData.name}</b><br>"
-  
-  if ("value_k" %in% names(hovering_datalist)) {
-    
-    data_fill$hovertemplate <- paste0(data_fill$hovertemplate,
-                                      paste0("Mean: %{customdata[",
-                                             which(names(hovering_datalist) %in% "value_k") - 1,
-                                             "]:.2f}k<br>"))
-  }
-  
-  if ("n_vec" %in% names(hovering_datalist)){
-    
-    data_fill$hovertemplate <- paste0(data_fill$hovertemplate,
-                                      paste0("N: %{customdata[",
-                                             which(names(hovering_datalist) %in% "n_vec") - 1,
-                                             "]}"))
-  }
-  
-  data_fill$hovertemplate <- paste0(data_fill$hovertemplate, "<extra></extra>")
-  
-  return(data_fill)
-  
 }
