@@ -38,10 +38,10 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
   
   summary_df <- retrieve_summary_table(plot_data, "xlabels")
   
-  bar_total <- plot_data %>%
+  bar_total <- summary_df %>%
     group_by(xlabels) %>%
     summarise(
-      colsum = sum(cost_value),
+      colsum = sum(mean_value),
       .groups    = "drop"
     ) %>%
     as.data.frame
