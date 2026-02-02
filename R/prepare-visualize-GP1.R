@@ -15,7 +15,6 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
   
   group_col <- update_group_col(plot_data, selected_table)
   
-  
   # Build xlabels on the row-level data
   if (identical(group_col, "player_code")) {
     
@@ -27,34 +26,29 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
   if (game_round %in% INTERM_ROUNDS) {
     
     plot_data <- plot_data %>% filter(groupround_round_number %in% game_round) %>% droplevels()
-    
   }
   
-  ave_data <- retrieve_average_vector(plot_data, "xlabels", "satisfaction_total", "ave_satisfaction")
+  # satisfaction series
+  ave_data <- retrieve_average_vector(plot_data, "xlabels", "satisfaction_total", "ave_satisfaction") %>%
+    mutate(series = "Average total satisfaction")
   
-  ave_data <- ave_data %>% mutate(series = "Average total satisfaction")
-  
+  # stacked costs
   plot_data <- retrieve_pivot_table(plot_data, stacked_vec)
-  
   summary_df <- retrieve_summary_table(plot_data, "xlabels")
   
-  bar_total <- summary_df %>%
-    group_by(xlabels) %>%
-    summarise(
-      colsum = sum(mean_value),
-      .groups    = "drop"
-    ) %>%
-    as.data.frame
+  # x order (critical for consistent stacking + line alignment)
+  xlevels <- if (is.factor(summary_df$xlabels)) levels(summary_df$xlabels) else unique(summary_df$xlabels)
   
-  max_cost <- max(bar_total$colsum,        na.rm = TRUE)
-  max_sat  <- max(ave_data$ave_satisfaction, na.rm = TRUE)
+  # keep only colors/labels for selected stacks
+  fill_values <- fill_values_all[names(fill_values_all) %in% stacked_vec]
+  fill_labels <- fill_labels_all[names(fill_labels_all) %in% stacked_vec]
   
-  if (!is.finite(max_cost) || max_cost == 0) max_cost <- 1
-  if (!is.finite(max_sat)  || max_sat  == 0) max_sat  <- 1
-  
-  scale_factor <- max_cost / max_sat
-  ave_data$ave_satisfaction_scaled <- ave_data$ave_satisfaction * scale_factor
-  
-  create_GP1_barplot(summary_df, ave_data, stacked_vec, fill_values_all, fill_labels_all, scale_factor)
-  
+  list(
+    summary_df  = summary_df,     # has xlabels, cost_type, mean_value, n, ...
+    ave_data    = ave_data,       # has xlabels, ave_satisfaction, series
+    stacked_vec = stacked_vec,
+    xlevels     = xlevels,
+    fill_values = fill_values,
+    fill_labels = fill_labels
+  )
 }
