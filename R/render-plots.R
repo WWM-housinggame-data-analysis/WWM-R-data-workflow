@@ -1,172 +1,159 @@
-trim_colname <- function(nm) {
-  
-  nm <- nm %||% ""
-  
-  # Remove leading "(" and trailing ")"
-  nm <- gsub("^\\(|\\)$", "", nm)
-  
-  # Remove trailing ", 1" (or ",1") if present
-  nm <- sub(",\\s*\\d+$", "", nm)
-  
-  return(nm)
-}
-
-structure_legend <- function(plotted_col_metadata, line1_legendname, bars_legendname) {
-  
-  if (plotted_col_metadata$type == "scatter") {
-    
-    plotted_col_metadata$legendgroup <- "line1"
-    
-    plotted_col_metadata$legendgrouptitle <- list(text = line1_legendname)
-    
-    plotted_col_metadata$legendrank <- 1
-    
-  } else if (plotted_col_metadata$type == "bar") {
-    
-    plotted_col_metadata$legendgroup <- "bars"
-    
-    plotted_col_metadata$legendgrouptitle <- list(text = bars_legendname)
-    
-    plotted_col_metadata$legendrank <- 2
-  }
-  
-  return(plotted_col_metadata)
-}
-
-
-convert2plotly_legend <- function(plotted_col_metadata, line1_legendname, bars_legendname, seen_colnames, rev_map) {
-  
-  plotted_col_metadata$name <- trim_colname(plotted_col_metadata$name)
-  
-  plotted_col_metadata$name <- if (plotted_col_metadata$name %in% rev_map) names(rev_map[rev_map %in% plotted_col_metadata$name]) else plotted_col_metadata$name
-  
-  plotted_col_metadata <- structure_legend(plotted_col_metadata, line1_legendname, bars_legendname)
-  
-  # show only one legend entry per name
-  if (plotted_col_metadata$name %in% seen_colnames) {
-    
-    plotted_col_metadata$showlegend <- FALSE
-    
-  } else {
-    
-    plotted_col_metadata$showlegend <- TRUE
-    
-    seen_colnames <- c(seen_colnames, plotted_col_metadata$name)
-    
-  }
-  
-  return(list(plotted_col_metadata = plotted_col_metadata, seen_colnames = seen_colnames))
-}
-
-retrieve_xlabel_order <- function(plot_metadata, plot_type = "bar") {
-  
-  # find first BAR trace for x order (safer than [[1]])
-  barplot_metadata_finder <- vapply(plot_metadata, function(metadata) metadata$type %||% "", character(1)) == plot_type
-  
-  xlabel_order <- plot_metadata[[which(barplot_metadata_finder)[1]]]$x
-  
-  return(xlabel_order)
-}
-
-design_hovering <- function(plotted_col_metadata, hovering_sumstats) {
-  
-  plotted_col_metadata$customdata <- do.call(cbind, hovering_sumstats)
-  
-  plotted_col_metadata$hovertemplate <- "<b>%{fullData.name}</b><br>"
-  
-  if ("value_k" %in% names(hovering_sumstats)) {
-    
-    plotted_col_metadata$hovertemplate <- paste0(plotted_col_metadata$hovertemplate,
-                                                 paste0("Mean: %{customdata[",
-                                                        which(names(hovering_sumstats) %in% "value_k") - 1,
-                                                        "]:.2f}k<br>"))
-  }
-  
-  if ("n_vec" %in% names(hovering_sumstats)){
-    
-    plotted_col_metadata$hovertemplate <- paste0(plotted_col_metadata$hovertemplate,
-                                                 paste0("N: %{customdata[",
-                                                        which(names(hovering_sumstats) %in% "n_vec") - 1,
-                                                        "]}"))
-  }
-  
-  plotted_col_metadata$hovertemplate <- paste0(plotted_col_metadata$hovertemplate, "<extra></extra>")
-  
-  return(plotted_col_metadata)
-  
-}
-
-create_hovering <- function(plotted_col_metadata, pivoted_df, stacked_colgroup, stacked_vec, rev_map, xlabels_levels){
-  
-  # Only add cost hover to bar traces
-  if ((plotted_col_metadata$type %||% "") != "bar") {
-    
-    return(plotted_col_metadata)
-    
-  } else {
-    
-    stacked_colname <- plotted_col_metadata$name %||% ""
-    
-    # Map plotted_colname to original df collumn name:
-    
-    stacked_colname <- if (stacked_colname %in% names(rev_map)) rev_map[names(rev_map) %in% stacked_colname] else stacked_colname
-    
-    
-    # Subset summary data for this cost_type and order by x and Ensure the same x order
-    
-    sub <- pivoted_df %>%
-      filter(.data[[stacked_colgroup]] == stacked_colname) %>%
-      mutate(xlabels = factor(xlabels, levels = xlabels_levels)) %>%
-      arrange(xlabels)
-    
-    
-    value_k <- sub$mean_value / K_FACTOR
-    n_vec   <- sub$n
-    
-    plotted_col_metadata <- design_hovering(plotted_col_metadata, list(value_k = value_k, n_vec = n_vec))
-    
-    return(plotted_col_metadata)
-  }
-}
-
 render_plots <- function(obj) {
   
-  # obj is list(plot, data)
-  gp  <- obj$plot
-  df  <- obj$data          # summary_df with mean_value & n
-  stacked_vec <- obj$barfill
+  df          <- obj$summary_df
+  ave         <- obj$ave_data
+  stacked_vec <- obj$stacked_vec
+  xlevels     <- obj$xlevels
+  fill_values <- obj$fill_values
+  fill_labels <- obj$fill_labels
   
-  plt <- ggplotly(gp)
+  # Ensure ordering matches for all traces
+  df <- df %>%
+    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
+    arrange(xlabels)
   
-  seen_colnames <- character()
+  ave <- ave %>%
+    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
+    arrange(xlabels)
   
-  plt <- layout(plt, hovermode = "closest")
+  # Convert bars to k for left axis # ---- ensure negatives for "spent savings" (EDIT this code to match your real cost_type) ----
+  df <- df %>%
+    mutate(
+      #mean_value = if_else(cost_type == "spent_savings", -abs(mean_value), mean_value),
+      mean_k = mean_value / K_FACTOR
+    )
   
-  # We need per-trace (cost_type) vectors of value_k and n in the same order as trace points.
-  # Plotly creates one trace per cost_type.
-  # For each trace name (fullData.name), subset df and order by the x (round_income) factor
-  # to match bar positions.
+  bar_total <- df %>%
+    group_by(xlabels) %>%
+    summarise(
+      colsum = sum(mean_k),
+      .groups    = "drop"
+    ) %>%
+    as.data.frame
   
-  xlabels_levels <- retrieve_xlabel_order(plt$x$data)
+  # compute a symmetric-ish range so negatives are visible (optional but helps)
+  y_min <- min(0, df$mean_k, na.rm = TRUE)
+  y_max <- max(0, bar_total$colsum, na.rm = TRUE)
   
-  # Map legend label back to cost_type value. If you used labels, we need a reverse map:
-  # build it once outside and keep it around; for demo we rebuild quickly:
-  # Suppose you still have 'stacked_vec' and 'fill_labels_all' in scope. If not, create a reverse map:
-  # reverse mapping label -> cost_type (if you used fill_labels_all)
-  rev_map <- setNames(names(fill_labels_all[names(fill_labels_all) %in% stacked_vec]), fill_labels_all[names(fill_labels_all) %in% stacked_vec])
+  # Start plotly
+  p <- plot_ly() %>%
+    layout(
+      barmode   = "relative",
+      hovermode = "closest",
+      
+      xaxis = list(
+        title         = "Round income (k)<br>Players per class",
+        categoryorder = "array",
+        categoryarray = xlevels,
+        
+        # (ii) vertical grid lines
+        showgrid = TRUE,
+        gridcolor = "rgba(0,0,0,0.08)",
+        gridwidth = 1,
+        zeroline  = FALSE
+      ),
+      
+      yaxis = list(
+        title    = "Game Currency (k)",
+        rangemode = "normal",
+        range     = c(y_min, y_max),
+        showgrid  = TRUE,
+        gridcolor = "rgba(0,0,0,0.06)",
+        gridwidth = 1,
+        zeroline  = TRUE,
+        zerolinecolor = "rgba(0,0,0,0.25)",
+        zerolinewidth = 1
+      ),
+      
+      yaxis2 = list(
+        title     = "Average total satisfaction",
+        overlaying = "y",
+        side      = "right",
+        rangemode = "tozero",
+        showgrid  = FALSE,
+        zeroline  = FALSE
+      ),
+      
+      # (iv) legend position near top/right (over/near y2 title)
+      
+      legend = list(
+        x = 1.10, y = 1.08,          # moved left (inside/closer to plot)
+        xanchor = "left",           # anchor from right edge so it pulls inward
+        yanchor = "top",
+        bgcolor = "rgba(255,255,255,0.65)",
+        traceorder = "grouped",     # <-- THIS makes legend split by 
+        tracegroupgap = 12
+      ),
+      
+      margin = list(r = 240, t = 60)  # smaller right margin since legend moved left
+      
+    )
   
-  for (i in seq_along(plt$x$data)) {
+  # ---- (iii) legend group titles: set only once per group ----
+  first_bar <- TRUE
+  
+  stacked_vec_legend <- stacked_vec              # desired legend order (unchanged)
+  stacked_vec_stack  <- rev(stacked_vec)         # stacking order (reversed)
+  
+  # --- Add stacked bar traces ---
+  for (ct in stacked_vec_stack) {
     
-    result_list <- convert2plotly_legend(plt$x$data[[i]], "Round Spendable Income", "Round costs", seen_colnames, rev_map)
+    sub <- df %>% filter(cost_type == ct)
     
-    plt$x$data[[i]] <- result_list$plotted_col_metadata
+    # label + color fallbacks
+    nm  <- fill_labels[[ct]] %||% ct
+    col <- fill_values[[ct]] %||% "#808080"
     
-    seen_colnames <- result_list$seen_colnames
+    p <- p %>%
+      add_bars(
+        data = sub,
+        x = ~xlabels,
+        y = ~mean_k,
+        name = nm,
+        marker = list(color = col),
+        
+        legendgroup = "bars",
+        legendgrouptitle = if (first_bar) list(text = "Round costs") else NULL,
+        legendrank = match(ct, stacked_vec_legend), # keep legend order the same as original stacked_vec
+        
+        customdata = ~n,
+        hovertemplate = paste0(
+          "<b>", nm, "</b><br>",
+          "Mean: %{y:.2f}k<br>",
+          "N: %{customdata}<extra></extra>"
+        )
+      )
     
-    plt$x$data[[i]] <- create_hovering(plt$x$data[[i]], df, "cost_type", stacked_vec, rev_map, xlabels_levels)
-    
+    first_bar <- FALSE
   }
   
-  plt
-}       
-
+  # --- Add satisfaction line+markers on y2 ---
+  p <- p %>%
+    add_trace(
+      data = ave,
+      x = ~xlabels,
+      y = ~ave_satisfaction,
+      type = "scatter",
+      mode = "lines+markers",
+      name = "Average total satisfaction",
+      showlegend = TRUE,             # <--- add this
+      
+      yaxis = "y2",
+      legendgroup = "line1",
+      legendgrouptitle = list(text = "Satisfaction"),
+      
+      
+      # ensure this group appears AFTER the bars
+      legendrank = length(stacked_vec_legend) + 100,
+      
+      line = list(color = "darkgreen", width = 2),
+      marker = list(color = "darkgreen", size = 7),
+      
+      hovertemplate = paste0(
+        "<b>Average total satisfaction</b><br>",
+        "%{y:.2f}<extra></extra>"
+      )
+    )
+  
+  p
+}

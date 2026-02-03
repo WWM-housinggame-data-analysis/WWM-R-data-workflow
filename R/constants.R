@@ -16,29 +16,32 @@ INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "
 
 
 # Central colour/label dictionaries (names must match cost_type in data)
-EXPENSE_BARCOLS <- c("cost_personal_measures_bought", "cost_fluvial_damage",
-                     "cost_pluvial_damage", "paid_debt", "cost_taxes",
-                     "mortgage_payment", "profit_minus_spent_savings_house_moving")
+EXPENSE_BARCOLS <- c("total_damage_costs",
+                     "cost_personal_measures_bought",
+                     "cost_house_measures_bought",
+                     "profit_minus_spent_savings_house_moving",
+                     "mortgage_payment",
+                     "paid_debt")
 
 
 fill_values_all <- c(
-  "paid_debt" = "black", #"ave_income_minus_living" = "#E1BB70", "ave_satisfaction" = "#dfaba3",
-  "cost_personal_measures_bought" = "#433E5E",
-  "profit_minus_spent_savings_house_moving" =  "#a3a3a3",
-  "mortgage_payment" = "#cccccc",
-  "cost_taxes" = "#dddddd",
-  "cost_fluvial_damage" = "#79A2C5",
-  "cost_pluvial_damage" = "#79BCC5")
+  "total_damage_costs"                          = "#79A2C5",
+  "cost_personal_measures_bought"               = "#dfaba3",
+  "cost_house_measures_bought"                  = "#433E5E",
+  "profit_minus_spent_savings_house_moving"     = "#a3a3a3",
+  "mortgage_payment"                            = "#cccccc",
+  "paid_debt"                                   = "black"
+  )
 
 
 fill_labels_all <- c(
-  "paid_debt" = "Debt", #"ave_satisfaction" = "Satisfaction", "ave_income_minus_living" = "Income - Living costs",
-  "cost_personal_measures_bought" = "Measures",
-  "profit_minus_spent_savings_house_moving" = "House profit - Spent savings",
-  "mortgage_payment" = "Mortgage",
-  "cost_taxes" = "Taxes",
-  "cost_fluvial_damage" = "River damage",
-  "cost_pluvial_damage" = "Rain damage")
+  "total_damage_costs"                          = "Damage (river + rain)",
+  "cost_personal_measures_bought"               = "Personal measures",
+  "cost_house_measures_bought"                  = "House measures",
+  "profit_minus_spent_savings_house_moving"     = "Spent savings (buying house)",
+  "mortgage_payment"                            = "Mortgage payment",
+  "paid_debt"                                   = "Paid debt"
+  )
 
 WELFARE_LABELS <- c("60k" = "Very Low",
                     "75k" = "Low",
