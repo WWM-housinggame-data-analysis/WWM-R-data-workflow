@@ -33,22 +33,33 @@ prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_r
     mutate(series = "Average total satisfaction")
   
   # stacked costs
-  plot_data <- retrieve_pivot_table(plot_data, stacked_vec)
-  summary_df <- retrieve_summary_table(plot_data, "xlabels")
+  summary_df <- retrieve_summary_table(plot_data, stacked_vec, "xlabels")
   
   # x order (critical for consistent stacking + line alignment)
-  xlevels <- if (is.factor(summary_df$xlabels)) levels(summary_df$xlabels) else unique(summary_df$xlabels)
+  bar_xlevels <- if (is.factor(summary_df$xlabels)) levels(summary_df$xlabels) else unique(summary_df$xlabels)
   
-  # keep only colors/labels for selected stacks
-  fill_values <- fill_values_all[names(fill_values_all) %in% stacked_vec]
-  fill_labels <- fill_labels_all[names(fill_labels_all) %in% stacked_vec]
+  scatter_xlevels <- if (is.factor(ave_data$xlabels)) levels(ave_data$xlabels) else unique(ave_data$xlabels)
+  
+  # Ensure ordering matches for all traces
+  df <- df %>%
+    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
+    arrange(xlabels)
+  
+  ave <- ave %>%
+    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
+    arrange(xlabels)
+  
+  # Convert bars to k for left axis # ---- ensure negatives for "spent savings" (EDIT this code to match your real cost_type) ----
+  df <- df %>%
+    mutate(
+      #mean_value = if_else(cost_type == "spent_savings", -abs(mean_value), mean_value),
+      mean_k = mean_value / K_FACTOR
+    )
   
   list(
     summary_df  = summary_df,     # has xlabels, cost_type, mean_value, n, ...
     ave_data    = ave_data,       # has xlabels, ave_satisfaction, series
     stacked_vec = stacked_vec,
-    xlevels     = xlevels,
-    fill_values = fill_values,
-    fill_labels = fill_labels
+    xlevels     = xlevels
   )
 }

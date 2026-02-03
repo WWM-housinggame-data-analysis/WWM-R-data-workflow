@@ -4,24 +4,10 @@ render_plots <- function(obj) {
   ave         <- obj$ave_data
   stacked_vec <- obj$stacked_vec
   xlevels     <- obj$xlevels
-  fill_values <- obj$fill_values
-  fill_labels <- obj$fill_labels
   
-  # Ensure ordering matches for all traces
-  df <- df %>%
-    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
-    arrange(xlabels)
-  
-  ave <- ave %>%
-    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
-    arrange(xlabels)
-  
-  # Convert bars to k for left axis # ---- ensure negatives for "spent savings" (EDIT this code to match your real cost_type) ----
-  df <- df %>%
-    mutate(
-      #mean_value = if_else(cost_type == "spent_savings", -abs(mean_value), mean_value),
-      mean_k = mean_value / K_FACTOR
-    )
+  # keep only colors/labels for selected stacks
+  fill_values <- fill_values_all[names(fill_values_all) %in% stacked_vec]
+  fill_labels <- fill_labels_all[names(fill_labels_all) %in% stacked_vec]
   
   bar_total <- df %>%
     group_by(xlabels) %>%

@@ -27,25 +27,6 @@ create_GP1_xlabels <- function(plot_data, group_col) {
   return(plot_data)
 }
 
-retrieve_average_vector <- function(plot_data, group_col, in_cols, out_cols) {
-  
-  stopifnot(length(in_cols) == length(out_cols))
-  
-  ave_data <- plot_data %>%
-    group_by(.data[[group_col]]) %>%
-    
-    summarise(
-      across(all_of(in_cols), ~ round(mean(.x, na.rm = TRUE), 2),
-             .names = paste0("{", deparse(substitute(out_cols)), "[match(.col, ", deparse(substitute(in_cols)), ")]}")
-             ),
-      .groups = "drop"
-    ) %>%
-    arrange(xlabels) %>%
-    as.data.frame()
-  
-  return(ave_data)
-}
-
 retrieve_n_table <- function(plot_data, group_col) {
   
   if (identical(group_col, "player_code")) {
@@ -62,23 +43,24 @@ retrieve_n_table <- function(plot_data, group_col) {
   return(n_data)
 }
 
-retrieve_pivot_table <- function(plot_data, stacked_vec) {
+retrieve_pivot_table <- function(plot_data, stacked_vec, stacked_name, stacked_value) {
   plot_data <- plot_data %>%
-    pivot_longer(cols = where(is.numeric), names_to = "cost_type", values_to = "cost_value") %>%
-    mutate(cost_type = factor(cost_type)) %>%
-    filter(cost_type %in% stacked_vec) %>%
+    pivot_longer(cols = where(is.numeric), names_to = stacked_name, values_to = stacked_value) %>%
+    mutate(!!stacked_name := factor(.data[[stacked_name]])) %>%
+    filter(.data[[stacked_name]] %in% stacked_vec) %>%
     droplevels() %>%
     mutate(
-      cost_type  = forcats::fct_relevel(cost_type, stacked_vec),
-      cost_value = as.numeric(gsub(",", "", as.character(cost_value))) # safe numeric
+      !!stacked_name := forcats::fct_relevel(.data[[stacked_name]], stacked_vec)
     )
   return(plot_data)
 }
 
 # Pre-aggregate: mean and count per bar segment (round_income × cost_type)
-retrieve_summary_table <- function(plot_data, group_col) {
+retrieve_summary_table <- function(plot_data, stacked_vec, group_col) {
   
-  summary_df <- plot_data %>%
+  pivoted_data <- retrieve_pivot_table(plot_data, stacked_vec, "cost_type", "cost_value")
+  
+  summary_df <- pivoted_data %>%
     group_by(across(all_of(c(group_col, "cost_type")))) %>%
     summarise(
       mean_value = round(mean(cost_value, na.rm = TRUE), 2),
@@ -89,5 +71,25 @@ retrieve_summary_table <- function(plot_data, group_col) {
   
   
   return(summary_df)
+}
+
+retrieve_average_vector <- function(plot_data, group_col, in_cols, out_cols, out_labels) {
+  
+  stopifnot(length(in_cols) == length(out_cols))
+  
+  pivoted_data <- retrieve_pivot_table(plot_data, in_cols, "scatter_type", "scatter_value")
+  
+  ave_data <- pivoted_data %>%
+    group_by(across(all_of(c(group_col, "scatter_type")))) %>%
+    
+    summarise(
+      mean_value = round(mean(scatter_value, na.rm = TRUE), 2),
+      .groups = "drop"
+    ) %>%
+    arrange(xlabels)  %>%
+    mutate(label = out_labels[out_cols]) %>%
+    as.data.frame()
+  
+  return(ave_data)
 }
 
