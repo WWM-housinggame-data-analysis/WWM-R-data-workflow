@@ -110,8 +110,8 @@ ui <- page_navbar(
                           # checkboxGroupInput and its reset
                           layout_columns(col_widths = c(9, 3),
                                          
-                                         checkboxGroupInput("cost_type", "Cost_Types:",
-                                                            choices = c("All", EXPENSE_BARCOLS),
+                                         checkboxGroupInput("bar_segment", "Cost_Types:",
+                                                            choices = c("All", names(EXPENSE_BARCOLS)),
                                                             selected = "All"),
                                          actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm")
                           )
@@ -205,14 +205,14 @@ server <- function(input, output, session) {
   # Reset only the checkboxGroupInput
   observeEvent(input$reset_cost, {
     # If your "All" is a semantic choice, reselect it:
-    updateCheckboxGroupInput(session, "cost_type", selected = "All")
+    updateCheckboxGroupInput(session, "bar_segment", selected = "All")
   })
   
   # Optional: global "Reset all filters"
   observeEvent(input$reset_all_filters, {
     updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
     updateSelectInput(session, "selected_table",      selected = "All")
-    updateCheckboxGroupInput(session, "cost_type",    selected = "All")
+    updateCheckboxGroupInput(session, "bar_segment",    selected = "All")
   })
 
   
@@ -222,8 +222,9 @@ server <- function(input, output, session) {
   
   selected_table <- reactive({filter_selected_categs(input$selected_table, required_tables())})
   
-  selected_costtypes <- reactive({filter_selected_categs(input$cost_type, EXPENSE_BARCOLS)})
+  selected_bar_segments <- reactive({filter_selected_categs(input$bar_segment, names(EXPENSE_BARCOLS))})
   
+  selected_columns <- reactive({EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments()]})
 
   # Reactive dataset grouped by the chosen color_by variable
 
@@ -231,10 +232,10 @@ server <- function(input, output, session) {
   grouped_data <- reactive({group_summary_table(income_dist_reactive(), selected_table())})
   
   
-  gg_plot <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_costtypes(), selected_table(), game_round = "All", fill_values_all, fill_labels_all)})
-  gg_plot1 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_costtypes(), selected_table(), game_round = "1", fill_values_all, fill_labels_all)})
-  gg_plot2 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_costtypes(), selected_table(), game_round = "2", fill_values_all, fill_labels_all)})
-  gg_plot3 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_costtypes(), selected_table(), game_round = "3", fill_values_all, fill_labels_all)})
+  gg_plot <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "All", fill_values_all)})
+  gg_plot1 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "1", fill_values_all)})
+  gg_plot2 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "2", fill_values_all)})
+  gg_plot3 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "3", fill_values_all)})
   
   # Connect plots
   
