@@ -43,16 +43,22 @@ retrieve_n_table <- function(plot_data, group_col) {
   return(n_data)
 }
 
-retrieve_pivot_table <- function(plot_data, stacked_vec, stacked_name, stacked_value) {
-  plot_data <- plot_data %>%
-    pivot_longer(cols = where(is.numeric), names_to = stacked_name, values_to = stacked_value) %>%
-    mutate(!!stacked_name := factor(.data[[stacked_name]])) %>%
-    filter(.data[[stacked_name]] %in% stacked_vec) %>%
+retrieve_pivot_table <- function(df, selected_columns, column_name, column_value) {
+  
+  pivoted_df <- df %>%
+    
+    pivot_longer(cols = where(is.numeric), names_to = column_name, values_to = column_value) %>%
+    
+    mutate(!!column_name := factor(.data[[column_name]])) %>%
+    
+    filter(.data[[column_name]] %in% selected_columns) %>%
+    
     droplevels() %>%
+    
     mutate(
-      !!stacked_name := forcats::fct_relevel(.data[[stacked_name]], stacked_vec)
+      !!column_name := forcats::fct_relevel(.data[[column_name]], selected_columns)
     )
-  return(plot_data)
+  return(pivoted_df)
 }
 
 # Pre-aggregate: mean and count per bar segment (round_income × cost_type)
@@ -73,23 +79,29 @@ retrieve_summary_table <- function(plot_data, stacked_vec, group_col) {
   return(summary_df)
 }
 
-retrieve_average_vector <- function(plot_data, group_col, in_cols, out_cols, out_labels) {
+retrieve_mean_table <- function(df, group_col, in_cols, out_cols) {
   
   stopifnot(length(in_cols) == length(out_cols))
   
-  pivoted_data <- retrieve_pivot_table(plot_data, in_cols, "scatter_type", "scatter_value")
+  names(in_cols) <- out_cols
   
-  ave_data <- pivoted_data %>%
-    group_by(across(all_of(c(group_col, "scatter_type")))) %>%
+  lookup <- enframe(in_cols, name = "mean_label", value = "column_name")
+  
+  pivoted_df <- retrieve_pivot_table(df, in_cols, "column_name", "column_value")
+  
+  ave_data <- pivoted_df %>%
+    group_by(across(all_of(c(group_col, "column_name")))) %>%
     
     summarise(
-      mean_value = round(mean(scatter_value, na.rm = TRUE), 2),
+      mean_value = round(mean(.data[["column_value"]], na.rm = TRUE), 2),
       .groups = "drop"
     ) %>%
-    arrange(xlabels)  %>%
-    mutate(label = out_labels[out_cols]) %>%
+    left_join(lookup, by = "column_name") %>%
+    arrange(xlabels) %>%
     as.data.frame()
   
   return(ave_data)
 }
+
+
 

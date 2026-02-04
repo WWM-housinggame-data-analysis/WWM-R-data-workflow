@@ -10,6 +10,7 @@ library(sqldf)
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(tibble)
 
 ## Load for excel manipulation
 library(writexl)

@@ -8,32 +8,31 @@ source(here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here(file.path(FUNCTION_PATH, "plot-data.R")))
 
 # Reactive plot based on user input
-prepare_visualize_GP1 <- function(plot_data, stacked_vec, selected_table, game_round, fill_values_all, fill_labels_all) {
+prepare_visualize_GP1 <- function(df, stacked_vec, selected_table, game_round, fill_values_all, fill_labels_all) {
   
   # Guard against empty states
-  req(nrow(plot_data) > 0, length(stacked_vec) > 0)
+  req(nrow(df) > 0, length(stacked_vec) > 0)
   
-  group_col <- update_group_col(plot_data, selected_table)
+  group_col <- update_group_col(df, selected_table)
   
   # Build xlabels on the row-level data
   if (identical(group_col, "player_code")) {
     
-    plot_data <- plot_data %>% filter(group_name %in% selected_table) %>% droplevels()
+    df <- df %>% filter(group_name %in% selected_table) %>% droplevels()
   }
   
-  plot_data <- create_GP1_xlabels(plot_data, group_col)
+  df <- create_GP1_xlabels(df, group_col)
   
   if (game_round %in% INTERM_ROUNDS) {
     
-    plot_data <- plot_data %>% filter(groupround_round_number %in% game_round) %>% droplevels()
+    df <- df %>% filter(groupround_round_number %in% game_round) %>% droplevels()
   }
   
   # satisfaction series
-  ave_data <- retrieve_average_vector(plot_data, "xlabels", "satisfaction_total", "ave_satisfaction") %>%
-    mutate(series = "Average total satisfaction")
+  ave_data <- retrieve_mean_table(df, "xlabels", "satisfaction_total", "Average total satisfaction")
   
   # stacked costs
-  summary_df <- retrieve_summary_table(plot_data, stacked_vec, "xlabels")
+  summary_df <- retrieve_summary_table(df, stacked_vec, "xlabels")
   
   # x order (critical for consistent stacking + line alignment)
   bar_xlevels <- if (is.factor(summary_df$xlabels)) levels(summary_df$xlabels) else unique(summary_df$xlabels)
