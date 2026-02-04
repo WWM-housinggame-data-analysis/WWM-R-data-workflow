@@ -28,6 +28,7 @@ calculate_bar_mins <- function(bar_df, group_col, y_col) {
       bar_min = sum(.data[[y_col]]),
       .groups    = "drop"
     ) %>%
+    ungroup() %>%
     pull(bar_min)
   
   return(bar_mins)
