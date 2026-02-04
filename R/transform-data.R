@@ -27,20 +27,20 @@ create_GP1_xlabels <- function(plot_data, group_col) {
   return(plot_data)
 }
 
-retrieve_n_table <- function(plot_data, group_col) {
+retrieve_n_table <- function(df, group_col, id_col = "player_code") {
   
-  if (identical(group_col, "player_code")) {
-    n_data <- plot_data %>%
-      select(player_code) %>%
+  if (identical(group_col, id_col)) {
+    n_df <- df %>%
+      select(all_of(id_col)) %>%
       summarise(N = n())
     
   } else {
-    n_data <- plot_data %>%
-      select(all_of(c(group_col, "player_code"))) %>%
+    n_df <- df %>%
+      select(all_of(c(group_col, id_col))) %>%
       group_by(.data[[group_col]]) %>%
       summarise(N = n())
   }
-  return(n_data)
+  return(n_df)
 }
 
 retrieve_pivot_table <- function(df, selected_columns, column_name, column_value) {
@@ -61,24 +61,6 @@ retrieve_pivot_table <- function(df, selected_columns, column_name, column_value
   return(pivoted_df)
 }
 
-# Pre-aggregate: mean and count per bar segment (round_income × cost_type)
-retrieve_summary_table <- function(plot_data, stacked_vec, group_col) {
-  
-  pivoted_data <- retrieve_pivot_table(plot_data, stacked_vec, "cost_type", "cost_value")
-  
-  summary_df <- pivoted_data %>%
-    group_by(across(all_of(c(group_col, "cost_type")))) %>%
-    summarise(
-      mean_value = round(mean(cost_value, na.rm = TRUE), 2),
-      n          = n(),
-      .groups    = "drop"
-    ) %>%
-    as.data.frame()
-  
-  
-  return(summary_df)
-}
-
 retrieve_mean_table <- function(df, group_col, in_cols, out_cols) {
   
   stopifnot(length(in_cols) == length(out_cols))
@@ -89,19 +71,19 @@ retrieve_mean_table <- function(df, group_col, in_cols, out_cols) {
   
   pivoted_df <- retrieve_pivot_table(df, in_cols, "column_name", "column_value")
   
-  ave_data <- pivoted_df %>%
+  mean_df <- pivoted_df %>%
     group_by(across(all_of(c(group_col, "column_name")))) %>%
     
     summarise(
       mean_value = round(mean(.data[["column_value"]], na.rm = TRUE), 2),
+      N          = n(),
       .groups = "drop"
     ) %>%
     left_join(lookup, by = "column_name") %>%
     arrange(xlabels) %>%
     as.data.frame()
   
-  return(ave_data)
+  return(mean_df)
 }
-
 
 

@@ -8,10 +8,10 @@ source(here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here(file.path(FUNCTION_PATH, "plot-data.R")))
 
 # Reactive plot based on user input
-prepare_visualize_GP1 <- function(df, stacked_vec, selected_table, game_round, fill_values_all, fill_labels_all) {
+prepare_visualize_GP1 <- function(df, selected_columns, selected_table, game_round, fill_values_all) {
   
   # Guard against empty states
-  req(nrow(df) > 0, length(stacked_vec) > 0)
+  req(nrow(df) > 0, length(selected_columns) > 0)
   
   group_col <- update_group_col(df, selected_table)
   
@@ -29,36 +29,43 @@ prepare_visualize_GP1 <- function(df, stacked_vec, selected_table, game_round, f
   }
   
   # satisfaction series
-  ave_data <- retrieve_mean_table(df, "xlabels", "satisfaction_total", "Average total satisfaction")
+  scatter_df <- retrieve_mean_table(df, "xlabels", "satisfaction_total", "Average total satisfaction")
   
   # stacked costs
-  summary_df <- retrieve_summary_table(df, stacked_vec, "xlabels")
+  
+  selected_bar_segments <- names(EXPENSE_BARCOLS)[EXPENSE_BARCOLS %in% selected_columns]
+  
+  bar_df <- retrieve_mean_table(df, "xlabels", selected_columns, selected_bar_segments)
   
   # x order (critical for consistent stacking + line alignment)
-  bar_xlevels <- if (is.factor(summary_df$xlabels)) levels(summary_df$xlabels) else unique(summary_df$xlabels)
+  bar_xlevels <- if (is.factor(bar_df$xlabels)) levels(bar_df$xlabels) else unique(bar_df$xlabels)
   
-  scatter_xlevels <- if (is.factor(ave_data$xlabels)) levels(ave_data$xlabels) else unique(ave_data$xlabels)
+  scatter_xlevels <- if (is.factor(scatter_df$xlabels)) levels(scatter_df$xlabels) else unique(scatter_df$xlabels)
+  
+  stopifnot(identical(bar_xlevels, scatter_xlevels))
+  
+  xlevels <- scatter_xlevels
   
   # Ensure ordering matches for all traces
-  df <- df %>%
+  bar_df <- bar_df %>%
     mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
     arrange(xlabels)
   
-  ave <- ave %>%
+  scatter_df <- scatter_df %>%
     mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
     arrange(xlabels)
   
   # Convert bars to k for left axis # ---- ensure negatives for "spent savings" (EDIT this code to match your real cost_type) ----
-  df <- df %>%
+  bar_df <- bar_df %>%
     mutate(
       #mean_value = if_else(cost_type == "spent_savings", -abs(mean_value), mean_value),
       mean_k = mean_value / K_FACTOR
     )
   
   list(
-    summary_df  = summary_df,     # has xlabels, cost_type, mean_value, n, ...
-    ave_data    = ave_data,       # has xlabels, ave_satisfaction, series
-    stacked_vec = stacked_vec,
-    xlevels     = xlevels
+    bar_df                = bar_df,     # has xlabels, cost_type, mean_value, n, ...
+    scatter_df            = scatter_df,       # has xlabels, ave_satisfaction, series
+    selected_bar_segments = selected_bar_segments,
+    xlevels               = xlevels
   )
 }

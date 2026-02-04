@@ -1,15 +1,21 @@
+# Set all default variables or global options and all the path variables at the top of the code.
+
+FUNCTION_PATH <- file.path("R")
+
+# Load required functions
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+
 render_plots <- function(obj) {
   
-  df          <- obj$summary_df
-  ave         <- obj$ave_data
-  stacked_vec <- obj$stacked_vec
-  xlevels     <- obj$xlevels
+  bar_df                <- obj$bar_df
+  scatter_df            <- obj$scatter_df
+  selected_bar_segments <- obj$selected_bar_segments
+  xlevels               <- obj$xlevels
   
   # keep only colors/labels for selected stacks
-  fill_values <- fill_values_all[names(fill_values_all) %in% stacked_vec]
-  fill_labels <- fill_labels_all[names(fill_labels_all) %in% stacked_vec]
+  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
   
-  bar_total <- df %>%
+  bar_total <- bar_df %>%
     group_by(xlabels) %>%
     summarise(
       colsum = sum(mean_k),
@@ -18,7 +24,7 @@ render_plots <- function(obj) {
     as.data.frame
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
-  y_min <- min(0, df$mean_k, na.rm = TRUE)
+  y_min <- min(0, bar_df$mean_k, na.rm = TRUE)
   y_max <- max(0, bar_total$colsum, na.rm = TRUE)
   
   # Start plotly
@@ -78,33 +84,32 @@ render_plots <- function(obj) {
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
   
-  stacked_vec_legend <- stacked_vec              # desired legend order (unchanged)
-  stacked_vec_stack  <- rev(stacked_vec)         # stacking order (reversed)
+  legend_label_order <- selected_bar_segments             # desired legend order (unchanged)
+  legend_label_match  <- rev(selected_bar_segments)         # stacking order (reversed)
   
   # --- Add stacked bar traces ---
-  for (ct in stacked_vec_stack) {
+  for (label in legend_label_match) {
     
-    sub <- df %>% filter(cost_type == ct)
+    segment_df <- bar_df %>% filter(mean_label == label)
     
     # label + color fallbacks
-    nm  <- fill_labels[[ct]] %||% ct
-    col <- fill_values[[ct]] %||% "#808080"
+    bar_color <- fill_values_all[names(fill_values_all) %in% label] %||% "#808080"
     
     p <- p %>%
       add_bars(
-        data = sub,
+        data = segment_df,
         x = ~xlabels,
         y = ~mean_k,
-        name = nm,
-        marker = list(color = col),
+        name = label,
+        marker = list(color = bar_color),
         
         legendgroup = "bars",
         legendgrouptitle = if (first_bar) list(text = "Round costs") else NULL,
-        legendrank = match(ct, stacked_vec_legend), # keep legend order the same as original stacked_vec
+        legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
         
-        customdata = ~n,
+        customdata = ~N,
         hovertemplate = paste0(
-          "<b>", nm, "</b><br>",
+          "<b>", label, "</b><br>",
           "Mean: %{y:.2f}k<br>",
           "N: %{customdata}<extra></extra>"
         )
@@ -114,32 +119,46 @@ render_plots <- function(obj) {
   }
   
   # --- Add satisfaction line+markers on y2 ---
-  p <- p %>%
-    add_trace(
-      data = ave,
-      x = ~xlabels,
-      y = ~ave_satisfaction,
-      type = "scatter",
-      mode = "lines+markers",
-      name = "Average total satisfaction",
-      showlegend = TRUE,             # <--- add this
-      
-      yaxis = "y2",
-      legendgroup = "line1",
-      legendgrouptitle = list(text = "Satisfaction"),
-      
-      
-      # ensure this group appears AFTER the bars
-      legendrank = length(stacked_vec_legend) + 100,
-      
-      line = list(color = "darkgreen", width = 2),
-      marker = list(color = "darkgreen", size = 7),
-      
-      hovertemplate = paste0(
-        "<b>Average total satisfaction</b><br>",
-        "%{y:.2f}<extra></extra>"
-      )
-    )
   
+  for (label in unique(scatter_df$mean_label)) {
+    
+    line_df <- scatter_df %>% filter(mean_label == label)
+    
+    # label + color fallbacks
+    line_color <- "darkgreen"
+    line_width <- 2
+    marker_size <- 7
+    legend_title <- "Satisfaction"
+    
+    p <- p %>%
+      add_trace(
+        data = line_df,
+        x = ~xlabels,
+        y = ~mean_value,
+        type = "scatter",
+        mode = "lines+markers",
+        name = label,
+        showlegend = TRUE,             # <--- add this
+        
+        yaxis = "y2",
+        legendgroup = "line1",
+        legendgrouptitle = list(text = legend_title),
+        
+        
+        # ensure this group appears AFTER the bars
+        legendrank = length(unique(scatter_df$mean_label)) + 100,
+        
+        line = list(color = line_color, width = line_width),
+        marker = list(color = line_color, size = marker_size),
+        
+        customdata = ~N,
+        hovertemplate = paste0(
+          "<b>", label, "</b><br>",
+          "Mean: %{y:.2f}k<br>",
+          "N: %{customdata}<extra></extra>"
+        )
+      )
+  }
+
   p
 }
