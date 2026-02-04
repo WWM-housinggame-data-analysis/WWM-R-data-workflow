@@ -6,7 +6,7 @@ FUNCTION_PATH <- file.path("R")
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 source(here(file.path(FUNCTION_PATH, "transform-data.R")))
 
-group_summary_table <- function(df, selected_table) {
+retrieve_summary_table <- function(df, selected_table) {
   
   group_col <- update_group_col(df, selected_table)
   

@@ -5,27 +5,65 @@ FUNCTION_PATH <- file.path("R")
 # Load required functions
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 
-render_plots <- function(obj) {
+calculate_bar_maxs <- function(bar_df, group_col, y_col) {
+  bar_maxs <- bar_df %>%
+    filter(y_col > 0) %>%
+    droplevels() %>%
+    group_by(.data[[group_col]]) %>%
+    summarise(
+      bar_max = sum(.data[[y_col]]),
+      .groups    = "drop"
+    ) %>%
+    pull(bar_max)
   
-  bar_df                <- obj$bar_df
-  scatter_df            <- obj$scatter_df
-  selected_bar_segments <- obj$selected_bar_segments
-  xlevels               <- obj$xlevels
+  return(bar_maxs)
+}
+
+calculate_bar_mins <- function(bar_df, group_col, y_col) {
+  bar_mins <- bar_df %>%
+    filter(y_col < 0) %>%
+    droplevels() %>%
+    group_by(.data[[group_col]]) %>%
+    summarise(
+      bar_min = sum(.data[[y_col]]),
+      .groups    = "drop"
+    ) %>%
+    pull(bar_min)
+  
+  return(bar_mins)
+}
+
+calculate_y_min <- function(bar_df, group_col, y_col) {
+  
+  bar_mins <- calculate_bar_mins(bar_df, group_col, y_col)
+  
+  y_min <- min(0, bar_mins, na.rm = TRUE) + 0.05 * min(0, bar_mins, na.rm = TRUE)
+  
+  return(y_min)
+}
+
+calculate_y_max <- function(bar_df, group_col, y_col) {
+  
+  bar_maxs <- calculate_bar_maxs(bar_df, group_col, y_col)
+  
+  y_max <- max(bar_maxs, na.rm = TRUE) + 0.05 * max(bar_maxs, na.rm = TRUE)
+  
+  return(y_max)
+}
+
+create_GP1_plotly <- function(plot_data) {
+  
+  bar_df                <- plot_data$bar_df
+  scatter_df            <- plot_data$scatter_df
+  selected_bar_segments <- plot_data$selected_bar_segments
+  xlevels               <- plot_data$xlevels
   
   # keep only colors/labels for selected stacks
   bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
   
-  bar_total <- bar_df %>%
-    group_by(xlabels) %>%
-    summarise(
-      colsum = sum(mean_k),
-      .groups    = "drop"
-    ) %>%
-    as.data.frame
-  
   # compute a symmetric-ish range so negatives are visible (optional but helps)
-  y_min <- min(0, bar_df$mean_k, na.rm = TRUE)
-  y_max <- max(0, bar_total$colsum, na.rm = TRUE)
+  bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
+  bar_y_max <- calculate_y_max(bar_df, "xlabels", "mean_k")
   
   # Start plotly
   p <- plot_ly() %>%
@@ -48,7 +86,7 @@ render_plots <- function(obj) {
       yaxis = list(
         title    = "Game Currency (k)",
         rangemode = "normal",
-        range     = c(y_min, y_max),
+        range     = c(bar_y_min, bar_y_max),
         showgrid  = TRUE,
         gridcolor = "rgba(0,0,0,0.06)",
         gridwidth = 1,

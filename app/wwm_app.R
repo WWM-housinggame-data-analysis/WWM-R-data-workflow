@@ -44,7 +44,7 @@ source(here(file.path(FUNCTION_PATH, "plot-data.R")))
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
 source(here(file.path(FUNCTION_PATH, "interact-data.R")))
 source(here(file.path(FUNCTION_PATH, "render-plots.R")))
-source(here(file.path(FUNCTION_PATH, "prepare-visualize-GP1.R")))
+source(here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
 
 
 # Data Workflow ----
@@ -216,9 +216,9 @@ server <- function(input, output, session) {
   })
 
   
-  income_dist_reactive <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
+  income_dist_df <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
   
-  required_tables <- reactive({as.character(unique(income_dist_reactive()$group_name))})
+  required_tables <- reactive({as.character(unique(income_dist_df()$group_name))})
   
   selected_table <- reactive({filter_selected_categs(input$selected_table, required_tables())})
   
@@ -226,48 +226,31 @@ server <- function(input, output, session) {
   
   selected_columns <- reactive({EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments()]})
 
-  # Reactive dataset grouped by the chosen color_by variable
-
-  
-  grouped_data <- reactive({group_summary_table(income_dist_reactive(), selected_table())})
+  summary_df <- reactive({retrieve_summary_table(income_dist_df(), selected_table())})
   
   
-  gg_plot <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "All", fill_values_all)})
-  gg_plot1 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "1", fill_values_all)})
-  gg_plot2 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "2", fill_values_all)})
-  gg_plot3 <- reactive({prepare_visualize_GP1(income_dist_reactive(), selected_columns(), selected_table(), game_round = "3", fill_values_all)})
+  GP1_plotall_data <- reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "All", fill_values_all) })
+  GP1_plot1_data <- reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "1", fill_values_all) })
+  GP1_plot2_data <- reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "2", fill_values_all) })
+  GP1_plot3_data <- reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "3", fill_values_all) })
   
   # Connect plots
-  
-  output$debug <- renderPrint({
-    unique(vapply(ggplotly(gg_plot$plot)$plt$x$data, function(tr) tr$name %||% "", character(1)))
-  })
-  
-  output$plot_all <- renderPlotly({render_plots(gg_plot())})
-  output$plot_r1  <- renderPlotly({render_plots(gg_plot1())})
-  output$plot_r2  <- renderPlotly({render_plots(gg_plot2())})
-  output$plot_r3  <- renderPlotly({render_plots(gg_plot3())})
-  
-  
-  # Optional: inspect reactive rows
-  output$debug <- renderPrint({
-    paste(
-      paste("Rows:", nrow(income_dist_reactive())),
-      paste("Costs:", length(selected_table())),
-      sep = "\n")
-  })
+  output$plot_all <- renderPlotly({ create_GP1_plotly(GP1_plotall_data()) })
+  output$plot_r1  <- renderPlotly({ create_GP1_plotly(GP1_plot1_data()) })
+  output$plot_r2  <- renderPlotly({ create_GP1_plotly(GP1_plot2_data()) })
+  output$plot_r3  <- renderPlotly({ create_GP1_plotly(GP1_plot3_data()) })
   
   # Summaries (update based on color_by choice)
-  output$summary_all <- renderPrint({ summary(grouped_data()) })
-  output$summary_r1  <- renderPrint({ summary(grouped_data()) })
-  output$summary_r2  <- renderPrint({ summary(grouped_data()) })
-  output$summary_r3  <- renderPrint({ summary(grouped_data()) })
+  output$summary_all <- renderPrint({ summary(summary_df()) })
+  output$summary_r1  <- renderPrint({ summary(summary_df()) })
+  output$summary_r2  <- renderPrint({ summary(summary_df()) })
+  output$summary_r3  <- renderPrint({ summary(summary_df()) })
   
   # Tables (update based on color_by choice)
-  output$table_all <- renderTable({ grouped_data() })
-  output$table_r1  <- renderTable({ grouped_data() })
-  output$table_r2  <- renderTable({ grouped_data() })
-  output$table_r3  <- renderTable({ grouped_data() })
+  output$table_all <- renderTable({ summary_df() })
+  output$table_r1  <- renderTable({ summary_df() })
+  output$table_r2  <- renderTable({ summary_df() })
+  output$table_r3  <- renderTable({ summary_df() })
   
   observe({
     updateSelectInput(session, "selected_table",
