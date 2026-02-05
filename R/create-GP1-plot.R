@@ -52,28 +52,23 @@ calculate_y_max <- function(bar_df, group_col, y_col) {
   return(y_max)
 }
 
-create_GP1_plotly <- function(plot_data) {
+signal_newline <- function(in_string, nl_char) {
+  gsub(nl_char, "<br>", in_string)
+}
+
+create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_title = NA, nl_char = " - ") {
   
-  bar_df                <- plot_data$bar_df
-  scatter_df            <- plot_data$scatter_df
-  selected_bar_segments <- plot_data$selected_bar_segments
-  xlevels               <- plot_data$xlevels
+  xtitle <- signal_newline(xtitle, nl_char)
+  y_title <- signal_newline(y_title, nl_char)
+  y2_title <- ifelse(is.na(y2_title), NA, signal_newline(y2_title, " - "))
   
-  # keep only colors/labels for selected stacks
-  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
-  
-  # compute a symmetric-ish range so negatives are visible (optional but helps)
-  bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
-  bar_y_max <- calculate_y_max(bar_df, "xlabels", "mean_k")
-  
-  # Start plotly
-  p <- plot_ly() %>%
+  out_plot <- plot_ly() %>%
     layout(
       barmode   = "relative",
       hovermode = "closest",
       
       xaxis = list(
-        title         = "Round income (k)<br>Players per class",
+        title         = xtitle,
         categoryorder = "array",
         categoryarray = xlevels,
         
@@ -85,24 +80,15 @@ create_GP1_plotly <- function(plot_data) {
       ),
       
       yaxis = list(
-        title    = "Game Currency (k)",
+        title    = y_title,
         rangemode = "normal",
-        range     = c(bar_y_min, bar_y_max),
+        range     = y_axis_range,
         showgrid  = TRUE,
         gridcolor = "rgba(0,0,0,0.06)",
         gridwidth = 1,
         zeroline  = TRUE,
         zerolinecolor = "rgba(0,0,0,0.25)",
         zerolinewidth = 1
-      ),
-      
-      yaxis2 = list(
-        title     = "Average total satisfaction",
-        overlaying = "y",
-        side      = "right",
-        rangemode = "tozero",
-        showgrid  = FALSE,
-        zeroline  = FALSE
       ),
       
       # (iv) legend position near top/right (over/near y2 title)
@@ -120,6 +106,26 @@ create_GP1_plotly <- function(plot_data) {
       
     )
   
+  if (is.na(y2_title) == FALSE) {
+    
+    out_plot <- out_plot %>%
+      layout(
+        yaxis2 = list(
+          title     = y2_title,
+          overlaying = "y",
+          side      = "right",
+          rangemode = "tozero",
+          showgrid  = FALSE,
+          zeroline  = FALSE
+        )
+      )
+  }
+  
+  return(out_plot)
+}
+
+add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
+  
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
   
@@ -134,7 +140,7 @@ create_GP1_plotly <- function(plot_data) {
     # label + color fallbacks
     bar_color <- fill_values_all[names(fill_values_all) %in% label] %||% "#808080"
     
-    p <- p %>%
+    out_plot <- out_plot %>%
       add_bars(
         data = segment_df,
         x = ~xlabels,
@@ -143,7 +149,7 @@ create_GP1_plotly <- function(plot_data) {
         marker = list(color = bar_color),
         
         legendgroup = "bars",
-        legendgrouptitle = if (first_bar) list(text = "Round costs") else NULL,
+        legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
         legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
         
         customdata = ~N,
@@ -157,19 +163,23 @@ create_GP1_plotly <- function(plot_data) {
     first_bar <- FALSE
   }
   
+  return(out_plot)
+}
+
+add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
   # --- Add satisfaction line+markers on y2 ---
+  
+  # label + color fallbacks
+  line_color <- "darkgreen"
+  line_width <- 2
+  marker_size <- 7
   
   for (label in unique(scatter_df$mean_label)) {
     
     line_df <- scatter_df %>% filter(mean_label == label)
     
-    # label + color fallbacks
-    line_color <- "darkgreen"
-    line_width <- 2
-    marker_size <- 7
-    legend_title <- "Satisfaction"
     
-    p <- p %>%
+    out_plot <- out_plot %>%
       add_trace(
         data = line_df,
         x = ~xlabels,
@@ -181,7 +191,7 @@ create_GP1_plotly <- function(plot_data) {
         
         yaxis = "y2",
         legendgroup = "line1",
-        legendgrouptitle = list(text = legend_title),
+        legendgrouptitle = list(text = scatter_legend_title),
         
         
         # ensure this group appears AFTER the bars
@@ -198,6 +208,37 @@ create_GP1_plotly <- function(plot_data) {
         )
       )
   }
+  
+  return(out_plot)
+}
 
-  p
+
+create_GP1_plotly <- function(plot_data) {
+  
+  bar_df                <- plot_data$bar_df
+  scatter_df            <- plot_data$scatter_df
+  selected_bar_segments <- plot_data$selected_bar_segments
+  xlevels               <- plot_data$xlevels
+  
+  # keep only colors/labels for selected stacks
+  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
+  
+  # compute a symmetric-ish range so negatives are visible (optional but helps)
+  bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
+  bar_y_max <- calculate_y_max(bar_df, "xlabels", "mean_k")
+  
+  # Start plotly
+  
+  GP1_plot <- create_plotly_layout("Round income (k) - Players per class",
+                                   xlevels,
+                                   "Game Currency (k)",
+                                   c(bar_y_min, bar_y_max),
+                                   "Average total satisfaction", " - ")
+  
+  GP1_plot <- add_bar_data(GP1_plot, bar_df, selected_bar_segments, "Round costs") 
+  
+  
+  GP1_plot <- add_scatter_data(GP1_plot, scatter_df, "Satisfaction") 
+  
+  GP1_plot
 }
