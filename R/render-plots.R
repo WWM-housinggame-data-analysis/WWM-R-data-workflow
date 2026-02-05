@@ -7,7 +7,7 @@ source(here(file.path(FUNCTION_PATH, "constants.R")))
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
-    filter(y_col > 0) %>%
+    filter(.data[[y_col]] > 0) %>%
     droplevels() %>%
     group_by(.data[[group_col]]) %>%
     summarise(
@@ -21,7 +21,7 @@ calculate_bar_maxs <- function(bar_df, group_col, y_col) {
 
 calculate_bar_mins <- function(bar_df, group_col, y_col) {
   bar_mins <- bar_df %>%
-    filter(y_col < 0) %>%
+    filter(.data[[y_col]] < 0) %>%
     droplevels() %>%
     group_by(.data[[group_col]]) %>%
     summarise(
@@ -30,7 +30,7 @@ calculate_bar_mins <- function(bar_df, group_col, y_col) {
     ) %>%
     ungroup() %>%
     pull(bar_min)
-  
+
   return(bar_mins)
 }
 
@@ -108,7 +108,7 @@ create_GP1_plotly <- function(plot_data) {
       # (iv) legend position near top/right (over/near y2 title)
       
       legend = list(
-        x = 1.10, y = 1.08,          # moved left (inside/closer to plot)
+        x = 1.20, y = 1.08,          # moved left (inside/closer to plot)
         xanchor = "left",           # anchor from right edge so it pulls inward
         yanchor = "top",
         bgcolor = "rgba(255,255,255,0.65)",
@@ -116,7 +116,7 @@ create_GP1_plotly <- function(plot_data) {
         tracegroupgap = 12
       ),
       
-      margin = list(r = 240, t = 60)  # smaller right margin since legend moved left
+      margin = list(r = 280, t = 60)  # smaller right margin since legend moved left
       
     )
   

@@ -131,7 +131,7 @@ ui <- page_navbar(
         
       ),
       
-      mainPanel(
+      mainPanel(width = 10,
         accordion(
           open = c("All Rounds"),
           accordion_panel(

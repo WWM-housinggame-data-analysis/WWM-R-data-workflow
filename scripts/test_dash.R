@@ -8,7 +8,7 @@ selected_bar_segments <- filter_selected_categs("All", names(EXPENSE_BARCOLS))
 
 selected_columns <- EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments]
 
-grouped_data <-group_summary_table(income_dist_df, selected_table)
+grouped_data <- retrieve_summary_table(income_dist_df, selected_table)
 
 plot_data <- prepare_GP1_data(income_dist_df, selected_columns, selected_table, game_round = "All", fill_values_all)
 
