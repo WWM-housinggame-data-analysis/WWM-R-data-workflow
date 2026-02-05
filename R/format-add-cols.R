@@ -8,9 +8,9 @@ source(here(file.path(FUNCTION_PATH, "constants.R")))
 
 TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
 
-PREV_COST_COLS <- c("cost_house_measures_bought", "cost_personal_measures_bought")
+CALCULATED_COLS <- c("calculated_costs_personal_measures", "calculated_costs_house_measures")
 
-REACT_COST_COLS <- c("calculated_costs_personal_measures", "calculated_costs_house_measures")
+names(CALCULATED_COLS) <- c("cost_house_measures_bought", "cost_personal_measures_bought")
 
 ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
                    "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
@@ -18,12 +18,33 @@ ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house
 
 DF_NAME <- "income_dist_df"
 
-report_missing_cols <- function(df, cols) {
-  if (any(cols %in% names(df)) == FALSE) {
-    stop(paste("All expected collumns", paste(cols[cols %in% names(df) == FALSE], collapse = ", "), "missing in", DF_NAME))
-  } else if (all(cols %in% names(df)) == FALSE) {
-    warning(paste("Collumns", paste(cols[cols %in% names(df) == FALSE], collapse = ", "), "missing in", DF_NAME))
+report_missing_cols <- function(df, in_cols, out_cols) {
+  
+  any_col <- TRUE
+  
+  if (any(in_cols %in% names(df)) == FALSE) {
+    
+    warning(paste0("(All) expected collumn(s) ",
+                   paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
+                   " missing in ", DF_NAME, ". Column(s) ", 
+                   paste(out_cols, collapse = ", "),
+                   " cannot be added to this dataframe."
+                   )
+            )
+    
+    any_col <- FALSE
+            
+  } else if (all(in_cols %in% names(df)) == FALSE) {
+    
+    warning(paste0("Expected Collumn(s) ",
+                   paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
+                   " missing in ", DF_NAME, ". They will not be used in Calculating collumn(s) ",
+                   paste(out_cols, collapse = ", "), "."
+                   )
+            )
   }
+  
+  return(any_col)
 }
 
 # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
@@ -99,12 +120,20 @@ retrieve_housemeasure_cumulative <- function(housemeasure) {
 
 calculate_costs_measures_difference <- function(income_dist_df) {
   
-  report_missing_cols(income_dist_df, PREV_COST_COLS)
-  report_missing_cols(income_dist_df, REACT_COST_COLS)
+  any_col <- report_missing_cols(income_dist_df, CALCULATED_COLS, "calculated_costs_measures_difference")
+  any_col <- any_col * report_missing_cols(income_dist_df, names(CALCULATED_COLS), "calculated_costs_measures_difference")
   
-  income_dist_df[, "calculated_costs_measures_difference"] <-
-    rowSums(income_dist_df[names(income_dist_df) %in% PREV_COST_COLS], na.rm = TRUE) -
-    rowSums(income_dist_df[names(income_dist_df) %in% REACT_COST_COLS], na.rm = TRUE)
+  if(any_col) {
+    
+    col_cross <- as.logical(names(CALCULATED_COLS) %in% names(income_dist_df) * names(CALCULATED_COLS) %in% names(income_dist_df))
+    
+    calc_cols <- CALCULATED_COLS[col_cross]
+    db_cols <- names(CALCULATED_COLS)[col_cross]
+    
+    income_dist_df[, "calculated_costs_measures_difference"] <-
+      rowSums(income_dist_df[names(income_dist_df) %in% db_cols], na.rm = TRUE) -
+      rowSums(income_dist_df[names(income_dist_df) %in% calc_cols], na.rm = TRUE)
+  }
   
   return(income_dist_df)
 }
@@ -114,13 +143,15 @@ calculate_costs_measures_difference <- function(income_dist_df) {
 
 calculate_total_damage_costs <- function(income_dist_df) {
   
-  report_missing_cols(income_dist_df, TYPE_COST_COLS)
+  any_col <- report_missing_cols(income_dist_df, TYPE_COST_COLS, "total_damage_costs")
   
-  income_dist_df[,"total_damage_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% TYPE_COST_COLS], na.rm = TRUE)
+  if(any_col) {
+    income_dist_df[,"total_damage_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% TYPE_COST_COLS], na.rm = TRUE)
+  }
   
   return(income_dist_df)
 }
-  
+
 
 # Calculate the round costs to check the spendable income
 # "paid_debt" not used in the calculations because is taken already when the spendable income comes as a negative value
@@ -128,9 +159,11 @@ calculate_total_damage_costs <- function(income_dist_df) {
 
 calculate_total_costs <- function(income_dist_df) {
   
-  report_missing_cols(income_dist_df, ALL_COST_COLS)
+  any_col <- report_missing_cols(income_dist_df, ALL_COST_COLS, "calculated_costs")
   
-  income_dist_df[, "calculated_costs"] <- rowSums(income_dist_df[, ALL_COST_COLS], na.rm = TRUE) 
+  if(any_col) {
+    income_dist_df[, "calculated_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% ALL_COST_COLS], na.rm = TRUE) 
+  }
   
   return(income_dist_df)
 }

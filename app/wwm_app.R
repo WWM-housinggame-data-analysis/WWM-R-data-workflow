@@ -66,8 +66,8 @@ names(gamesession_paths) <- gamesession_names
 
 ui <- page_navbar(
   title = "WhereWeMove Dashboard",
-  bg = "#2D89C8",
-  inverse = TRUE,
+  navbar_options = navbar_options(bg = "#2D89C8",
+                                  theme = "dark"),
   
   nav_panel(
     title = "Game Play",
