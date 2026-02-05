@@ -23,25 +23,18 @@ EXPENSE_BARCOLS <- c("total_damage_costs",
                      "mortgage_payment",
                      "paid_debt")
 
-
-fill_values_all <- c(
-  "total_damage_costs"                          = "#79A2C5",
-  "cost_personal_measures_bought"               = "#dfaba3",
-  "cost_house_measures_bought"                  = "#433E5E",
-  "profit_minus_spent_savings_house_moving"     = "#a3a3a3",
-  "mortgage_payment"                            = "#cccccc",
-  "paid_debt"                                   = "black"
-  )
+names(EXPENSE_BARCOLS) <- c("Damage (river + rain)",
+                            "Personal measures",
+                            "House measures",
+                            "Spent savings (buying house)",
+                            "Mortgage payment",
+                            "Paid debt")
 
 
-fill_labels_all <- c(
-  "total_damage_costs"                          = "Damage (river + rain)",
-  "cost_personal_measures_bought"               = "Personal measures",
-  "cost_house_measures_bought"                  = "House measures",
-  "profit_minus_spent_savings_house_moving"     = "Spent savings (buying house)",
-  "mortgage_payment"                            = "Mortgage payment",
-  "paid_debt"                                   = "Paid debt"
-  )
+fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
+
+names(fill_values_all) <- names(EXPENSE_BARCOLS)
+
 
 WELFARE_LABELS <- c("60k" = "Very Low",
                     "75k" = "Low",
