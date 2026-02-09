@@ -1,56 +1,80 @@
 # Load necessary libraries ----
+
+## Load for handling file location
+library(here)
+
+## Load importing/exporting data
 library(readxl)
 library(readr)
 library(openxlsx)
-
-## Load for database manipulation
-library(sqldf)
+library(writexl)
 
 ## Load for data manipulation
+library(sqldf)
 library(dplyr)
 library(stringr)
 library(tidyr)
 library(tibble)
 
-## Load for excel manipulation
-library(writexl)
-
 ## Load for data visualisation
 library(ggplot2)
 library(ggtext)
-
-library(here)
 library(shiny)
 library(bslib)
 library(plotly)
 
-# Set defaults ----
-# Set all default variables or global options and all the path variables at the top of the code.
 
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
+
+## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
+
+## Load all default variables or global options. Please check this file for visual check loaded variables 
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+
 
 # Source files ----
 
-# Get the path of the current script
-## when you open Rstudio by clinking on .Rproj, default working directory is folder where .Rproj is stored
-getwd()
+## Load required functions
 
-# Load required functions
-source(here(file.path(FUNCTION_PATH, "constants.R")))
+### Load functions required for listing, uploading and exporting data
 source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
+
+### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
-source(here(file.path(FUNCTION_PATH, "transform-data.R")))
-source(here(file.path(FUNCTION_PATH, "plot-data.R")))
+
+### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
-source(here(file.path(FUNCTION_PATH, "interact-data.R")))
-source(here(file.path(FUNCTION_PATH, "render-plots.R")))
+
+### Load function containing the transformation of data tables to fit the format required for GP1 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
+
+### Load functions required to handle dashboard filter actions
+source(here(file.path(FUNCTION_PATH, "interact-data.R")))
+
+### Load functions required to setup plotly visualizations
+source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 
 
 # Data Workflow ----
 
-# Read all tables in the database folder to create accordingly the dataframe tables inside list
-gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame")
+## Read all tables in the database folders into a single list variable:
+##
+## list(gamesession_data_list)
+##  |
+##  |-- list(gamessession_data_session1)
+##  |     |
+##  |     |-- table 1
+##  |     |-- table 2
+##  |     |-- table 3
+##  |     ...
+##  |
+##  |-- list(gamessession_data_session1)
+##  ...
+##
+
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = TRUE, selection = TRUE)
 
 income_dist_list <- list()
 
