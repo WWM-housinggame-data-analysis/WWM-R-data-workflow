@@ -1,76 +1,95 @@
-# Set all default variables or global options and all the path variables at the top of the code.
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
 
+## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
-TABLE_TYPE <- ".csv"
-
-WORKFLOW_STAGES <- c("raw", "preprocessed")
-names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
-
-# Load required functions
+## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 
+# Functions ---
 
-list_all_subfolders <- function(folder_path, subfolder_pattern) {
+## Find paths to subfolders within given main folder path and matching a given pattern
 
-  # List all subfolders inside the main folder
-  subfolders <- list.dirs(path = here(folder_path), full.names = TRUE, recursive = FALSE)
+list_matching_subfolders <- function(folder_path, subfolder_pattern) {
   
-  # Filter subfolders that matches your pattern
-  subfolders <- subfolders[grepl(subfolder_pattern, basename(subfolders))]
+  ## Check inputs are characters with length = 1
+  stopifnot("folder_path expected to be character" = is.character(folder_path),
+            "folder_path expected to have only element 1" = length(folder_path) == 1,
+            "subfolder_pattern expected to be character" = is.character(subfolder_pattern),
+            "subfolder_pattern expected to have only element 1" = length(subfolder_pattern) == 1)
+
+  ## List all subfolders inside the main folder
+  subfolder_paths <- list.dirs(path = here(folder_path), full.names = TRUE, recursive = FALSE)
   
-  # Check subfolders found
-  if (length(subfolders) == 0) {
-    stop(paste("No subfolder matching pattern `", subfolder_pattern, "` found.", sep = ""))
-  } else {
-    for (subfolder in subfolders) {
-      print(paste("Subfolder `", subfolder, "` found.", sep = ""))
-    }
+  ## Check any subfolder found
+  if (length(subfolder_paths) == 0) {
+    stop(sprintf("No subfolder in '%s' found.", folder_path))
   }
   
-  return(subfolders)
+  ## Filter subfolders that matches your pattern
+  subfolder_paths <- subfolder_paths[grepl(subfolder_pattern, basename(subfolder_paths))]
+  
+  ## Check any subfolder matching pattern found
+  if (length(subfolder_paths) == 0) {
+    stop(sprintf("No subfolder matching pattern '%s' found.", folder_path))
+  }
+  
+  return(subfolder_paths)
 }
 
-# List CSV files
-list_all_dbtables <- function(folder_path, subfolder_pattern) {
+## Find dbtable files found in subfolders found inside main folder whose names match given pattern
+
+list_matching_dbtables <- function(folder_path, subfolder_pattern) {
   
-  subfolders <- list_all_subfolders(folder_path, subfolder_pattern)
+  ## List paths to subfolders within given main folder path and matching a given pattern
+  subfolder_paths <- list_matching_subfolders(folder_path, subfolder_pattern)
   
+  # Check IMPORTED_TABLE_TYPE exists
+  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))
+  
+  ## Create list to store dbtables found within each subfolder
   dbtable_filenames <- list()
   
-  for (subfolder in subfolders) {
+  for (subfolder_path in subfolder_paths) {
     
     i <- length(dbtable_filenames) + 1
     
-    dbtable_filenames[[i]] <- list.files(path = here(subfolder), pattern = paste("\\", TABLE_TYPE, "$", sep = ""), full.names = TRUE)
+    dbtable_filenames[[i]] <- list.files(path = here(subfolder_path), pattern = paste("\\", IMPORTED_TABLE_TYPE, "$", sep = ""), full.names = TRUE)
     
-    names(dbtable_filenames)[i] <- subfolder
-    
+    ## Warning if no .csv table is found within a given subfolder
     if (length(dbtable_filenames[[i]]) == 0) {
       dbtable_filenames[[i]] <- NA
-      warning(paste("No ", TABLE_TYPE, "files found in the target subfolder ", subfolder, sep = ""))
+      warning(paste0("No ", IMPORTED_TABLE_TYPE, "files found in the target subfolder ", subfolder_path, "."))
     }
+    
+    names(dbtable_filenames)[i] <- basename(subfolder_path)
+    
   }
   
+  ## Error if no subfolder contains .csv tables
   if (all(is.na(dbtable_filenames) == TRUE)) {
-    stop(paste("No ", TABLE_TYPE, " files found in any target subfolder.", sep = ""))
+    stop(paste0("No ", IMPORTED_TABLE_TYPE, "files found in any subfolder within ", folder_path, "."))
   }
   
   return(dbtable_filenames)
 }
 
  
-# Write to Excel with sheet names matching table names
+## Export Excel file for data relative to a given session (expected to be stored in a subfolder), with sheet names matching table names
 
 export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   
+  ## Generate timestamp to append to excel file name
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   
-  if (preprocessed == TRUE && "income_dist_df" %in% names(sessiontable_list) == TRUE) {
+  stopifnot("Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))))
+  
+  if (preprocessed && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
     
     parent_path <- PREPRDATA_PATH
     
-  } else if (preprocessed == TRUE && "income_dist_df" %in% names(sessiontable_list) == FALSE) {
+  } else if (preprocessed && "income_dist_df" %in% names(sessiontable_list) == FALSE) {
     
     stop(paste0("Expected table named '", "income_dist_df", "' not found in table list"))
     
@@ -102,7 +121,7 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
 # Retrieve all tables into a named list
 upload_dbtables <- function(folder_path, subfolder_pattern, excel = FALSE, selection = TRUE) {
   
-  dbtable_filenames <- list_all_dbtables(folder_path, subfolder_pattern)
+  dbtable_filenames <- list_matching_dbtables(folder_path, subfolder_pattern)
   
   dbtables_list <- dbtable_filenames
   

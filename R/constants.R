@@ -1,4 +1,3 @@
-# Set defaults ----
 # Set all default variables or global options and all the path variables at the top of the code.
 
 FUNCTION_PATH <- file.path("R")
@@ -14,6 +13,15 @@ SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
 INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
                            "groupround_id", "groupround_round_number", "welfaretype_id", "community_name")
 
+
+## Default variables for handling data import/export
+
+IMPORTED_TABLE_TYPE <- ".csv"
+
+WORKFLOW_STAGES <- c("raw", "preprocessed")
+names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
+
+PREPROCESSED_DBTABLES <- c("income_dist_df")
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",

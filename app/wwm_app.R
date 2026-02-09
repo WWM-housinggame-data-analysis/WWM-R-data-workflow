@@ -65,16 +65,18 @@ source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 ##  |
 ##  |-- list(gamessession_data_session1)
 ##  |     |
-##  |     |-- table 1
-##  |     |-- table 2
-##  |     |-- table 3
+##  |     |-- df(table1)
+##  |     |-- df(table2)
+##  |     |-- df(table3)
 ##  |     ...
 ##  |
-##  |-- list(gamessession_data_session1)
+##  |-- list(gamessession_data_session2)
+##  |     |
+##       ...
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = TRUE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
 
 income_dist_list <- list()
 
