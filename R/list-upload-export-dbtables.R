@@ -83,30 +83,39 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   ## Generate timestamp to append to excel file name
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   
+  ## Check PREPROCESSED_DBTABLES exists
   stopifnot("Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))))
   
-  if (preprocessed && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
+  ## Define excel_outpath based on consistency between input logical argument `preprocessed` and presence/absence of PREPROCESSED_DBTABLES in sessiontable_list
+  ## (In)consistencies are tested.
+  if (preprocessed && all(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
     
-    parent_path <- PREPRDATA_PATH
+    excel_outpath <- PREPRDATA_PATH
     
-  } else if (preprocessed && "income_dist_df" %in% names(sessiontable_list) == FALSE) {
+  } else if (preprocessed && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE)) {
     
-    stop(paste0("Expected table named '", "income_dist_df", "' not found in table list"))
+    stop(paste0("Expected table(s) named ",
+                "'", paste(PREPROCESSED_DBTABLES[PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE], collapse = ", "), "'",
+                " not found in table list."))
     
-  } else if (preprocessed == FALSE && "income_dist_df" %in% names(sessiontable_list) == TRUE) {
+  } else if (preprocessed == FALSE && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
     
-    stop(paste0("Non-expected table named '", "income_dist_df", "' found in table list"))
+    stop(paste0("Non-expected table named '",
+                "'", paste(PREPROCESSED_DBTABLES[PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE], collapse = ", "), "'",
+                "income_dist_df", " found in table list."))
     
-  } else if (preprocessed == FALSE && "income_dist_df" %in% names(sessiontable_list) == FALSE) {
+  } else if (preprocessed == FALSE && all(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE)) {
     
-    parent_path = RAWDATA_PATH
+    excel_outpath = RAWDATA_PATH
   }
   
-  workflow_stage <- WORKFLOW_STAGES[names(WORKFLOW_STAGES) %in% parent_path]
+  # Define workflow stage label to be appended to excel file name
+  workflow_stage <- WORKFLOW_STAGES[names(WORKFLOW_STAGES) %in% excel_outpath]
   
+  # Export data available for a given session to excel file
   tryCatch({
     write_xlsx(sessiontable_list,
-               here(file.path(parent_path,
+               here(file.path(excel_outpath,
                               paste0(paste(session_name, timestamp, workflow_stage, sep = "-"), ".xlsx"))))
     
     message("File written successfully.")
@@ -118,22 +127,41 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
 }
 
 
-# Retrieve all tables into a named list
+## Retrieve tables as dataframes stored inside a named list
 upload_dbtables <- function(folder_path, subfolder_pattern, excel = FALSE, selection = TRUE) {
   
+  ## Retrieve table files inside subfolders of folder_path whose names match subfolder_pattern
   dbtable_filenames <- list_matching_dbtables(folder_path, subfolder_pattern)
   
+  ## Check SELECTED_DBTABLES exists
+  stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(SELECTED_DBTABLES))))
+  
+  # Check IMPORTED_TABLE_TYPE exists
+  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))
+  
+  ## Define named list where table files are stored as dataframes based on list containing the respective filenames
   dbtables_list <- dbtable_filenames
   
+  ## Populate named list with table data as dataframes
   for (subfolder in names(dbtable_filenames)) {
-    dbtables_list[[subfolder]] <- lapply(dbtable_filenames[[subfolder]], readr::read_csv)
     
-    names(dbtables_list[[subfolder]]) <- tools::file_path_sans_ext(basename(dbtable_filenames[[subfolder]]))
+    ## For a given list named after a given subfolder, import into the list each table file as dataframe
     
+    if (identical(IMPORTED_TABLE_TYPE, ".csv")) {
+      dbtables_list[[subfolder]] <- lapply(dbtable_filenames[[subfolder]], readr::read_csv)
+    } else {
+      stop(paste0("Non-expected table type ", IMPORTED_TABLE_TYPE, " to be imported."))
+    }
+    
+    ## Name list after subfolder
+    names(dbtables_list[[subfolder]]) <- basename(dbtable_filenames[[subfolder]])
+    
+    ## If logical argument asking for table selection based on SELECTED_DBTABLES is true
     if (selection) { 
       dbtables_list[[subfolder]] <- dbtables_list[[subfolder]][names(dbtables_list[[subfolder]]) %in% SELECTED_DBTABLES == TRUE]
     }
     
+    ## If logical argument asking for excel export of named list is true
     if(excel) {
       export_excel(dbtables_list[[subfolder]], subfolder, preprocessed = FALSE)
     }
