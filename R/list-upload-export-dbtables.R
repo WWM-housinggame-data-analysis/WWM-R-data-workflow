@@ -153,8 +153,8 @@ upload_dbtables <- function(folder_path, subfolder_pattern, excel = FALSE, selec
       stop(paste0("Non-expected table type ", IMPORTED_TABLE_TYPE, " to be imported."))
     }
     
-    ## Name list after subfolder
-    names(dbtables_list[[subfolder]]) <- basename(dbtable_filenames[[subfolder]])
+    ## Name listed tables after their filename without extension
+    names(dbtables_list[[subfolder]]) <- tools::file_path_sans_ext(basename(dbtable_filenames[[subfolder]]))
     
     ## If logical argument asking for table selection based on SELECTED_DBTABLES is true
     if (selection) { 

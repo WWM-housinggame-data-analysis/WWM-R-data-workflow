@@ -76,7 +76,7 @@ source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = TRUE, selection = TRUE)
 
 income_dist_list <- list()
 
