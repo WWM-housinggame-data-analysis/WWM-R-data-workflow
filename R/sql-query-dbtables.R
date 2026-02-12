@@ -1,26 +1,24 @@
 # Functions ---
 
-## test for empty character vectors
-is_blank <- function(x) {
+## test whether character vector contains blank element
+contains_blank_char <- function(x) {
   
-  stopifnot("Argument expected to be a character vector" = is.character(x))
-  
-  # NULL or length-0 vectors count as blank
-  if (is.null(x) || length(x) == 0L) return(TRUE)
-  
-  # Recurse over lists: all elements must be blank
-  if (is.list(x)) return(all(vapply(x, is_blank, logical(1))))
-  
-  # Factor -> character
-  if (is.factor(x)) x <- as.character(x)
-  
-  if (is.character(x)) {
-    return(all(is.na(x) | trimws(x) == ""))
+    # NULL or length-0 vectors are considered blank
+    if (is.null(x) || length(x) == 0L) return(TRUE)
+    
+    # Treat factors as their character labels
+    if (is.factor(x)) x <- as.character(x)
+    
+    res <- is.na(x)
+    
+    # For character inputs, blank means "" or whitespace-only
+    if (is.character(x)) {
+      res <- res | trimws(x) == ""
+    }
+    
+    # Return logical stating whether any element in character vector is blank 
+    return(any(res))
   }
-  
-  # For other atomic types, only NA counts
-  all(is.na(x))
-}
 
 
 
@@ -37,8 +35,8 @@ select_sqlquery <- function(dbtable, selected_cols) {
   if (missing(selected_cols) == FALSE) {
     
     ## Check selected_cols is blank character vector
-    if (is_blank(selected_cols)) {
-      warning("selected_cols detected as blank character vector. Column selection will be ignored.")
+    if (contains_blank_char(selected_cols)) {
+      warning("Blank character elements detected in selected_cols. Column selection will be ignored.")
     
     ## Otherwise check selected_cols is not identical to the current names of dbtable. In that case columns are selected and sorted as in selected_cols, ignore non mentioned ones.
       
@@ -58,13 +56,15 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   stopifnot("dbtable1 expected to be a data frame by sqldf" = is.data.frame(dbtable1),
             "dbtable2 expected to be a data frame by sqldf" = is.data.frame(dbtable2))
   
-  ## Check match_dbtable1_cols and match_dbtable2_cols are not blank and have the same exact length
-  stopifnot("match_dbtable1_cols not expected to be blank character vector" = is_blank(match_dbtable1_cols) == FALSE,
-            "match_dbtable2_cols not expected to be blank character vector" = is_blank(match_dbtable2_cols) == FALSE,
+  ## Check match_dbtable1_cols and match_dbtable2_cols are not blank, can be found in dbtable1 and dbtable, respectively, and have the same exact length
+  stopifnot("match_dbtable1_cols not expected to have blank character elements" = contains_blank_char(match_dbtable1_cols) == FALSE,
+            "match_dbtable2_cols not expected to have blank character elements" = contains_blank_char(match_dbtable2_cols) == FALSE,
+            "At least one element in match_dbtable1_cols not found as dbtable1 collumn name" = all(match_dbtable1_cols %in% names(dbtable1)),
+            "At least one element in match_dbtable2_cols not found as dbtable2 collumn name" = all(match_dbtable2_cols %in% names(dbtable2)),
             "match_dbtable1_cols and match_dbtable2_cols expected to have same length" = length(match_dbtable1_cols) == length(match_dbtable2_cols))
   
   ## If kept_dbtable1_cols is present as a non-blank character_vector, columns from first dbtable are selected and sorted as in kept_dbtable1_cols. Otherwise all the collumns are selected as they are.
-  if (missing(kept_dbtable1_cols) == FALSE && is_blank(kept_dbtable1_cols) == FALSE && identical(kept_dbtable1_cols, names(dbtable1)) == FALSE) {
+  if (missing(kept_dbtable1_cols) == FALSE && contains_blank_char(kept_dbtable1_cols) == FALSE && identical(kept_dbtable1_cols, names(dbtable1)) == FALSE) {
     
     select_statement <- paste0("SELECT ", paste(paste0("dbtable1.", kept_dbtable1_cols[kept_dbtable1_cols %in% names(dbtable1)]), collapse = ", "))
     
@@ -77,7 +77,7 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   }
   
   ## If kept_dbtable2_cols is present as a non-blank character_vector, columns from first dbtable are selected and sorted as in kept_dbtable2_cols. Otherwise all the collumns are selected as they are.
-  if (missing(kept_dbtable2_cols) == FALSE && is_blank(kept_dbtable2_cols) == FALSE  && identical(kept_dbtable2_cols, names(dbtable2)) == FALSE) {
+  if (missing(kept_dbtable2_cols) == FALSE && contains_blank_char(kept_dbtable2_cols) == FALSE  && identical(kept_dbtable2_cols, names(dbtable2)) == FALSE) {
     
     select_statement <- paste(select_statement, paste(paste0("dbtable2.", kept_dbtable2_cols[kept_dbtable2_cols %in% names(dbtable2)]), collapse = ", "), sep = ", ")
     
@@ -107,82 +107,124 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   return(sqlquery)
 }
 
-rename_cols_sqlquery <- function(dbtable, current_colnames, new_colnames, renamed_cols_first = FALSE) {
+## Create sql query to rename columns in dbtable
+rename_cols_sqlquery <- function(dbtable, current_colnames, new_colnames) {
   
-  stopifnot(is.character(current_colnames))
+  ## Check dbtable is data frames
+  stopifnot("dbtable expected to be a data frame by sqldf" = is.data.frame(dbtable))
   
-  stopifnot(is.character(new_colnames))
+  ## Check current_colnames and new_colnames are not blank and have the same exact length
+  stopifnot("current_colnames not expected to have blank character elements" = contains_blank_char(current_colnames) == FALSE,
+            "new_colnames not expected to have blank character elements" = contains_blank_char(new_colnames) == FALSE,
+            "current_colnames and new_colnames expected to have same length" = length(current_colnames) == length(new_colnames))
   
-  if (length(current_colnames) != length(new_colnames)) {
-    stop("current_colnames and new_colnames need to have the same length")
+  ## Check current_colnames can be found in dbtable column names
+  if (all(current_colnames %in% names(dbtable)) == FALSE) {
+    stop(paste0("Character vector `current_colnames` contains the following elements not found in names(dbtable): ",
+                paste(current_colnames[current_colnames %in% names(dbtable) == FALSE], collapse = ", " )))
   }
   
-  match_colnames <- ifelse(names(dbtable) %in% current_colnames == FALSE, NA, names(dbtable))
+  ## update new_colnames by matching its values with dbtables column names
+  new_colnames <- new_colnames[match(names(dbtable), current_colnames)]
   
-  new_colnames <- new_colnames[match(match_colnames, current_colnames)[!is.na(match(match_colnames, current_colnames))]]
+  ## create character vector containing rename statements to be collapsed into rename sql query
+  rename_statements <- mapply(function(table_cols, new_cols) {
+                           if (!is.na(table_cols) && !is.na(new_cols)) {
+                             paste(table_cols, new_cols, sep = " AS ")
+                           } else if (!is.na(table_cols)) {
+                             table_cols
+                           } else {
+                             stop("Blank names detected in dbtable")
+                           }
+                        }, names(dbtable), new_colnames)
   
-  match_colnames[is.na(match_colnames) == FALSE] <- new_colnames
-  
-  current_colnames <- names(dbtable)
-  
-  new_colnames <- match_colnames
-  
-  
-  rename_statement <- paste(mapply(function(old_cols, new_cols) {
-                                    if (!is.na(old_cols) && !is.na(new_cols)) {
-                                      paste(old_cols, new_cols, sep = " AS ")
-                                   } else if (!is.na(old_cols)) {
-                                      old_cols
-                                   } else {
-                                      stop("No valid column name found")
-                                   }
-                                  }, current_colnames, new_colnames),
-                            collapse = ", ")
-  
-  
-  sqlquery <- paste0("SELECT ", rename_statement, " FROM " , deparse(substitute(dbtable)))
+  ## return rename sql query
+  sqlquery <- paste0("SELECT ", paste(rename_statements, collapse = ", "), " FROM " , deparse(substitute(dbtable)))
 
   return(sqlquery)
 }
 
-sort_dbtable_sqlquery <- function(dbtable, sorting_col, asc = TRUE) {
+## Create sql query to sort dbtable by a given column. Sorting assumed to be ascending based on logical argument `asc`.
+sort_dbtable_sqlquery <- function(dbtable, sort_col, asc = TRUE) {
+  
+  ## Check dbtable is data frame
+  stopifnot("dbtable expected to be a data frame by sqldf" = is.data.frame(dbtable))
+  
+  ## Check sort_col is not blank, has length one and is a table column name
+  stopifnot("sort_col not expected to be blank character" = contains_blank_char(sort_col) == FALSE,
+            "Only one sorting column is allowed" = length(sort_col) == 1,
+            "Sorting column not found in dbtable" = sort_col %in% names(dbtable))
+  
   if (asc) {
-    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sorting_col, " ASC")
+    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sort_col, " ASC")
     
   } else {
-    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sorting_col, " DESC")
+    sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)), " ORDER BY ", sort_col, " DESC")
   }
   return(sqlquery)
 }
 
+## Create sql query to compare matching columns between two tables. An additional column is added informing whether the matching columns are the same or not
 compare_dbtables_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, compare_col) {
   
+  ## Check dbtables are data frames
+  stopifnot("dbtable1 expected to be a data frame by sqldf" = is.data.frame(dbtable1),
+            "dbtable2 expected to be a data frame by sqldf" = is.data.frame(dbtable2))
+  
+  ## Check match_dbtable1_cols and match_dbtable2_cols are not blank, can be found in dbtable1 and dbtable, respectively, and have the same exact length
+  stopifnot("match_dbtable1_cols not expected to have blank character elements" = contains_blank_char(match_dbtable1_cols) == FALSE,
+            "match_dbtable2_cols not expected to have blank character elements" = contains_blank_char(match_dbtable2_cols) == FALSE,
+            "At least one element in match_dbtable1_cols not found as dbtable1 collumn name" = all(match_dbtable1_cols %in% names(dbtable1)),
+            "At least one element in match_dbtable2_cols not found as dbtable2 collumn name" = all(match_dbtable2_cols %in% names(dbtable2)),
+            "match_dbtable1_cols and match_dbtable2_cols expected to have same length" = length(match_dbtable1_cols) == length(match_dbtable2_cols))
+  
+  ## Write case statement where match_dbtable1_cols in dbtable1 and match_dbtable2_cols in dbtable2 are compared to check if they are the same or not.
   case_statement <- paste0("CASE WHEN EXISTS (SELECT TRUE FROM [", deparse(substitute(dbtable2)), "] AS dbtable2 ",
-                           "WHERE ", paste(paste(paste0("dbtable1.", match_dbtable1_cols), paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "), ") ",
+                           "WHERE ", paste(paste(paste0("dbtable1.", match_dbtable1_cols),
+                                                 paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "), ") ",
                            "THEN TRUE ELSE FALSE END AS ", compare_col)
   
+  # Prepare case sql query to be returned
   sqlquery <- paste0("SELECT dbtable1.*, ", case_statement, " FROM [", deparse(substitute(dbtable1)), "] AS dbtable1")
   
   return(sqlquery)
 }
 
-make_cast_statement <- function(colname, coltype) {
-  if (coltype == "integer") {
-    cast_statement <- paste0("CAST(", colname, " AS INTEGER)")
-  } else {
-    cast_statement <- colname
-  }
+## Create cast statement to for sql query designed to combine columns
+make_cast_statement <- function(cast_col, col_type) {
   
-  return(cast_statement)
+  ## Check cast_col is not blank and has length one 
+  stopifnot("sort_col not expected to be blank character" = contains_blank_char(cast_col) == FALSE,
+            "Only one sorting column is allowed" = length(cast_col) == 1)
+  
+  ## If col_type is "integer", then create default cast statement. Otherwise return cast_col with no casting
+  if (identical(col_type, "integer")) {
+    cast_statement <- paste0("CAST(", cast_col, " AS INTEGER)")
+    return(cast_statement)
+    
+  } else {
+    return(cast_col)
+  }
 }
 
-combine_cols_sqlquery <- function(dbtable, colname1, coltype1, colname2, coltype2, comb_colname) {
+## sql query designed to combine columns
+combine_cols_sqlquery <- function(dbtable, cast_col1, col_type1, cast_col2, col_type2, comb_col) {
   
-  colname1_statement <- make_cast_statement(colname1, coltype1)
+  ## Check dbtable is data frames
+  stopifnot("dbtable expected to be a data frame by sqldf" = is.data.frame(dbtable))
   
-  colname2_statement <- make_cast_statement(colname2, coltype2)
+  ## Check cast_col1 is not blank, has length one and is a table column name
+  stopifnot("cast_col1 not expected to be blank character" = contains_blank_char(cast_col1) == FALSE,
+            "cast_col2 not expected to be blank character" = contains_blank_char(cast_col2) == FALSE,
+            "cast_col1 and cast_col2 should have length = 1 each" = length(cast_col1) + length(cast_col2) == 2,
+            "First column name not found in dbtable" = cast_col1 %in% names(dbtable),
+            "Second column name not found in dbtable" = cast_col1 %in% names(dbtable))
   
-  sqlquery <- paste0("SELECT *, ", colname1_statement, " || ' - ' || ", colname2_statement, " AS ", comb_colname, " FROM ", deparse(substitute(dbtable)))
+  ## write sql query to combine cast_col1 and 2 as comb_col,
+  sqlquery <- paste0("SELECT *, ", make_cast_statement(cast_col1, col_type1), " || ' - ' || ",
+                                   make_cast_statement(cast_col2, col_type2),
+                     " AS ", comb_col,
+                     " FROM ", deparse(substitute(dbtable)))
   
   return(sqlquery)
 }
