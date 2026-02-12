@@ -23,6 +23,34 @@ names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
 
 PREPROCESSED_DBTABLES <- c("income_dist_df")
 
+
+## Default variables for preprocessing data
+
+TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
+
+CALCULATED_COLS <- c("calculated_costs_personal_measures", "calculated_costs_house_measures")
+
+names(CALCULATED_COLS) <- c("cost_house_measures_bought", "cost_personal_measures_bought")
+
+ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
+                   "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
+                   "cost_fluvial_damage", "cost_pluvial_damage")
+
+DF_NAME <- "income_dist_df"
+
+COST_ABSOLUTE_COL <- "cost_absolute"
+
+PERCENTAGE_INCOME_COL <- "cost_percentage_income"
+
+ROUND_INCOME_COL <- "round_income"
+
+PERCENTAGE_HOUSE_COL <- "cost_percentage_house"
+
+LAST_PRICE_COL <- "last_sold_price"
+
+PERCENTAGE_FACTOR <- 100
+
+
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
                      "cost_personal_measures_bought",

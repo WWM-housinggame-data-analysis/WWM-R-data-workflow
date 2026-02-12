@@ -1,27 +1,24 @@
-# Set all default variables or global options and all the path variables at the top of the code.
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
 
+## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
-# Load required functions
+## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 
+# Functions ----
 
-TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
-
-CALCULATED_COLS <- c("calculated_costs_personal_measures", "calculated_costs_house_measures")
-
-names(CALCULATED_COLS) <- c("cost_house_measures_bought", "cost_personal_measures_bought")
-
-ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
-                   "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
-                   "cost_fluvial_damage", "cost_pluvial_damage")
-
-DF_NAME <- "income_dist_df"
-
+## Report missing cols for a given dataframe
 report_missing_cols <- function(df, in_cols, out_cols) {
   
-  any_col <- TRUE
+  # Check DF_NAME exists
+  stopifnot("Default variable DF_NAME not found in R/constants.R" = exists(deparse(substitute(DF_NAME))))
   
+  ## Assumption that there are no missing columns
+  missing_all <- FALSE
+  
+  ## Warning for if all input columns are missing
   if (any(in_cols %in% names(df)) == FALSE) {
     
     warning(paste0("(All) expected collumn(s) ",
@@ -32,7 +29,7 @@ report_missing_cols <- function(df, in_cols, out_cols) {
                    )
             )
     
-    any_col <- FALSE
+    missing_all <- TRUE
             
   } else if (all(in_cols %in% names(df)) == FALSE) {
     
@@ -44,20 +41,40 @@ report_missing_cols <- function(df, in_cols, out_cols) {
             )
   }
   
-  return(any_col)
+  return(missing_all)
 }
 
-# CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
+
 #calculate the costs of the personal measures bough
-retrieve_personalmeasure_calculated_costs <- function(personalmeasure) {
+retrieve_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
   
-  personalmeasure$calculated_costs <- rowSums(cbind(personalmeasure$cost_absolute,
-                                                 (personalmeasure$cost_percentage_income / 100) * personalmeasure$round_income,
-                                                 (personalmeasure$cost_percentage_house / 100) * personalmeasure$last_sold_price),
-                                           na.rm = TRUE)
+  ## Check constants used in calculation exist
+  stopifnot("Default variable COST_ABSOLUTE_COL not found in R/constants.R" = exists(deparse(substitute(COST_ABSOLUTE_COL))),
+            "Default variable PERCENTAGE_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_INCOME_COL))),
+            "Default variable PERCENTAGE_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_HOUSE_COL))),
+            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
+            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
+            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
+            
+  )
   
-  return(personalmeasure)
+  ## Calculate costs by summing absolute costs, amount of income and house-related costs 
+  pm_df <- pm_df %>%
+    mutate(
+      !!sum_col :=
+        rowSums(
+          cbind(
+            .data[[COST_ABSOLUTE_COL]],
+            (.data[[PERCENTAGE_INCOME_COL]] / PERCENTAGE_FACTOR) * .data[[ROUND_INCOME_COL]],
+            (.data[[PERCENTAGE_HOUSE_COL]] / PERCENTAGE_FACTOR) * .data[[LAST_PRICE_COL]]
+          ),
+          na.rm = TRUE
+        )
+    )
+  
+  return(pm_df)
 }
+
 
 retrieve_personalmeasure_cumulative <- function(personalmeasure) {
 
@@ -120,10 +137,10 @@ retrieve_housemeasure_cumulative <- function(housemeasure) {
 
 calculate_costs_measures_difference <- function(income_dist_df) {
   
-  any_col <- report_missing_cols(income_dist_df, CALCULATED_COLS, "calculated_costs_measures_difference")
-  any_col <- any_col * report_missing_cols(income_dist_df, names(CALCULATED_COLS), "calculated_costs_measures_difference")
+  missing_all <- report_missing_cols(income_dist_df, CALCULATED_COLS, "calculated_costs_measures_difference")
+  missing_all <- missing_all * report_missing_cols(income_dist_df, names(CALCULATED_COLS), "calculated_costs_measures_difference")
   
-  if(any_col) {
+  if(missing_all == FALSE) {
     
     col_cross <- as.logical(names(CALCULATED_COLS) %in% names(income_dist_df) * names(CALCULATED_COLS) %in% names(income_dist_df))
     
@@ -143,9 +160,9 @@ calculate_costs_measures_difference <- function(income_dist_df) {
 
 calculate_total_damage_costs <- function(income_dist_df) {
   
-  any_col <- report_missing_cols(income_dist_df, TYPE_COST_COLS, "total_damage_costs")
+  missing_all <- report_missing_cols(income_dist_df, TYPE_COST_COLS, "total_damage_costs")
   
-  if(any_col) {
+  if(missing_all == FALSE) {
     income_dist_df[,"total_damage_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% TYPE_COST_COLS], na.rm = TRUE)
   }
   
@@ -159,9 +176,9 @@ calculate_total_damage_costs <- function(income_dist_df) {
 
 calculate_total_costs <- function(income_dist_df) {
   
-  any_col <- report_missing_cols(income_dist_df, ALL_COST_COLS, "calculated_costs")
+  missing_all <- report_missing_cols(income_dist_df, ALL_COST_COLS, "calculated_costs")
   
-  if(any_col) {
+  if(missing_all == FALSE) {
     income_dist_df[, "calculated_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% ALL_COST_COLS], na.rm = TRUE) 
   }
   

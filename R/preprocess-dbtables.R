@@ -209,7 +209,7 @@ preprocess_dbtables <- function(dbtable_list) {
   
   personalmeasure_df <- manipulate_personalmeasure(personalmeasure_df, playerround_df, housegroup_df, measuretype_df)
   
-  personalmeasure_df <- retrieve_personalmeasure_calculated_costs(personalmeasure_df)
+  personalmeasure_df <- calculate_personalmeasure_costs(personalmeasure_df, "calculated_costs")
     
   
   # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
