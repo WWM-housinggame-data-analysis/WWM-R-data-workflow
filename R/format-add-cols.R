@@ -53,10 +53,29 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
             "Default variable PERCENTAGE_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_INCOME_COL))),
             "Default variable PERCENTAGE_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_HOUSE_COL))),
             "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
-            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
-            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
-            
+            "Default variable PERCENTAGE_FACTOR not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_FACTOR))),
+            "Default variable LAST_PRICE_COL not found in R/constants.R" = exists(deparse(substitute(LAST_PRICE_COL))),
   )
+  
+  ## Check data frame is in the expected format
+  stopifnot("personalmeasure_df expected to be a data frame" = is.data.frame(pm_df))
+            
+  ## Check columns to which constants refer in calculation exist, and are numeric
+  cols <- c(PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL, ROUND_INCOME_COL, LAST_PRICE_COL)
+  
+  if (any(cols %in% names(pm_df) == FALSE)){
+    stop(paste0("These personalmeasure_df columns could not be found: ",
+               paste(cols[cols %in% names(pm_df) == FALSE], collapse = ", "),
+               "."))
+  }
+  
+  if (any(unlist(lapply(pm_df[,cols], is.numeric)) == FALSE)) {
+    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                paste(names(unlist(lapply(pm_df[,cols], is.numeric)))[unlist(lapply(pm_df[,cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
   
   ## Calculate costs by summing absolute costs, amount of income and house-related costs 
   pm_df <- pm_df %>%
@@ -76,97 +95,252 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
 }
 
 
+## Create personalmeasure_cumulative_df 
 create_personalmeasure_cumulative_df <- function(pm_df) {
 
+  ## Check constants used in calculation exist
+  stopifnot("Default variable PLAYER_CODE_COL not found in R/constants.R" = exists(deparse(substitute(PLAYER_CODE_COL))),
+            "Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_NUMBER_COL))),
+            "Default variable CALCULATED_COSTS_PERSONAL_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COSTS_PERSONAL_COL))),
+            "Default variable COST_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(COST_HOUSE_COL))),
+            "Default variable PERSONAL_HOUSE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(PERSONAL_HOUSE_DIFFCOL))),
+            "Default variable CUMULATIVE_COSTS_PERSONAL_COL not found in R/constants.R" = exists(deparse(substitute(CUMULATIVE_COSTS_PERSONAL_COL))),
+            "Default variable CUMULATIVE_PERSONAL_HOUSE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(CUMULATIVE_PERSONAL_HOUSE_DIFFCOL)))
+  )
+  
+  ## Check data frame is in the expected format
+  stopifnot("personalmeasure_df expected to be a data frame" = is.data.frame(pm_df))
+  
+  ## Check columns to which constants refer in calculation exist
+  nonnum_cols <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
+  num_cols <- c(CALCULATED_COSTS_PERSONAL_COL, COST_HOUSE_COL)
+  cols <- c(nonnum_cols, num_cols)
+  
+  if (any(cols %in% names(pm_df) == FALSE)){
+    stop(paste0("These personalmeasure_df columns could not be found: ",
+                paste(cols[cols %in% names(pm_df) == FALSE], collapse = ", "),
+                "."))
+  }
+  
+  ## Check factor or character (non-numeric) columns are defined as such
+  detect_nonnum <- unlist(lapply(pm_df[,nonnum_cols], is.factor)) + unlist(lapply(pm_df[,nonnum_cols], is.character))
+  
+  if (any(detect_nonnum == 0)) {
+    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
+                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
+                ".")
+    )
+  }
+  
+  ## Check numeric columns are defined as such
+  if (any(unlist(lapply(pm_df[,num_cols], is.numeric)) == FALSE)) {
+    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                paste(names(unlist(lapply(pm_df[,num_cols], is.numeric)))[unlist(lapply(pm_df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
 
   #calculate the cumulative of the personal measures to compare it against the cost of house measures bought
   pmc_df <- pm_df %>%
-    arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%   # ensure proper order
-    group_by(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%  # group by player and round
-    #add up costs within each round for each player (since you may have multiple rows per round)
-    summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),# sum across rows in the round
-              !!COST_HOUSE_COL := first(.data[[COST_HOUSE_COL]]), # keep the round’s value
+    
+    # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
+    arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%   
+    group_by(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%
+    
+    #add up CALCULATED_COSTS_PERSONAL_COL within each round for each player and keep COST_HOUSE_COL value
+    summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),
+              !!COST_HOUSE_COL := first(.data[[COST_HOUSE_COL]]),
               .groups = "drop"
-    ) %>% 
+    ) %>%
+    
     #ensure cumulative totals are calculated separately for each player
     mutate(
-      difference = .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]]
+      !!PERSONAL_HOUSE_DIFFCOL := .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]]
     ) %>%
-    group_by(player_code) %>%
-    arrange(groupround_round_number) %>%
+    
+    # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
+    group_by(.data[[PLAYER_CODE_COL]]) %>%
+    arrange(.data[[ROUND_NUMBER_COL]]) %>%
+    
     # compute the running total across rounds
     mutate(
-      !!CUMULATIVE_COSTS_PERSONAL_COL := cumsum(calculated_costs_personal_measures),
-      cum_difference  = cumsum(difference)
+      !!CUMULATIVE_COSTS_PERSONAL_COL     := cumsum(CALCULATED_COSTS_PERSONAL_COL),
+      !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]])
     )
   
   return(pmc_df)
 }
 
-retrieve_housemeasure_cumulative <- function(housemeasure) {
+
+## Create housemeasure_cumulative_df
+retrieve_housemeasure_cumulative <- function(hm_df) {
+  
+  ## Check constants used in calculation exist
+  stopifnot("Default variable PLAYER_CODE_COL not found in R/constants.R" = exists(deparse(substitute(PLAYER_CODE_COL))),
+            "Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_NUMBER_COL))),
+            "Default variable COST_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(COST_HOUSE_COL))),
+            "Default variable COST_ABSOLUTE_COL not found in R/constants.R" = exists(deparse(substitute(COST_ABSOLUTE_COL))),
+            "Default variable IS_IHM_COL not found in R/constants.R" = exists(deparse(substitute(IS_IHM_COL))),
+            "Default variable CALCULATED_COSTS_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COSTS_HOUSE_COL))),
+            "Default variable TOTAL_BOUGHT_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_BOUGHT_COL))),
+            "Default variable HOUSE_TOTAL_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSE_TOTAL_DIFFCOL))),
+            "Default variable CUMULATIVE_COSTS_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(CUMULATIVE_COSTS_HOUSE_COL))),
+            "Default variable CUMULATIVE_HOUSE_TOTAL_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(CUMULATIVE_HOUSE_TOTAL_DIFFCOL)))
+  )
+  
+  
+  ## Check data frame is in the expected format
+  stopifnot("housemeasure_df expected to be a data frame" = is.data.frame(hm_df))
+  
+  ## Check columns to which constants refer in calculation exist
+  nonnum_cols <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
+  num_cols <- c(COST_ABSOLUTE_COL, COST_HOUSE_COL)
+  logic_cols <- IS_IHM_COL
+  
+  cols <- c(nonnum_cols, num_cols, logic_cols)
+  
+  if (any(cols %in% names(hm_df) == FALSE)){
+    stop(paste0("These housemeasure_df columns could not be found: ",
+                paste(cols[cols %in% names(hm_df) == FALSE], collapse = ", "),
+                "."))
+  }
+  
+  ## Check factor or character (non-numeric) columns are defined as such
+  detect_nonnum <- unlist(lapply(hm_df[,nonnum_cols], is.factor)) + unlist(lapply(hm_df[,nonnum_cols], is.character))
+  
+  if (any(detect_nonnum == 0)) {
+    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
+                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
+                ".")
+    )
+  }
+  
+  ## Check logical columns are defined as such
+  if (any(unlist(lapply(hm_df[,logic_cols], is.logical)) == FALSE)) {
+    stop(paste0("These personalmeasure_df columns expected to be logical: ",
+                paste(names(unlist(lapply(hm_df[,logic_cols], is.logical)))[unlist(lapply(hm_df[,logic_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
+  
+  ## Check numeric columns are defined as such
+  if (any(unlist(lapply(hm_df[,num_cols], is.numeric)) == FALSE)) {
+    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                paste(names(unlist(lapply(hm_df[,num_cols], is.numeric)))[unlist(lapply(hm_df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
   
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
   #exclude the costs of the housemeasures that came implemented in the house when bought
-  housemeasure_cumulative <- housemeasure %>%
-    arrange(player_code, groupround_round_number) %>%   # ensure proper order
-    group_by(player_code, groupround_round_number) %>%  # group by player and round
-    #add up costs within each round for each player (since you may have multiple rows per round)
+  hmc_df <- hm_df %>%
+    
+    # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
+    arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%   
+    group_by(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%
+    
+    #add up costs within each round for each player
     summarise(
+      
       # sum only cost_absolute where initialhousemeasure == FALSE
-      calculated_costs_house_measures = sum(
-        ifelse(is_initialhousemeasure, 0, cost_absolute)
-      ),
-      total_bought_measures = first(cost_house_measures_bought), # keep the round’s value
+      !!CALCULATED_COSTS_HOUSE_COL := sum(ifelse(.data[[IS_IHM_COL]], 0, .data[[COST_ABSOLUTE_COL]])),
+      
+      # keep the round’s value
+      !!TOTAL_BOUGHT_COL := first(.data[[COST_HOUSE_COL]]),
       .groups = "drop"
     ) %>%
+    
     #ensure cumulative totals are calculated separately for each player
     mutate(
-      difference = calculated_costs_house_measures - total_bought_measures
+      !!HOUSE_TOTAL_DIFFCOL := .data[[CALCULATED_COSTS_HOUSE_COL]] - .data[[TOTAL_BOUGHT_COL]]
     ) %>%
-    group_by(player_code) %>%
-    arrange(groupround_round_number) %>%
+    
+    # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
+    group_by(.data[[PLAYER_CODE_COL]]) %>%
+    arrange(.data[[ROUND_NUMBER_COL]]) %>%
+    
     # compute the running total across rounds
     mutate(
-      cum_costs       = cumsum(calculated_costs_house_measures),
-      cum_difference  = cumsum(difference)
+      CUMULATIVE_COSTS_HOUSE_COL     := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]]),
+      CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]] - .data[[TOTAL_BOUGHT_COL]])
     )
   
-  return(housemeasure_cumulative)
+  return(hmc_df)
 }
 
-
-calculate_costs_measures_difference <- function(income_dist_df) {
+## Append difference between reported and calculated measures
+append_reported_calculatedcosts_difference <- function(df) {
   
-  missing_all <- report_missing_cols(income_dist_df, CALCULATED_COLS, "calculated_costs_measures_difference")
-  missing_all <- missing_all * report_missing_cols(income_dist_df, names(CALCULATED_COLS), "calculated_costs_measures_difference")
+  ## Check constants used in calculation exist
+  stopifnot("Default variable CALCULATED_COLS not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COLS))),
+            "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COSTS_DIFF))))
+            
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
   
+  ## Check at least one calculated cost is not missing
+  missing_all <- report_missing_cols(df, CALCULATED_COLS, CALCULATED_COSTS_DIFF)
+  
+  ## Check the respective reported cost(s) is/are also not missing
+  missing_all <- missing_all * report_missing_cols(df, names(CALCULATED_COLS), CALCULATED_COSTS_DIFF)
+  
+  ## Proceed in case of at least one pair of reported-calculated cost is available, 
   if(missing_all == FALSE) {
     
-    col_cross <- as.logical(names(CALCULATED_COLS) %in% names(income_dist_df) * names(CALCULATED_COLS) %in% names(income_dist_df))
+    ## filter complete reported-calculated cost pairs and calculate difference between those
+    col_cross <- as.logical(names(CALCULATED_COLS) %in% names(df) * names(CALCULATED_COLS) %in% names(df))
     
     calc_cols <- CALCULATED_COLS[col_cross]
-    db_cols <- names(CALCULATED_COLS)[col_cross]
+    repor_cols <- names(CALCULATED_COLS)[col_cross]
     
-    income_dist_df[, "calculated_costs_measures_difference"] <-
-      rowSums(income_dist_df[names(income_dist_df) %in% db_cols], na.rm = TRUE) -
-      rowSums(income_dist_df[names(income_dist_df) %in% calc_cols], na.rm = TRUE)
+    ## Check numeric columns are defined as such
+    if (any(unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)) == FALSE)) {
+      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                  paste(names(unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)))[unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)) == FALSE], collapse = ", "),
+                  ".")
+      )
+    }
+    
+    ## calculate difference between reported-calculated cost pairs
+    df[, CALCULATED_COSTS_DIFF] <-
+      rowSums(df[names(df) %in% repor_cols], na.rm = TRUE) - rowSums(df[names(df) %in% calc_cols], na.rm = TRUE)
   }
   
-  return(income_dist_df)
+  return(df)
 }
   
 
-# CHANGES annehuitema2003-3: Added pluvial&fluvial costs as total_damage to df_income_dist
-
-calculate_total_damage_costs <- function(income_dist_df) {
+## Append pluvial + fluvial costs as total_damage
+calculate_total_damage_costs <- function(df) {
   
-  missing_all <- report_missing_cols(income_dist_df, TYPE_COST_COLS, "total_damage_costs")
+  ## Check constants used in calculation exist
+  stopifnot("Default variable TYPE_COST_COLS not found in R/constants.R" = exists(deparse(substitute(TYPE_COST_COLS))),
+            "Default variable TOTAL_DAMAGE_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_DAMAGE_COL))))
   
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  # Check at least one element of TYPE_COST_COLS is not missing in df
+  missing_all <- report_missing_cols(df, TYPE_COST_COLS, TOTAL_DAMAGE_COL)
+  
+  # In case at least one element of TYPE_COST_COLS is not missing, check the columns are numeric and calculate their sum
   if(missing_all == FALSE) {
-    income_dist_df[,"total_damage_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% TYPE_COST_COLS], na.rm = TRUE)
+    
+    num_cols <- TYPE_COST_COLS[TYPE_COST_COLS %in% names(df)]
+    
+    if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
+      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                  paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                  ".")
+      )
+    }
+    
+    df[, TOTAL_DAMAGE_COL] <- rowSums(df[names(df) %in% TYPE_COST_COLS], na.rm = TRUE)
   }
   
-  return(income_dist_df)
+  return(df)
 }
 
 
@@ -174,58 +348,109 @@ calculate_total_damage_costs <- function(income_dist_df) {
 # "paid_debt" not used in the calculations because is taken already when the spendable income comes as a negative value
 # If either column has NA, the sum will also be NA unless the sum is done this way
 
-calculate_total_costs <- function(income_dist_df) {
+append_calculate_total_costs <- function(df) {
   
-  missing_all <- report_missing_cols(income_dist_df, ALL_COST_COLS, "calculated_costs")
+  ## Check constants used in calculation exist
+  stopifnot("Default variable ALL_COST_COLS not found in R/constants.R" = exists(deparse(substitute(ALL_COST_COLS))),
+            "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))))
   
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  # Check at least one element of ALL_COST_COLS is not missing in df
+  missing_all <- report_missing_cols(df, ALL_COST_COLS, TOTAL_COSTS_COL)
+  
+  # In case at least one element of ALL_COST_COLS is not missing, check columns are numeric and calculate their sum
   if(missing_all == FALSE) {
-    income_dist_df[, "calculated_costs"] <- rowSums(income_dist_df[names(income_dist_df) %in% ALL_COST_COLS], na.rm = TRUE) 
+    
+    num_cols <- ALL_COST_COLS[ALL_COST_COLS %in% names(df)]
+    
+    if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
+      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                  paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                  ".")
+      )
+    }
+    
+    df[, TOTAL_COSTS_COL] <- rowSums(df[names(df) %in% ALL_COST_COLS], na.rm = TRUE) 
   }
   
-  return(income_dist_df)
+  return(df)
 }
   
 # Calculate the spendable income
 
-calculate_spendable_income <- function(income_dist_df) {
+calculate_spendable_income <- function(df) {
   
-  income_dist_df <- income_dist_df %>% arrange(player_code, groupround_round_number)
+  ## Check constants used in calculation exist
+  stopifnot("Default variable PLAYER_CODE_COL not found in R/constants.R" = exists(deparse(substitute(PLAYER_CODE_COL))),
+            "Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_NUMBER_COL))),
+            "Default variable SPENDABLE_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(SPENDABLE_INCOME_COL))),
+            "Default variable CALCULATED_SPENDABLE_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_SPENDABLE_COL))),
+            "Default variable SPENDABLE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(SPENDABLE_DIFFCOL))))
   
-  income_dist_df$calculated_spendable <- income_dist_df$spendable_income
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
   
-  expected_players <- unique(income_dist_df[, "player_code"])
+  nonnum_col <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
+  num_col <- SPENDABLE_INCOME_COL
+  cols <- c(nonnum_col, num_col)
   
-  found_players <- income_dist_df %>%
-                      filter(groupround_round_number %in% 0) %>%
-                      pull(player_code)
+  if (any(cols %in% names(hm_df) == FALSE)){
+    stop(paste0("These personalmeasure_df columns could not be found: ",
+                paste(cols[cols %in% names(hm_df) == FALSE], collapse = ", "),
+                "."))
+  }
+  
+  ## Check factor or character (non-numeric) columns are defined as such
+  detect_nonnum <- unlist(lapply(df[,nonnum_cols], is.factor)) + unlist(lapply(df[,nonnum_cols], is.character))
+  
+  if (any(detect_nonnum == 0)) {
+    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
+                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
+                ".")
+    )
+  }
+  
+  ## Check numeric columns are defined as such
+  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
+    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
+                paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
+  # Check that players found match those expected
+  expected_players <- unique(df[, PLAYER_CODE_COL])
+  
+  found_players <- df %>% filter(ROUND_NUMBER_COL %in% 0) %>% pull(PLAYER_CODE_COL)
   
   
+  df <- df %>%
+    arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%
+    mutate(!!CALCULATED_SPENDABLE_COL := .data[[SPENDABLE_INCOME_COL]])
+  
+  # mismatch between found and expected players stops run
   if (any(expected_players %in% found_players) == FALSE) {
     
     stop(paste("Missing Round Number 0 value detected for players", paste(expected_players[expected_players %in% found_players == FALSE], collapse = ", ")))
-    
+  
+  ## Else
   } else {
     
-    # for (i in which(income_dist_df$groupround_round_number != "0")) {
-    #   
-    #   income_dist_df$calculated_spendable[i] <- rowSums(income_dist_df$calculated_spendable[i-1],
-    #                                                     income_dist_df$round_income[i],
-    #                                                     income_dist_df$profit_sold_house[i],
-    #                                                     -income_dist_df$calculated_costs[i],
-    #                                                     na.rm = TRUE)   }
+
     
+    df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, CALCULATED_SPENDABLE_COL] <-
+      rowSums(cbind(df[which(df[, ROUND_NUMBER_COL] %in% 0 == FALSE) - 1, CALCULATED_SPENDABLE_COL],
+                    df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, ROUND_INCOME_COL],
+                    df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, PROFIT_HOUSE_COL],
+                    -df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, TOTAL_COSTS_COL]), na.rm = TRUE)
     
-    income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "calculated_spendable"] <-
-      rowSums(cbind(income_dist_df[which(income_dist_df[, "groupround_round_number"] %in% 0 == FALSE) - 1, "calculated_spendable"],
-                    income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "round_income"],
-                    income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "profit_sold_house"],
-                    -income_dist_df[income_dist_df[, "groupround_round_number"] %in% 0 == FALSE, "calculated_costs"]), na.rm = TRUE)
+    df[, SPENDABLE_DIFFCOL] <- df[, SPENDABLE_INCOME_COL] - df[, CALCULATED_SPENDABLE_COL]
   }
   
   
-  income_dist_df$calculated_difference_spendable <- income_dist_df$spendable_income - income_dist_df$calculated_spendable
-  
-  return(income_dist_df)
+  return(df)
   
 }
   # Calcule the reference dataset with all players average

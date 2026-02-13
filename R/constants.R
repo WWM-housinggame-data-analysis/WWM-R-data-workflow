@@ -28,9 +28,15 @@ PREPROCESSED_DBTABLES <- c("income_dist_df")
 
 TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
 
-CALCULATED_COLS <- c("calculated_costs_personal_measures", "calculated_costs_house_measures")
+CALCULATED_COSTS_PERSONAL_COL <- "calculated_costs_personal_measures"
 
-names(CALCULATED_COLS) <- c("cost_house_measures_bought", "cost_personal_measures_bought")
+CALCULATED_COSTS_HOUSE_COL <- "calculated_costs_house_measures"
+
+CALCULATED_COLS <- c(CALCULATED_COSTS_PERSONAL_COL, CALCULATED_COSTS_HOUSE_COL)
+
+COST_HOUSE_COL <- "cost_house_measures_bought"
+
+names(CALCULATED_COLS) <- c(COST_HOUSE_COL, "cost_personal_measures_bought")
 
 ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
                    "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
@@ -50,13 +56,39 @@ LAST_PRICE_COL <- "last_sold_price"
 
 PERCENTAGE_FACTOR <- 100
 
-CALCULATED_COSTS_PERSONAL_COL <- "calculated_costs_personal_measures"
-
-COST_HOUSE_COL <- "cost_house_measures_bought"
-
 PLAYER_CODE_COL <- "player_code"
 
 ROUND_NUMBER_COL <- "groupround_round_number"
+
+PERSONAL_HOUSE_DIFFCOL <- "difference"
+
+CUMULATIVE_COSTS_PERSONAL_COL <- "cum_costs"
+
+CUMULATIVE_PERSONAL_HOUSE_DIFFCOL <- "cum_difference"
+
+IS_IHM_COL <- "is_initialhousemeasure"
+
+TOTAL_BOUGHT_COL <- "total_bought_measures"
+
+HOUSE_TOTAL_DIFFCOL <- "difference"
+
+CUMULATIVE_COSTS_HOUSE_COL <- "cum_costs"
+
+CUMULATIVE_HOUSE_TOTAL_DIFFCOL <- "cum_differences"
+
+CALCULATED_COSTS_DIFF <- "calculated_costs_measures_difference"
+
+TOTAL_DAMAGE_COL <- "total_damage_costs"
+
+TOTAL_COSTS_COL <- "calculated_costs"
+
+SPENDABLE_INCOME_COL <- "spendable_income"
+
+CALCULATED_SPENDABLE_COL <- "calculated_spendable"
+
+PROFIT_HOUSE_COL <- "profit_sold_house"
+
+SPENDABLE_DIFFCOL <- "calculated_difference_spendable"
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
