@@ -46,7 +46,7 @@ report_missing_cols <- function(df, in_cols, out_cols) {
 
 
 #calculate the costs of the personal measures bough
-retrieve_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
+append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
   
   ## Check constants used in calculation exist
   stopifnot("Default variable COST_ABSOLUTE_COL not found in R/constants.R" = exists(deparse(substitute(COST_ABSOLUTE_COL))),
@@ -76,31 +76,31 @@ retrieve_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
 }
 
 
-retrieve_personalmeasure_cumulative <- function(personalmeasure) {
+create_personalmeasure_cumulative_df <- function(pm_df) {
 
 
   #calculate the cumulative of the personal measures to compare it against the cost of house measures bought
-  personalmeasure_cumulative <- personalmeasure %>%
-    arrange(player_code, groupround_round_number) %>%   # ensure proper order
-    group_by(player_code, groupround_round_number) %>%  # group by player and round
+  pmc_df <- pm_df %>%
+    arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%   # ensure proper order
+    group_by(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%  # group by player and round
     #add up costs within each round for each player (since you may have multiple rows per round)
-    summarise(calculated_costs_personal_measures = sum(calculated_costs),# sum across rows in the round
-              total_bought_measures = first(cost_house_measures_bought), # keep the round’s value
+    summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),# sum across rows in the round
+              !!COST_HOUSE_COL := first(.data[[COST_HOUSE_COL]]), # keep the round’s value
               .groups = "drop"
     ) %>% 
     #ensure cumulative totals are calculated separately for each player
     mutate(
-      difference = calculated_costs_personal_measures - total_bought_measures
+      difference = .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]]
     ) %>%
     group_by(player_code) %>%
     arrange(groupround_round_number) %>%
     # compute the running total across rounds
     mutate(
-      cum_costs       = cumsum(calculated_costs_personal_measures),
+      !!CUMULATIVE_COSTS_PERSONAL_COL := cumsum(calculated_costs_personal_measures),
       cum_difference  = cumsum(difference)
     )
   
-  return(personalmeasure_cumulative)
+  return(pmc_df)
 }
 
 retrieve_housemeasure_cumulative <- function(housemeasure) {

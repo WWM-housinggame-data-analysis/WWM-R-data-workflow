@@ -50,6 +50,13 @@ LAST_PRICE_COL <- "last_sold_price"
 
 PERCENTAGE_FACTOR <- 100
 
+CALCULATED_COSTS_PERSONAL_COL <- "calculated_costs_personal_measures"
+
+COST_HOUSE_COL <- "cost_house_measures_bought"
+
+PLAYER_CODE_COL <- "player_code"
+
+ROUND_NUMBER_COL <- "groupround_round_number"
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
