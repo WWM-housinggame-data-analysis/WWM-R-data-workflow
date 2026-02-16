@@ -472,7 +472,7 @@ preprocess_dbtables <- function(dbtable_list) {
   income_dist_df <- append_income_grp(income_dist_df)
   
   income_dist_df <- income_dist_df %>%
-    mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, "income_grp"))], as.numeric)
+    mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))], as.numeric)
   
   income_dist_df <- calculate_total_costs(income_dist_df)
   
