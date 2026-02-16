@@ -90,16 +90,18 @@ PROFIT_HOUSE_COL <- "profit_sold_house"
 
 SPENDABLE_DIFFCOL <- "calculated_difference_spendable"
 
-WELFARE_LABELS <- c("Very Low",
-                    "Low",
-                    "Low-average",
-                    "High-average",
-                    "High",
-                    "Very High")
+WELFARE_LABELS <- c("60k" = "Very Low",
+                    "75k" = "Low",
+                    "90k" = "Low-average",
+                    "110k" = "High-average", 
+                    "130k" = "High", 
+                    "190k" = "Very High")
 
 WELFARE_ID_COL <- "welfaretype_id"
 
 WELFARE_LABEL_COL <- "welfare_level"
+
+INCOME_GRP_COL <- "income_grp"
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
@@ -121,15 +123,8 @@ fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "bla
 
 names(fill_values_all) <- names(EXPENSE_BARCOLS)
 
-
-WELFARE_LABELS <- c("60k" = "Very Low",
-                    "75k" = "Low",
-                    "90k" = "Low-average",
-                    "110k" = "High-average", 
-                    "130k" = "High", 
-                    "190k" = "Very High")
-
 K_FACTOR <- 1000
+names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
 INTERM_ROUNDS <- as.character(1:3)

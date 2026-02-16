@@ -281,29 +281,44 @@ append_welfare_labels <- function(pr_df) {
   
   
   ## Check data frame is in the expected format
-  stopifnot("housemeasure_df expected to be a data frame" = is.data.frame(pr_df))
+  stopifnot("playerround_df expected to be a data frame" = is.data.frame(pr_df))
+  
+  ## Check factor or character (non-numeric) columns are defined as such
+  detect_nonnum <- unlist(lapply(pr_df[, WELFARE_ID_COL], is.factor)) + unlist(lapply(pr_df[, WELFARE_ID_COL], is.character))
+  
+  if (any(detect_nonnum == 0)) {
+    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
+                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
+                ".")
+    )
+  }
   
   # Save unique welfare ids. ids sorted ascendingly, as in WELFARE_LABELS match
-  welfare_ids <- sort(unique(pr_df[, WELFARE_ID_COL]))
+  welfare_ids <- sort(unique(as.character(pr_df[, WELFARE_ID_COL])))
   
   
   ## Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
   
-  if (length(wt_codes) == 6) {
-    pr_df[, WELFARE_LABEL_COL] <- factor(
-      WELFARE_LABELS[match(pr_df[, WELFARE_ID_COL], welfare_ids)],
-      levels = WELFARE_LABELS,
-      ordered = TRUE
-    )
+  if (identical(unname(WELFARE_LABELS) %in% welfare_ids)) {
+    
+      pr_df <- pr_df %>%
+        mutate(
+          !!WELFARE_LABEL_COL := factor(WELFARE_LABELS[match(.data[[WELFARE_ID_COL]], welfare_ids)],
+                                        levels = WELFARE_LABELS,
+                                        ordered = TRUE
+          )
+        )
     
   } else {
     
-    warning(paste0("Expected 6 distinct welfaretype_id values, but found ",
-                  length(wt_codes),
-                  ". welfare_level not created."))
+    warning(paste0("Expected the following welfaretype_id value: ",
+                   paste(WELFARE_LABELS, collapse = ", "),
+                   ". Instead the following values were found: ",
+                   paste(welfare_ids, collapse = ", "),
+                   "."))
   }
   
-  # Stop test ----
+  return(pr_df)
 }
 
 ## Append difference between reported and calculated measures
@@ -474,8 +489,6 @@ calculate_spendable_income <- function(df) {
   ## Else
   } else {
     
-
-    
     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, CALCULATED_SPENDABLE_COL] <-
       rowSums(cbind(df[which(df[, ROUND_NUMBER_COL] %in% 0 == FALSE) - 1, CALCULATED_SPENDABLE_COL],
                     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, ROUND_INCOME_COL],
@@ -489,6 +502,42 @@ calculate_spendable_income <- function(df) {
   return(df)
   
 }
+
+## Append income_grp labels based on round_income to dataframe
+append_income_grp <- function(df) {
+  
+  ## Check constants used in calculation exist
+  stopifnot("Default variable WELFARE_LABELS not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABELS))),
+            "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
+            "Default variable K_FACTOR not found in R/constants.R" = exists(deparse(substitute(K_FACTOR))),
+            "Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))))
+  
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  # Save unique income labels. labels sorted ascendingly, as in WELFARE_LABELS match
+  income_labels <- sort(unique(paste0(df[, ROUND_INCOME_COL] / K_FACTOR, names(K_FACTOR))))
+  
+  # append income groups based on ROUND_INCOME_COL values
+  df <- df %>%
+    mutate(!!INCOME_GRP_COL := factor(paste0(.data[[ROUND_INCOME_COL]] / K_FACTOR, names(K_FACTOR)),
+                                      levels = income_labels,
+                                      ordered = TRUE))
+  
+  # if income_labels does not match names(WELFARE_LABELS), issue warning
+  if (identical(income_labels, names(WELFARE_LABELS)) == FALSE) {
+    
+    warning(paste0("Expected the following income_grp labels: ",
+                   paste(names(WELFARE_LABELS), collapse = ", "),
+                   ". Instead the following values were found: ",
+                   paste(income_labels, collapse = ", "),
+                   "."))
+  }
+  
+  return(df)
+  
+}
+
   # Calcule the reference dataset with all players average
   ## mapply safely substracts ingnoring NAs in either column 
   ## na.rm = TRUE remove or ignore NA (missing) values when performing calculations.
