@@ -90,6 +90,17 @@ PROFIT_HOUSE_COL <- "profit_sold_house"
 
 SPENDABLE_DIFFCOL <- "calculated_difference_spendable"
 
+WELFARE_LABELS <- c("Very Low",
+                    "Low",
+                    "Low-average",
+                    "High-average",
+                    "High",
+                    "Very High")
+
+WELFARE_ID_COL <- "welfaretype_id"
+
+WELFARE_LABEL_COL <- "welfare_level"
+
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
                      "cost_personal_measures_bought",

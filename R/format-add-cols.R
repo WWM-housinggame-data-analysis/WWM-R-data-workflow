@@ -270,6 +270,42 @@ retrieve_housemeasure_cumulative <- function(hm_df) {
   return(hmc_df)
 }
 
+## append human‑readable ordered categories matching numeric welfare IDso 
+append_welfare_labels <- function(pr_df) {
+  
+  ## Check constants used in calculation exist
+  stopifnot("Default variable WELFARE_LABELS not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABELS))),
+            "Default variable WELFARE_ID_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_ID_COL))),
+            "Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL)))
+  )
+  
+  
+  ## Check data frame is in the expected format
+  stopifnot("housemeasure_df expected to be a data frame" = is.data.frame(pr_df))
+  
+  # Save unique welfare ids. ids sorted ascendingly, as in WELFARE_LABELS match
+  welfare_ids <- sort(unique(pr_df[, WELFARE_ID_COL]))
+  
+  
+  ## Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
+  
+  if (length(wt_codes) == 6) {
+    pr_df[, WELFARE_LABEL_COL] <- factor(
+      WELFARE_LABELS[match(pr_df[, WELFARE_ID_COL], welfare_ids)],
+      levels = WELFARE_LABELS,
+      ordered = TRUE
+    )
+    
+  } else {
+    
+    warning(paste0("Expected 6 distinct welfaretype_id values, but found ",
+                  length(wt_codes),
+                  ". welfare_level not created."))
+  }
+  
+  # Stop test ----
+}
+
 ## Append difference between reported and calculated measures
 append_reported_calculatedcosts_difference <- function(df) {
   

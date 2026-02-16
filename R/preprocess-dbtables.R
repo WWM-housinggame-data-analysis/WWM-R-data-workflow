@@ -354,36 +354,7 @@ preprocess_dbtables <- function(dbtable_list) {
   
   manipulate2_playerround <- function(playerround_df, housemeasure_cumulative, personalmeasure_cumulative) {
     
-    # Move to tests/test_welfare levels ----
-    
-    # CHANGES annehuitema2003-3: Added pluvial&fluvial costs as total_damage to playerround_df and income_dist_df
-    # Map numeric welfaretype_id to welfare text levels
-    #converts numeric welfare IDs into human‑readable ordered categories
-    # Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
-    
-    welfare_labels <- c("Very Low",
-                        "Low",
-                        "Low-average",
-                        "High-average",
-                        "High",
-                        "Very High")
-    
-    wt_codes <- sort(unique(playerround_df$welfaretype_id))
-    
-    if (length(wt_codes) == 6) {
-      playerround_df$welfare_level <- factor(
-        welfare_labels[match(playerround_df$welfaretype_id, wt_codes)],
-        levels = welfare_labels,
-        ordered = TRUE
-      )
-    } else {
-      warning("Expected 6 distinct welfaretype_id values, but found ",   #make sure that it returns warning if not applicable
-              length(wt_codes),
-              ". welfare_level not created.")
-    }
-    
-    # Stop test ----
-    
+    playerround_df <- append_welfare_labels(playerround_df)
     
     playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
                                                housemeasure_cumulative, c("player_code", "groupround_round_number"),
