@@ -538,24 +538,71 @@ append_income_grp <- function(df) {
   
 }
 
-  # Calcule the reference dataset with all players average
-  ## mapply safely substracts ingnoring NAs in either column 
-  ## na.rm = TRUE remove or ignore NA (missing) values when performing calculations.
-  
+## Calculate income - living costs
+append_income_living_diff <- function(df) {
 
+  ## Check constants used in calculation exist
+  stopifnot("Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
+            "Default variable LIVING_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(LIVING_COSTS_COL))),
+            "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))))
   
-  # income_dist_df$income_minus_living <- mapply(
-  #   function(income, cost) sum(income, -cost, na.rm = TRUE),
-  #   income_dist_df$round_income,
-  #   income_dist_df$living_costs
-  # )
-  # 
-    
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  ## Check columns to which constants refer in calculation exist
+  num_cols <- c(ROUND_INCOME_COL, LIVING_COSTS_COL)
+  
+  if (any(num_cols %in% names(df) == FALSE)){
+    stop(paste0("These df columns could not be found: ",
+                paste(num_cols[num_cols %in% names(df) == FALSE], collapse = ", "),
+                "."))
+  }
+  
+  ## Check numeric columns are defined as such
+  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
+    stop(paste0("These df columns expected to be numeric: ",
+                paste(names(unlist(lapply(pdf[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
+  df[, INCOME_LIVING_DIFFCOL] <- rowSums(cbind(df[, ROUND_INCOME_COL],
+                                               -df[ ,LIVING_COSTS_COL]), na.rm = TRUE)
+  
+  return(df)
+}
 
-  # income_dist_df$profit_minus_spent_savings_house_moving <- mapply(
-  #   function(profit, spent) sum(profit, -spent, na.rm = TRUE),
-  #   income_dist_df$profit_sold_house,
-  #   income_dist_df$spent_savings_for_buying_house
-  # )
-  # 
+## Calculate  "profit - spent savings house moving"
+append_housemoving_diff <- function(df) {
+  
+  ## Check constants used in calculation exist
+  stopifnot("Default variable PROFIT_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(PROFIT_HOUSE_COL))),
+            "Default variable SPENT_SAVINGS_COL not found in R/constants.R" = exists(deparse(substitute(SPENT_SAVINGS_COL))),
+            "Default variable HOUSEMOVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSEMOVING_DIFFCOL))))
+  
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  ## Check columns to which constants refer in calculation exist
+  num_cols <- c(PROFIT_HOUSE_COL, SPENT_SAVINGS_COL)
+  
+  if (any(num_cols %in% names(df) == FALSE)){
+    stop(paste0("These df columns could not be found: ",
+                paste(num_cols[num_cols %in% names(df) == FALSE], collapse = ", "),
+                "."))
+  }
+  
+  ## Check numeric columns are defined as such
+  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
+    stop(paste0("These df columns expected to be numeric: ",
+                paste(names(unlist(lapply(pdf[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+  
+  df[, HOUSEMOVING_DIFFCOL] <- rowSums(cbind(df[, PROFIT_HOUSE_COL],
+                                             -df[, SPENT_SAVINGS_COL]), na.rm = TRUE)
+  
+  return(df)
+}
 

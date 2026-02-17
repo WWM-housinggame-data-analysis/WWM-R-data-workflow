@@ -88,6 +88,10 @@ CALCULATED_SPENDABLE_COL <- "calculated_spendable"
 
 PROFIT_HOUSE_COL <- "profit_sold_house"
 
+SPENT_SAVINGS_COL <- "spent_savings_for_buying_house"
+
+HOUSEMOVING_DIFFCOL <- "profit_minus_spent_savings_house_moving"
+
 SPENDABLE_DIFFCOL <- "calculated_difference_spendable"
 
 WELFARE_LABELS <- c("60k" = "Very Low",
@@ -102,6 +106,10 @@ WELFARE_ID_COL <- "welfaretype_id"
 WELFARE_LABEL_COL <- "welfare_level"
 
 INCOME_GRP_COL <- "income_grp"
+
+LIVING_COSTS_COL <- "living_costs"
+
+INCOME_LIVING_DIFFCOL <- "income_minus_living"
 
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",

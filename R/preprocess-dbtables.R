@@ -478,11 +478,9 @@ preprocess_dbtables <- function(dbtable_list) {
   
   income_dist_df <- calculate_spendable_income(income_dist_df)
   
-  income_dist_df[, "income_minus_living"] <- rowSums(cbind(income_dist_df[, "round_income"],
-                                                           -income_dist_df[ ,"living_costs"]), na.rm = TRUE)
+  income_dist_df <- append_income_living_diff(income_dist_df)
   
-  income_dist_df[, "profit_minus_spent_savings_house_moving"] <- rowSums(cbind(income_dist_df[, "profit_sold_house"],
-                                                                               -income_dist_df[ ,"spent_savings_for_buying_house"]), na.rm = TRUE)
+  income_dist_df <- append_housemoving_diff(income_dist_df)
   
   # Step 3: Income distribution specification ---------------------------------------------------
   # CHANGES vjcortesa-7: Added to the dbtable_list file the tables added in the code
