@@ -43,7 +43,7 @@ source(here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here(file.path(FUNCTION_PATH, "plot-data.R")))
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
 source(here(file.path(FUNCTION_PATH, "interact-data.R")))
-source(here(file.path(FUNCTION_PATH, "render-plots.R")))
+source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 source(here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
 
 
