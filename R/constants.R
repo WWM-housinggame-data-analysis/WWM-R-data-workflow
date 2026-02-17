@@ -42,8 +42,6 @@ ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house
                    "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
                    "cost_fluvial_damage", "cost_pluvial_damage")
 
-DF_NAME <- "income_dist_df"
-
 COST_ABSOLUTE_COL <- "cost_absolute"
 
 PERCENTAGE_INCOME_COL <- "cost_percentage_income"

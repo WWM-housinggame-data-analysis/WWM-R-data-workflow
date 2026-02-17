@@ -9,11 +9,38 @@ source(here(file.path(FUNCTION_PATH, "constants.R")))
 
 # Functions ----
 
+check_df_cols <- function(df, cols) {
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  ## Check columns are found in data frame
+  if (any(cols %in% names(df) == FALSE)){
+    stop(paste0("These personalmeasure_df columns could not be found: ",
+                paste(cols[cols %in% names(df) == FALSE], collapse = ", "),
+                "."))
+  }
+}
+
+check_num_cols <- function(df, cols) {
+  
+  ## Check is data frame and columns are found in data frame
+  check_df_cols(df, cols)
+  
+  ## check columns are numeric
+  numtext_vec <- unlist(lapply(df[, cols], is.numeric))
+  
+  if (any(numtext_vec == FALSE)) {
+    
+    stop(paste0("These df columns expected to be numeric: ",
+                paste(names(numtext_vec)[numtext_vec == FALSE], collapse = ", "),
+                ".")
+    )
+  }
+}
+
+
 ## Report missing cols for a given dataframe
 report_missing_cols <- function(df, in_cols, out_cols) {
-  
-  # Check DF_NAME exists
-  stopifnot("Default variable DF_NAME not found in R/constants.R" = exists(deparse(substitute(DF_NAME))))
   
   ## Assumption that there are no missing columns
   missing_all <- FALSE
@@ -23,7 +50,7 @@ report_missing_cols <- function(df, in_cols, out_cols) {
     
     warning(paste0("(All) expected collumn(s) ",
                    paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
-                   " missing in ", DF_NAME, ". Column(s) ", 
+                   " missing in df. Column(s) ", 
                    paste(out_cols, collapse = ", "),
                    " cannot be added to this dataframe."
                    )
@@ -35,7 +62,7 @@ report_missing_cols <- function(df, in_cols, out_cols) {
     
     warning(paste0("Expected Collumn(s) ",
                    paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
-                   " missing in ", DF_NAME, ". They will not be used in Calculating collumn(s) ",
+                   " missing in df. They will not be used in Calculating collumn(s) ",
                    paste(out_cols, collapse = ", "), "."
                    )
             )
@@ -56,25 +83,9 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
             "Default variable PERCENTAGE_FACTOR not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_FACTOR))),
             "Default variable LAST_PRICE_COL not found in R/constants.R" = exists(deparse(substitute(LAST_PRICE_COL))),
   )
-  
-  ## Check data frame is in the expected format
-  stopifnot("personalmeasure_df expected to be a data frame" = is.data.frame(pm_df))
-            
-  ## Check columns to which constants refer in calculation exist, and are numeric
-  cols <- c(PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL, ROUND_INCOME_COL, LAST_PRICE_COL)
-  
-  if (any(cols %in% names(pm_df) == FALSE)){
-    stop(paste0("These personalmeasure_df columns could not be found: ",
-               paste(cols[cols %in% names(pm_df) == FALSE], collapse = ", "),
-               "."))
-  }
-  
-  if (any(unlist(lapply(pm_df[,cols], is.numeric)) == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                paste(names(unlist(lapply(pm_df[,cols], is.numeric)))[unlist(lapply(pm_df[,cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
+   
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(pm_df, c(PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL, ROUND_INCOME_COL, LAST_PRICE_COL))
   
   
   ## Calculate costs by summing absolute costs, amount of income and house-related costs 
