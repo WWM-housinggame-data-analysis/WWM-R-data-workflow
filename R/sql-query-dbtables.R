@@ -184,7 +184,7 @@ sort_dbtable_sqlquery <- function(dbtable, sort_col, asc = TRUE) {
 }
 
 
-## Create sql query to compare matching columns between two tables. An additional column is added informing whether the matching columns are the same or not
+## Create sql query to compare matching columns between two tables. An additional column is added to dbtable1 informing whether the matching columns are the same or not
 compare_dbtables_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, compare_col) {
   
   ## Check match_dbtable1_cols and match_dbtable2_cols are not blank, can be found in dbtable1 and dbtable, respectively, and have the same exact length
@@ -199,7 +199,7 @@ compare_dbtables_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, m
   check_df_cols(dbtable2, match_dbtable2_cols)
   
   ## Check compare_col does not repeat already existing column names in dbtable
-  stopifnot("compare_col is already existing column name in dbtable." = compare_col %in% names(dbtable) == FALSE)
+  stopifnot("compare_col is already existing column name in dbtable." = compare_col %in% names(dbtable1) == FALSE)
   
   ## Write case statement where match_dbtable1_cols in dbtable1 and match_dbtable2_cols in dbtable2 are compared to check if they are the same or not.
   case_statement <- paste0("CASE WHEN EXISTS (SELECT TRUE FROM [", deparse(substitute(dbtable2)), "] AS dbtable2 ",
