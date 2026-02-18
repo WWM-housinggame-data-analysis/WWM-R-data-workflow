@@ -6,70 +6,11 @@ FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here(file.path(FUNCTION_PATH, "constants.R")))
+source(here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # Functions ----
 
-check_df_cols <- function(df, cols) {
-  ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
-  
-  ## Check columns are found in data frame
-  if (any(cols %in% names(df) == FALSE)){
-    stop(paste0("These personalmeasure_df columns could not be found: ",
-                paste(cols[cols %in% names(df) == FALSE], collapse = ", "),
-                "."))
-  }
-}
 
-check_num_cols <- function(df, cols) {
-  
-  ## Check is data frame and columns are found in data frame
-  check_df_cols(df, cols)
-  
-  ## check columns are numeric
-  numtext_vec <- unlist(lapply(df[, cols], is.numeric))
-  
-  if (any(numtext_vec == FALSE)) {
-    
-    stop(paste0("These df columns expected to be numeric: ",
-                paste(names(numtext_vec)[numtext_vec == FALSE], collapse = ", "),
-                ".")
-    )
-  }
-}
-
-
-## Report missing cols for a given dataframe
-report_missing_cols <- function(df, in_cols, out_cols) {
-  
-  ## Assumption that there are no missing columns
-  missing_all <- FALSE
-  
-  ## Warning for if all input columns are missing
-  if (any(in_cols %in% names(df)) == FALSE) {
-    
-    warning(paste0("(All) expected collumn(s) ",
-                   paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
-                   " missing in df. Column(s) ", 
-                   paste(out_cols, collapse = ", "),
-                   " cannot be added to this dataframe."
-                   )
-            )
-    
-    missing_all <- TRUE
-            
-  } else if (all(in_cols %in% names(df)) == FALSE) {
-    
-    warning(paste0("Expected Collumn(s) ",
-                   paste(in_cols[in_cols %in% names(df) == FALSE], collapse = ", "),
-                   " missing in df. They will not be used in Calculating collumn(s) ",
-                   paste(out_cols, collapse = ", "), "."
-                   )
-            )
-  }
-  
-  return(missing_all)
-}
 
 
 #calculate the costs of the personal measures bough
@@ -119,38 +60,13 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
             "Default variable CUMULATIVE_PERSONAL_HOUSE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(CUMULATIVE_PERSONAL_HOUSE_DIFFCOL)))
   )
   
-  ## Check data frame is in the expected format
-  stopifnot("personalmeasure_df expected to be a data frame" = is.data.frame(pm_df))
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(pm_df, c(CALCULATED_COSTS_PERSONAL_COL, COST_HOUSE_COL))
   
-  ## Check columns to which constants refer in calculation exist
-  nonnum_cols <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
-  num_cols <- c(CALCULATED_COSTS_PERSONAL_COL, COST_HOUSE_COL)
-  cols <- c(nonnum_cols, num_cols)
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
+  check_char_cols(pm_df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
   
-  if (any(cols %in% names(pm_df) == FALSE)){
-    stop(paste0("These personalmeasure_df columns could not be found: ",
-                paste(cols[cols %in% names(pm_df) == FALSE], collapse = ", "),
-                "."))
-  }
   
-  ## Check factor or character (non-numeric) columns are defined as such
-  detect_nonnum <- unlist(lapply(pm_df[,nonnum_cols], is.factor)) + unlist(lapply(pm_df[,nonnum_cols], is.character))
-  
-  if (any(detect_nonnum == 0)) {
-    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
-                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
-                ".")
-    )
-  }
-  
-  ## Check numeric columns are defined as such
-  if (any(unlist(lapply(pm_df[,num_cols], is.numeric)) == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                paste(names(unlist(lapply(pm_df[,num_cols], is.numeric)))[unlist(lapply(pm_df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
-
   #calculate the cumulative of the personal measures to compare it against the cost of house measures bought
   pmc_df <- pm_df %>%
     
@@ -200,49 +116,14 @@ retrieve_housemeasure_cumulative <- function(hm_df) {
   )
   
   
-  ## Check data frame is in the expected format
-  stopifnot("housemeasure_df expected to be a data frame" = is.data.frame(hm_df))
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(hm_df, c(COST_ABSOLUTE_COL, COST_HOUSE_COL))
   
-  ## Check columns to which constants refer in calculation exist
-  nonnum_cols <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
-  num_cols <- c(COST_ABSOLUTE_COL, COST_HOUSE_COL)
-  logic_cols <- IS_IHM_COL
-  
-  cols <- c(nonnum_cols, num_cols, logic_cols)
-  
-  if (any(cols %in% names(hm_df) == FALSE)){
-    stop(paste0("These housemeasure_df columns could not be found: ",
-                paste(cols[cols %in% names(hm_df) == FALSE], collapse = ", "),
-                "."))
-  }
-  
-  ## Check factor or character (non-numeric) columns are defined as such
-  detect_nonnum <- unlist(lapply(hm_df[,nonnum_cols], is.factor)) + unlist(lapply(hm_df[,nonnum_cols], is.character))
-  
-  if (any(detect_nonnum == 0)) {
-    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
-                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
-                ".")
-    )
-  }
-  
-  ## Check logical columns are defined as such
-  if (any(unlist(lapply(hm_df[,logic_cols], is.logical)) == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be logical: ",
-                paste(names(unlist(lapply(hm_df[,logic_cols], is.logical)))[unlist(lapply(hm_df[,logic_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
-  
-  
-  ## Check numeric columns are defined as such
-  if (any(unlist(lapply(hm_df[,num_cols], is.numeric)) == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                paste(names(unlist(lapply(hm_df[,num_cols], is.numeric)))[unlist(lapply(hm_df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
-  
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
+  check_char_cols(hm_df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
+
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are logical
+  check_logical_cols(hm_df, IS_IHM_COL)
   
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
   #exclude the costs of the housemeasures that came implemented in the house when bought
@@ -290,26 +171,14 @@ append_welfare_labels <- function(pr_df) {
             "Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL)))
   )
   
-  
-  ## Check data frame is in the expected format
-  stopifnot("playerround_df expected to be a data frame" = is.data.frame(pr_df))
-  
-  ## Check factor or character (non-numeric) columns are defined as such
-  detect_nonnum <- unlist(lapply(pr_df[, WELFARE_ID_COL], is.factor)) + unlist(lapply(pr_df[, WELFARE_ID_COL], is.character))
-  
-  if (any(detect_nonnum == 0)) {
-    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
-                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
-                ".")
-    )
-  }
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
+  check_char_cols(pr_df, WELFARE_ID_COL)
   
   # Save unique welfare ids. ids sorted ascendingly, as in WELFARE_LABELS match
   welfare_ids <- sort(unique(as.character(pr_df[, WELFARE_ID_COL])))
   
   
   ## Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
-  
   if (identical(unname(WELFARE_LABELS) %in% welfare_ids)) {
     
       pr_df <- pr_df %>%
@@ -339,9 +208,6 @@ append_reported_calculatedcosts_difference <- function(df) {
   stopifnot("Default variable CALCULATED_COLS not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COLS))),
             "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(CALCULATED_COSTS_DIFF))))
             
-  ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
-  
   ## Check at least one calculated cost is not missing
   missing_all <- report_missing_cols(df, CALCULATED_COLS, CALCULATED_COSTS_DIFF)
   
@@ -358,12 +224,7 @@ append_reported_calculatedcosts_difference <- function(df) {
     repor_cols <- names(CALCULATED_COLS)[col_cross]
     
     ## Check numeric columns are defined as such
-    if (any(unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)) == FALSE)) {
-      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                  paste(names(unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)))[unlist(lapply(df[,c(calc_cols, repor_cols)], is.numeric)) == FALSE], collapse = ", "),
-                  ".")
-      )
-    }
+    check_num_cols(df, c(repor_cols, calc_cols))
     
     ## calculate difference between reported-calculated cost pairs
     df[, CALCULATED_COSTS_DIFF] <-
@@ -390,14 +251,8 @@ calculate_total_damage_costs <- function(df) {
   # In case at least one element of TYPE_COST_COLS is not missing, check the columns are numeric and calculate their sum
   if(missing_all == FALSE) {
     
-    num_cols <- TYPE_COST_COLS[TYPE_COST_COLS %in% names(df)]
-    
-    if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
-      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                  paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                  ".")
-      )
-    }
+    ## Check numeric columns are defined as such
+    check_num_cols(df, TYPE_COST_COLS[TYPE_COST_COLS %in% names(df)])
     
     df[, TOTAL_DAMAGE_COL] <- rowSums(df[names(df) %in% TYPE_COST_COLS], na.rm = TRUE)
   }
@@ -416,23 +271,13 @@ append_calculate_total_costs <- function(df) {
   stopifnot("Default variable ALL_COST_COLS not found in R/constants.R" = exists(deparse(substitute(ALL_COST_COLS))),
             "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))))
   
-  ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
-  
   # Check at least one element of ALL_COST_COLS is not missing in df
   missing_all <- report_missing_cols(df, ALL_COST_COLS, TOTAL_COSTS_COL)
   
   # In case at least one element of ALL_COST_COLS is not missing, check columns are numeric and calculate their sum
   if(missing_all == FALSE) {
     
-    num_cols <- ALL_COST_COLS[ALL_COST_COLS %in% names(df)]
-    
-    if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
-      stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                  paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                  ".")
-      )
-    }
+    check_num_cols(df, ALL_COST_COLS[ALL_COST_COLS %in% names(df)])
     
     df[, TOTAL_COSTS_COL] <- rowSums(df[names(df) %in% ALL_COST_COLS], na.rm = TRUE) 
   }
@@ -454,50 +299,26 @@ calculate_spendable_income <- function(df) {
   ## Check data frame is in the expected format
   stopifnot("df expected to be a data frame" = is.data.frame(df))
   
-  nonnum_col <- c(PLAYER_CODE_COL, ROUND_NUMBER_COL)
-  num_col <- SPENDABLE_INCOME_COL
-  cols <- c(nonnum_col, num_col)
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
+  check_char_cols(df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
   
-  if (any(cols %in% names(hm_df) == FALSE)){
-    stop(paste0("These personalmeasure_df columns could not be found: ",
-                paste(cols[cols %in% names(hm_df) == FALSE], collapse = ", "),
-                "."))
-  }
-  
-  ## Check factor or character (non-numeric) columns are defined as such
-  detect_nonnum <- unlist(lapply(df[,nonnum_cols], is.factor)) + unlist(lapply(df[,nonnum_cols], is.character))
-  
-  if (any(detect_nonnum == 0)) {
-    stop(paste0("These personalmeasure_df columns expected to be factor or character: ",
-                paste(names(detect_nonnum)[detect_nonnum == 0], collapse = ", "),
-                ".")
-    )
-  }
-  
-  ## Check numeric columns are defined as such
-  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be numeric: ",
-                paste(names(unlist(lapply(df[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(df, SPENDABLE_INCOME_COL)
   
   # Check that players found match those expected
   expected_players <- unique(df[, PLAYER_CODE_COL])
   
   found_players <- df %>% filter(ROUND_NUMBER_COL %in% 0) %>% pull(PLAYER_CODE_COL)
   
-  
   df <- df %>%
     arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL))) %>%
     mutate(!!CALCULATED_SPENDABLE_COL := .data[[SPENDABLE_INCOME_COL]])
   
-  # mismatch between found and expected players stops run
+  # mismatch between found and expected players stops run, otherwise columns and CALCULATED_SPENDABLE_COL and SPENDABLE_DIFFCOL are calculated
   if (any(expected_players %in% found_players) == FALSE) {
     
     stop(paste("Missing Round Number 0 value detected for players", paste(expected_players[expected_players %in% found_players == FALSE], collapse = ", ")))
   
-  ## Else
   } else {
     
     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, CALCULATED_SPENDABLE_COL] <-
@@ -509,9 +330,7 @@ calculate_spendable_income <- function(df) {
     df[, SPENDABLE_DIFFCOL] <- df[, SPENDABLE_INCOME_COL] - df[, CALCULATED_SPENDABLE_COL]
   }
   
-  
   return(df)
-  
 }
 
 ## Append income_grp labels based on round_income to dataframe
@@ -521,10 +340,10 @@ append_income_grp <- function(df) {
   stopifnot("Default variable WELFARE_LABELS not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABELS))),
             "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
             "Default variable K_FACTOR not found in R/constants.R" = exists(deparse(substitute(K_FACTOR))),
-            "Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))))
+            "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))))
   
-  ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  ## Check data frame is in the expected format and columns to which constants refer in calculation exist
+  check_df_cols(df, ROUND_INCOME_COL)
   
   # Save unique income labels. labels sorted ascendingly, as in WELFARE_LABELS match
   income_labels <- sort(unique(paste0(df[, ROUND_INCOME_COL] / K_FACTOR, names(K_FACTOR))))
@@ -557,31 +376,15 @@ append_income_living_diff <- function(df) {
             "Default variable LIVING_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(LIVING_COSTS_COL))),
             "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))))
   
-  ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
-  
-  ## Check columns to which constants refer in calculation exist
-  num_cols <- c(ROUND_INCOME_COL, LIVING_COSTS_COL)
-  
-  if (any(num_cols %in% names(df) == FALSE)){
-    stop(paste0("These df columns could not be found: ",
-                paste(num_cols[num_cols %in% names(df) == FALSE], collapse = ", "),
-                "."))
-  }
-  
-  ## Check numeric columns are defined as such
-  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
-    stop(paste0("These df columns expected to be numeric: ",
-                paste(names(unlist(lapply(pdf[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(df, c(ROUND_INCOME_COL, LIVING_COSTS_COL))
   
   df[, INCOME_LIVING_DIFFCOL] <- rowSums(cbind(df[, ROUND_INCOME_COL],
                                                -df[ ,LIVING_COSTS_COL]), na.rm = TRUE)
   
   return(df)
 }
+
 
 ## Calculate  "profit - spent savings house moving"
 append_housemoving_diff <- function(df) {
@@ -594,22 +397,8 @@ append_housemoving_diff <- function(df) {
   ## Check data frame is in the expected format
   stopifnot("df expected to be a data frame" = is.data.frame(df))
   
-  ## Check columns to which constants refer in calculation exist
-  num_cols <- c(PROFIT_HOUSE_COL, SPENT_SAVINGS_COL)
-  
-  if (any(num_cols %in% names(df) == FALSE)){
-    stop(paste0("These df columns could not be found: ",
-                paste(num_cols[num_cols %in% names(df) == FALSE], collapse = ", "),
-                "."))
-  }
-  
-  ## Check numeric columns are defined as such
-  if (any(unlist(lapply(df[,num_cols], is.numeric)) == FALSE)) {
-    stop(paste0("These df columns expected to be numeric: ",
-                paste(names(unlist(lapply(pdf[,num_cols], is.numeric)))[unlist(lapply(df[,num_cols], is.numeric)) == FALSE], collapse = ", "),
-                ".")
-    )
-  }
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(df, c(PROFIT_HOUSE_COL, SPENT_SAVINGS_COL))
   
   df[, HOUSEMOVING_DIFFCOL] <- rowSums(cbind(df[, PROFIT_HOUSE_COL],
                                              -df[, SPENT_SAVINGS_COL]), na.rm = TRUE)
