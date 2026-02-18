@@ -69,7 +69,7 @@ check_logical_cols <- function(df, cols) {
   detect_logical <- unlist(lapply(df[, cols], is.logical))
   
   if (any(detect_logical == FALSE)) {
-    stop(paste0("These personalmeasure_df columns expected to be logical: ",
+    stop(paste0("These df columns expected to be logical: ",
                 paste(names(detect_logical)[detect_logical == FALSE], collapse = ", "),
                 ".")
     )

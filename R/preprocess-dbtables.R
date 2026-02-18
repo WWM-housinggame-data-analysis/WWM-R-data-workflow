@@ -422,30 +422,42 @@ preprocess_dbtables <- function(dbtable_list) {
   # playerround_df <- append_playerround_costmeas(playerround_df, dataset_date)
     
   
-  manipulate2_playerround <- function(playerround_df, housemeasure_cumulative_df, personalmeasure_cumulative_df) {
-    
-    playerround_df <- append_welfare_labels(playerround_df, WELFARE_LABEL_COL)
-    
-    playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
-                                               housemeasure_cumulative_df, c("player_code", "groupround_round_number"),
-                                               kept_dbtable2_cols = "calculated_costs_house_measures"))
-    
-    
-    playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
-                                               personalmeasure_cumulative_df, c("player_code", "groupround_round_number"),
-                                               kept_dbtable2_cols = "calculated_costs_personal_measures"))
-    
-    playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
-    
-  }
+  ## append human‑readable ordered categories matching numeric welfare IDs  
+  playerround_df <- append_welfare_labels(playerround_df, WELFARE_LABEL_COL)
   
-  playerround_df <- manipulate2_playerround(playerround_df, housemeasure_cumulative_df, personalmeasure_cumulative_df)
+  
+  ## Add to playerround_df the calculated costs of measures
+  ##
+  ## "SELECT dbtable1.*, dbtable2.calculated_costs_house_measures
+  ##  FROM [playerround_df] AS dbtable1
+  ##  LEFT JOIN [housemeasure_cumulative_df] AS dbtable2
+  ##  ON dbtable1.player_code = dbtable2.player_code AND dbtable1.groupround_round_number = dbtable2.groupround_round_number"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
+                                             housemeasure_cumulative_df, c("player_code", "groupround_round_number"),
+                                             kept_dbtable2_cols = "calculated_costs_house_measures"))
+  
+  
+  ## "SELECT dbtable1.*, dbtable2.calculated_costs_personal_measures
+  ## FROM [playerround_df] AS dbtable1
+  ## LEFT JOIN [personalmeasure_cumulative_df] AS dbtable2
+  ## ON dbtable1.player_code = dbtable2.player_code AND dbtable1.groupround_round_number = dbtable2.groupround_round_number"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
+                                             personalmeasure_cumulative_df, c("player_code", "groupround_round_number"),
+                                             kept_dbtable2_cols = "calculated_costs_personal_measures"))
+  
+  
+  ##  Sort playerround_df by player_code ascendingly
+  ## "SELECT * FROM playerround_df ORDER BY player_code ASC"
+  playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
+  
   
   playerround_df <- append_reported_calculated_difference(playerround_df, REPORTED_CALCULATED_COSTS_DIFFCOL)
   
   playerround_df <- append_total_damage_costs(playerround_df, TOTAL_DAMAGE_COL)
-    
-
+  
+  
   # questionitem_df <- sqldf("
   # SELECT 
   #   qi.id AS questionitem_id, qi.code AS answer_code, qi.name AS answer_name, 

@@ -97,7 +97,8 @@ create_housemeasure_cumulative_df <- function(hm_df) {
   check_df_cols(hm_df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
   
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are logical
-  check_logical_cols(hm_df, IS_IHM_COL)
+  #check_logical_cols(hm_df, IS_IHM_COL)
+  check_num_cols(hm_df, IS_IHM_COL)
   
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
   #exclude the costs of the housemeasures that came implemented in the house when bought

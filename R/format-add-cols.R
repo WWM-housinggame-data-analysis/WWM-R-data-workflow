@@ -44,7 +44,7 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
 }
 
 
-## append human‑readable ordered categories matching numeric welfare IDso 
+## append human‑readable ordered categories matching numeric welfare IDs 
 append_welfare_labels <- function(pr_df, label_col) {
   
   ## Check constants used in calculation exist
@@ -52,14 +52,17 @@ append_welfare_labels <- function(pr_df, label_col) {
             "Default variable WELFARE_ID_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_ID_COL))))
   
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
-  check_char_cols(pr_df, WELFARE_ID_COL)
+  ## check_char_cols(pr_df, WELFARE_ID_COL)
+  check_df_cols(pr_df, WELFARE_ID_COL)
+  
   
   ## Save unique welfare ids. ids sorted ascendingly, as in WELFARE_LABELS match
   welfare_ids <- sort(unique(as.character(pr_df[, WELFARE_ID_COL])))
   
   
-  ## Only if there are exactly six distinct IDs. Otherwise, it warns you that the mapping isn’t valid.
-  if (identical(unname(WELFARE_LABELS) %in% welfare_ids)) {
+  ## If the number of distinct IDs is the same as WELFARE_LABELS, then WELFARE_LABELS are mapped to the ids in pr_df, assuming id values are sorted according to increasing welfare level (th higher the id value, the higher the welfare level)
+  ## Otherwise, it warns you that the mapping isn’t valid.
+  if (length(WELFARE_LABELS) == length(welfare_ids)) {
     
       pr_df <- pr_df %>%
         mutate(
@@ -71,11 +74,8 @@ append_welfare_labels <- function(pr_df, label_col) {
     
   } else {
     
-    warning(paste0("Expected the following welfaretype_id value: ",
-                   paste(WELFARE_LABELS, collapse = ", "),
-                   ". Instead the following values were found: ",
-                   paste(welfare_ids, collapse = ", "),
-                   "."))
+    warning(paste0("Expected ", length(WELFARE_LABELS), " welfaretype_id values. ",
+                   "Instead, ", length(welfare_ids), " values were found."))
   }
   
   return(pr_df)
@@ -207,7 +207,8 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
             "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))))
   
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are character or factor
-  check_char_cols(df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
+  #check_char_cols(df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
+  check_df_cols(df, c(PLAYER_CODE_COL, ROUND_NUMBER_COL))
   
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
   check_num_cols(df, c(SPENDABLE_INCOME_COL, ROUND_INCOME_COL, PROFIT_HOUSE_COL, TOTAL_COSTS_COL))
