@@ -225,7 +225,7 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
   } else {
     
     df <- df %>%
-      arrange(across(all_of(PLAYER_CODE_COL, ROUND_NUMBER_COL)))
+      arrange(across(all_of(c(PLAYER_CODE_COL, ROUND_NUMBER_COL))))
     
     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, calc_col] <-
       rowSums(cbind(df[which(df[, ROUND_NUMBER_COL] %in% 0 == FALSE) - 1, SPENDABLE_INCOME_COL],

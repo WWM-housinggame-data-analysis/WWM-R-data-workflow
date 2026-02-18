@@ -1,231 +1,270 @@
-# Set all default variables or global options and all the path variables at the top of the code.
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
 
+## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
-# Load required functions
+## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
-
 source(here(file.path(FUNCTION_PATH, "create-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
 
-stopifnot("Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
-          "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(REPORTED_CALCULATED_COSTS_DIFFCOL))),
-          "Default variable TOTAL_DAMAGE_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_DAMAGE_COL))),
-          "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
-          "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))),
-          "Default variable CALCULATED_SPENDABLE_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_SPENDABLE_COL))),
-          "Default variable SPENDABLE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(SPENDABLE_DIFFCOL))),
-          "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))),
-          "Default variable HOUSEMOVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSEMOVING_DIFFCOL))))
+
+# Functions ----
+
+## Unpack dataframes in list and save them as independent variables
+unpack_dbtable_list <- function(dblist, suffix = "_df") {
+  if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {
+    stop("Missing dbtables needed for preprocessing")
+  }
+  dblist <- setNames(dblist, paste0(names(dblist), suffix))
+  list2env(dblist, envir = parent.frame())
+}
+
 
 preprocess_dbtables <- function(dbtable_list) {
   
-  unpack_dbtable_list <- function(dblist, suffix = "_df") {
-    if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {
-      stop("Missing dbtables needed for preprocessing")
-    }
-    dblist <- setNames(dblist, paste0(names(dblist), suffix))
-    list2env(dblist, envir = parent.frame())
-  }
+  ## Check constants used in preprocessing exist
+  stopifnot("Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
+            "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(REPORTED_CALCULATED_COSTS_DIFFCOL))),
+            "Default variable TOTAL_DAMAGE_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_DAMAGE_COL))),
+            "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
+            "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))),
+            "Default variable CALCULATED_SPENDABLE_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_SPENDABLE_COL))),
+            "Default variable SPENDABLE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(SPENDABLE_DIFFCOL))),
+            "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))),
+            "Default variable HOUSEMOVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSEMOVING_DIFFCOL))))
   
-  # Unpack into global environment
+  ## Unpack into global environment
   unpack_dbtable_list(dbtable_list, "_df")
   
-  # Rename the session name variable in the dataframe to avoid name overlap with the group name variable
-  #gamesession_df <- sqldf("SELECT * FROM gamesession_df")
-  #names(gamesession_df)[names(gamesession_df) == "name"] <- "gamesession_name"
+  ## Rename the session name variable in the dataframe to avoid name overlap with the group name variable
+  ## "SELECT id, name AS gamesession_name, password, location, create_time, date, start_time, end_time, gameversion_id, description FROM gamesession_df" 
   
   gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
   
   
-  # Add to the group dataframe the gamesession_name by the group_df = gamesession_df id
-  # Leftjoin Keeps only the rows that have matching values in both data frames
-  # group_df <- sqldf("
-  # SELECT g.*, gs.gamesession_name
-  # FROM [group_df] AS g
-  # LEFT JOIN [gamesession_df] AS gs
-  # ON g.gamesession_id = gs.id
-  # ")
+  ## Add to the group dataframe the gamesession_name by the group_df id = gamesession_df
+  ## Leftjoin Keeps only the rows that have matching values in both data frames
+  ##
+  ## "SELECT dbtable1.*, dbtable2.gamesession_name
+  ##  FROM [group_df] AS dbtable1
+  ##  LEFT JOIN [gamesession_df] AS dbtable2
+  ##  ON dbtable1.gamesession_id = dbtable2.id"
   
-  group_df <- sqldf(left_join_sqlquery(group_df, "gamesession_id", gamesession_df, "id", kept_dbtable2_vars = "gamesession_name"))
-  
-  # Add to groupround_df the group_df variables selection
-  # groupround_df <- sqldf("
-  # SELECT gr.*, g.name, g.gamesession_id, g.gamesession_name, g.scenario_id
-  # FROM [groupround_df] AS gr
-  # LEFT JOIN [group_df] AS g
-  # ON gr.group_id = g.id
-  # ")
-  
-  # Rename the added columns in the dataframe to know from which table first come from
-  # names(groupround_df)[names(groupround_df) == "scenario_id"] <- "group_scenario_id"
-  
-  # # Rename name variable in the groupround dataframe for variable naming consistency
-  # groupround_df <- sqldf("SELECT * FROM groupround_df")
-  # 
-  # # Rename the added columns in the dataframe to know from which table first come from
-  # names(groupround_df)[names(groupround_df) == "name"] <- "group_name"
-  
-  manipulate_groupround <- function(groupround_df, group_df) {
-  
-    group_df <- sqldf(rename_cols_sqlquery(group_df, c("name", "scenario_id"), c("group_name", "group_scenario_id")))
-    
-    groupround_df <- sqldf(left_join_sqlquery(groupround_df, "group_id", group_df, "id",
-                                              kept_dbtable2_vars = c("group_name", "gamesession_id", "gamesession_name", "group_scenario_id")))
-    
-    return(groupround_df)  
-  }
-  
-  groupround_df <- manipulate_groupround(groupround_df, group_df)
-  
-  
-  # Added house query to get community area into the playerround_df table
-  # house_df <- sqldf("
-  # SELECT h.*, c.name AS community_name
-  # FROM [house_df] AS h
-  # LEFT JOIN [community_df] as c
-  # ON c.id = h.community_id
-  # ")
-  
-  
-  manipulate_house <- function(house_df, community_df) {
-    
-    community_df <- sqldf(rename_cols_sqlquery(community_df, "name", "community_name"))
-    
-    house_df <- sqldf(left_join_sqlquery(house_df, "community_id", community_df, "id", kept_dbtable2_vars = "community_name"))
-    
-    return(house_df)  
-  }
-  
-  house_df <- manipulate_house(house_df, community_df)
-  
-  
-  # Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id
-  # playerround_df <- sqldf("
-  # SELECT pr.*, gr.round_number, gr.group_id, gr.group_name, gr.gamesession_id, gr.gamesession_name, gr.group_scenario_id
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [groupround_df] AS gr
-  # ON pr.groupround_id = gr.id
-  # ")
-  
-  # Rename id with the table prefix to avoid id ambiguity
-  # names(playerround_df)[names(playerround_df) == "id"] <- "playerround_id"
-  
-  # Add to the playerround_df the p.code and welfaretype_id
-  # playerround_df <- sqldf("
-  # SELECT pr.*, p.code AS player_code, p.welfaretype_id AS welfaretype_id
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [player_df] AS p
-  # ON pr.player_id = p.id
-  # ORDER BY player_code ASC
-  # ")
-  
-  # playerround_df <- sqldf("
-  # SELECT pr.*, hg.code AS house_code, h.community_name
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [housegroup_df] AS hg
-  # ON pr.final_housegroup_id = hg.id
-  # LEFT JOIN [house_df] AS h
-  # ON hg.code = h.code
-  # ORDER BY pr.player_code ASC
-  # ")
-  
-  manipulate_playerround <- function(playerround_df, groupround_df, player_df, house_df, housegroup_df) {
-    
-    groupround_df <- sqldf(rename_cols_sqlquery(groupround_df, "round_number", "groupround_round_number"))
-    
-    playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "id", "playerround_id", renamed_cols_first = TRUE))
-    
-    playerround_df <- sqldf(left_join_sqlquery(playerround_df, "groupround_id", groupround_df, "id",
-                                               kept_dbtable2_vars = c("groupround_round_number", "group_id",
-                                                                      "group_name", "gamesession_id",
-                                                                      "gamesession_name", "group_scenario_id")))
-    
-    
-    player_df <- sqldf(rename_cols_sqlquery(player_df, "code", "player_code"))
-    
-    playerround_df <- sqldf(left_join_sqlquery(playerround_df, "player_id", player_df, "id",
-                                               kept_dbtable2_vars = c("player_code", "welfaretype_id")))
-    
-    
-    
-    housegroup_df <- sqldf(left_join_sqlquery(housegroup_df, "code", house_df, "code", kept_dbtable2_vars = "community_name"))
-    
-    housegroup_df <- sqldf(rename_cols_sqlquery(housegroup_df, "code", "house_code"))
-    
-    playerround_df <- sqldf(left_join_sqlquery(playerround_df, "final_housegroup_id", housegroup_df, "id", kept_dbtable2_vars = c("house_code", "community_name")))
-   
-    playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
-    
-    return(playerround_df) 
-  }
-  
-  playerround_df <- manipulate_playerround(playerround_df, groupround_df, player_df, house_df, housegroup_df)
-    
-  
-  # Added the game_session_name to the measures tables
-  # Add to the personalmeasure the playerround_df selection to filter per player, table, round and cost of measures
-  # personalmeasure_df <- sqldf("
-  # SELECT pr.gamesession_name, pm.*, pr.group_name, pr.player_id, pr.player_code, pr.groupround_round_number, pr.round_income, pr.cost_house_measures_bought, pr.final_housegroup_id, pr.mortgage_payment
-  # FROM [personalmeasure_df] AS pm
-  # LEFT JOIN [playerround_df] AS pr
-  # ON pm.playerround_id = pr.playerround_id
-  # ORDER BY pr.player_code ASC
-  # ")
-  # 
+  group_df <- sqldf(left_join_sqlquery(group_df, "gamesession_id", gamesession_df, "id", kept_dbtable2_cols = "gamesession_name"))
 
-  # Add to the personalmeasure the housegroup selection to calculate the cost of measures
-  # personalmeasure_df <- sqldf("
-  # SELECT pm.*, hg.code AS house_code, hg.last_sold_price, hg.owner_id
-  # FROM [personalmeasure_df] AS pm
-  # LEFT JOIN [housegroup_df] AS hg
-  # ON pm.final_housegroup_id = hg.id
-  # ORDER BY pm.player_code ASC
-  # ")
+  
+  ## Add to groupround_df the group_df variables selection
+  ##
+  ## "SELECT dbtable1.*, dbtable2.name, dbtable2.gamesession_id, dbtable2.gamesession_name, dbtable2.scenario_id
+  ##  FROM [groupround_df] AS dbtable1
+  ##  LEFT JOIN [group_df] AS dbtable2
+  ##  ON dbtable1.group_id = dbtable2.id"
+    
+  groupround_df <- sqldf(left_join_sqlquery(groupround_df, "group_id", group_df, "id",
+                                              kept_dbtable2_cols = c("name", "gamesession_id", "gamesession_name", "scenario_id")))
+
+    
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ## "SELECT id, timestamp, pluvial_flood_intensity, fluvial_flood_intensity, group_state, round_number, group_id, name AS group_name, gamesession_id, gamesession_name, scenario_id AS group_scenario_id FROM groupround_df"
+  
+  groupround_df <- sqldf(rename_cols_sqlquery(groupround_df, c("name", "scenario_id"), c("group_name", "group_scenario_id")))
   
   
-  # Add to the measuretype selection to compare it with the costs of measures per round
-  # personalmeasure_df <- sqldf("
-  # SELECT pm.*, m.short_alias, m.cost_absolute, m.cost_percentage_income, m.cost_percentage_house, m.satisfaction_delta_once, m.pluvial_protection_delta, m.fluvial_protection_delta
-  # FROM [personalmeasure_df] AS pm
-  # LEFT JOIN [measuretype_df] AS m
-  # ON pm.measuretype_id = m.id
-  # ORDER BY pm.player_code ASC
-  # ")
-  # str(personalmeasure_df)
+  ## Added community name to houde_df
+  ##
+  ## "SELECT dbtable1.*, dbtable2.name
+  ## FROM [house_df] AS dbtable1
+  ## LEFT JOIN [community_df] AS dbtable2
+  ## ON dbtable1.community_id = dbtable2.id"
+  
+  house_df <- sqldf(left_join_sqlquery(house_df, "community_id", community_df, "id", kept_dbtable2_cols = "name"))
+  
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ## "SELECT id, price, code, available_round, address, rating, initial_pluvial_protection, initial_fluvial_protection, community_id, name AS community_name FROM house_df"
+  
+  house_df <- sqldf(rename_cols_sqlquery(house_df, "name", "community_name"))
+
+  
+  ## Rename playerround_df column "id" with the table prefix to avoid id ambiguity , i.e. "playerround_id"
+  ##
+  ## "SELECT id AS playerround_id, create_time, round_income, living_costs, paid_debt, mortgage_payment, profit_sold_house,
+  ##  spent_savings_for_buying_house, cost_taxes, cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage,
+  ##  cost_pluvial_damage, spendable_income, satisfaction_move_penalty, satisfaction_house_rating_delta, satisfaction_house_measures,
+  ##  satisfaction_personal_measures, satisfaction_fluvial_penalty, satisfaction_pluvial_penalty, satisfaction_debt_penalty, satisfaction_total,
+  ##  preferred_house_rating, maximum_mortgage, mortgage_house_start, mortgage_left_start, house_price_sold, house_price_bought, mortgage_house_end,
+  ##  mortgage_left_end, movingreason_id, moving_reason_other, pluvial_base_protection, fluvial_base_protection, pluvial_community_delta,
+  ##  fluvial_community_delta, pluvial_house_delta, fluvial_house_delta, player_state, player_id, groupround_id, start_housegroup_id,
+  ##  final_housegroup_id, active_transaction_id FROM playerround_df"
+  
+  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "id", "playerround_id"))
+  
+  
+  ## Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id, with "playerround_id" as first column
+  ##
+  ## "SELECT dbtable1.*, dbtable2.round_number, dbtable2.group_id, dbtable2.group_name, dbtable2.gamesession_id, dbtable2.gamesession_name, dbtable2.group_scenario_id 
+  ##  FROM [playerround_df] AS dbtable1
+  ##  LEFT JOIN [groupround_df] AS dbtable2
+  ##  ON dbtable1.groupround_id = dbtable2.id"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "groupround_id", groupround_df, "id",
+                                             kept_dbtable1_cols = unique(c("playerround_id", names(playerround_df))),
+                                             kept_dbtable2_cols = c("round_number", "group_id",
+                                                                    "group_name", "gamesession_id",
+                                                                    "gamesession_name", "group_scenario_id")))
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ##
+  ## "SELECT playerround_id, create_time, round_income, living_costs, paid_debt, mortgage_payment, profit_sold_house,
+  ##  spent_savings_for_buying_house, cost_taxes, cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage,
+  ##  cost_pluvial_damage, spendable_income, satisfaction_move_penalty, satisfaction_house_rating_delta, satisfaction_house_measures,
+  ##  satisfaction_personal_measures, satisfaction_fluvial_penalty, satisfaction_pluvial_penalty, satisfaction_debt_penalty,
+  ##  satisfaction_total, preferred_house_rating, maximum_mortgage, mortgage_house_start, mortgage_left_start, house_price_sold,
+  ##  house_price_bought, mortgage_house_end, mortgage_left_end, movingreason_id, moving_reason_other, pluvial_base_protection,
+  ##  fluvial_base_protection, pluvial_community_delta, fluvial_community_delta, pluvial_house_delta, fluvial_house_delta,
+  ##  player_state, player_id, groupround_id, start_housegroup_id, final_housegroup_id, active_transaction_id,
+  ##  round_number AS groupround_round_number, group_id, group_name, gamesession_id, gamesession_name, group_scenario_id FROM playerround_df"
+  
+  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "round_number", "groupround_round_number"))
+  
+  
+  ## Add to the playerround_df the player code and welfaretype_id
+  ##
+  ## "SELECT dbtable1.*, dbtable2.code, dbtable2.welfaretype_id
+  ##  FROM [playerround_df] AS dbtable1
+  ##  LEFT JOIN [player_df] AS dbtable2
+  ##  ON dbtable1.player_id = dbtable2.id"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "player_id", player_df, "id",
+                                             kept_dbtable2_cols = c("code", "welfaretype_id")))
+  
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ##
+  ## "SELECT playerround_id, create_time, round_income, living_costs, paid_debt, mortgage_payment, profit_sold_house,
+  ##  spent_savings_for_buying_house, cost_taxes, cost_house_measures_bought, cost_personal_measures_bought,
+  ##  cost_fluvial_damage, cost_pluvial_damage, spendable_income, satisfaction_move_penalty, satisfaction_house_rating_delta,
+  ##  satisfaction_house_measures, satisfaction_personal_measures, satisfaction_fluvial_penalty, satisfaction_pluvial_penalty,
+  ##  satisfaction_debt_penalty, satisfaction_total, preferred_house_rating, maximum_mortgage, mortgage_house_start, mortgage_left_start,
+  ##  house_price_sold, house_price_bought, mortgage_house_end, mortgage_left_end, movingreason_id, moving_reason_other, pluvial_base_protection,
+  ## fluvial_base_protection, pluvial_community_delta, fluvial_community_delta, pluvial_house_delta, fluvial_house_delta, player_state, player_id,
+  ##  groupround_id, start_housegroup_id, final_housegroup_id, active_transaction_id, groupround_round_number, group_id, group_name, gamesession_id,
+  ##  gamesession_name, group_scenario_id, code AS player_code, welfaretype_id FROM playerround_df"
+  
+  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "code", "player_code"))
+  
+  
+  ## Add to the playerround_df the house code
+  ##
+  ## "SELECT dbtable1.*, dbtable2.code
+  ##  FROM [playerround_df] AS dbtable1
+  ##  LEFT JOIN [housegroup_df] AS dbtable2
+  ##  ON dbtable1.final_housegroup_id = dbtable2.id"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "final_housegroup_id", housegroup_df, "id", kept_dbtable2_cols = "code"))
+  
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ##
+  ## "SELECT playerround_id, create_time, round_income, living_costs, paid_debt, mortgage_payment, profit_sold_house,
+  ##  spent_savings_for_buying_house, cost_taxes, cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage,
+  ##  cost_pluvial_damage, spendable_income, satisfaction_move_penalty, satisfaction_house_rating_delta, satisfaction_house_measures,
+  ##  satisfaction_personal_measures, satisfaction_fluvial_penalty, satisfaction_pluvial_penalty, satisfaction_debt_penalty,
+  ##  satisfaction_total, preferred_house_rating, maximum_mortgage, mortgage_house_start, mortgage_left_start, house_price_sold,
+  ##  house_price_bought, mortgage_house_end, mortgage_left_end, movingreason_id, moving_reason_other, pluvial_base_protection,
+  ##  fluvial_base_protection, pluvial_community_delta, fluvial_community_delta, pluvial_house_delta, fluvial_house_delta,
+  ##  player_state, player_id, groupround_id, start_housegroup_id, final_housegroup_id, active_transaction_id, groupround_round_number,
+  ##  group_id, group_name, gamesession_id, gamesession_name, group_scenario_id, player_code, welfaretype_id, code AS house_code
+  ##  FROM playerround_df"
+  
+  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "code", "house_code"))
+  
+  
+  ## Add to the playerround_df the community_name
+  ##
+  ## "SELECT dbtable1.*, dbtable2.community_name
+  ##  FROM [playerround_df] AS dbtable1
+  ##  LEFT JOIN [house_df] AS dbtable2
+  ##  ON dbtable1.house_code = dbtable2.code"
+  
+  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "house_code", house_df, "code", kept_dbtable2_cols = "community_name"))
+  
+  
+  ## Sort playerround_df by player_code ascendingly
+  ## "SELECT * FROM playerround_df ORDER BY player_code ASC"
+  
+  playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
   
  
-  manipulate_personalmeasure <- function(personalmeasure_df, playerround_df, housegroup_df, measuretype_df) {
-    
-    personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "playerround_id", playerround_df, "playerround_id",
-                                                   kept_dbtable2_vars = c("gamesession_name", "group_name", "player_id", "player_code", "groupround_round_number", "round_income",
-                                                                          "cost_house_measures_bought", "final_housegroup_id", "mortgage_payment")))
-    
-    personalmeasure_df <- sqldf(select_sqlquery(personalmeasure_df, c("gamesession_name", names(personalmeasure_df)[names(personalmeasure_df) %in% "gamesession_name" == F])))
-    
-    
-    housegroup_df <- sqldf(rename_cols_sqlquery(housegroup_df, "code", "house_code"))
-    
-    personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "final_housegroup_id", housegroup_df, "id", kept_dbtable2_vars = c("house_code", "last_sold_price", "owner_id")))
-    
-    
-    personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "measuretype_id", measuretype_df, "id",
-                                                   kept_dbtable2_vars = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house",
-                                                                          "satisfaction_delta_once", "pluvial_protection_delta", "fluvial_protection_delta")))
-    
-    personalmeasure_df <- sqldf(sort_dbtable_sqlquery(personalmeasure_df, "player_code"))
-    
-    return(personalmeasure_df)
-  }
+  ##  Add to the personalmeasure the playerround_df selection to filter per player, table, round and cost of measures
+  ##
+  ## "SELECT dbtable1.*, dbtable2.gamesession_name, dbtable2.group_name, dbtable2.player_id, dbtable2.player_code, dbtable2.groupround_round_number, dbtable2.round_income, dbtable2.cost_house_measures_bought, dbtable2.final_housegroup_id, dbtable2.mortgage_payment
+  ##  FROM [personalmeasure_df] AS dbtable1
+  ##  LEFT JOIN [playerround_df] AS dbtable2
+  ##  ON dbtable1.playerround_id = dbtable2.playerround_id"
   
-  personalmeasure_df <- manipulate_personalmeasure(personalmeasure_df, playerround_df, housegroup_df, measuretype_df)
+  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "playerround_id", playerround_df, "playerround_id",
+                                                 kept_dbtable2_cols = c("gamesession_name", "group_name", "player_id",
+                                                                        "player_code", "groupround_round_number", "round_income",
+                                                                        "cost_house_measures_bought", "final_housegroup_id", "mortgage_payment")))
   
-  personalmeasure_df <- append_personalmeasure_calculated_costs(personalmeasure_df, CALCULATED_COSTS_PERSONAL_COL)
-    
   
-  # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
+  ## Make game_session_name first column in personalmeasure
+  ##
+  ## "SELECT gamesession_name, id, measuretype_id, playerround_id, group_name, player_id, player_code,
+  ##  groupround_round_number, round_income, cost_house_measures_bought, final_housegroup_id, mortgage_payment
+  ##  FROM personalmeasure_df"
   
+  personalmeasure_df <- sqldf(select_sqlquery(personalmeasure_df, unique(c("gamesession_name", names(personalmeasure_df)))))
+  
+  
+  ## Add to the personalmeasure the housegroup selection to calculate the cost of measures
+  ##
+  ## "SELECT dbtable1.*, dbtable2.code, dbtable2.last_sold_price, dbtable2.owner_id
+  ##  FROM [personalmeasure_df] AS dbtable1
+  ##  LEFT JOIN [housegroup_df] AS dbtable2
+  ##  ON dbtable1.final_housegroup_id = dbtable2.id"
+  
+  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "final_housegroup_id", housegroup_df, "id", kept_dbtable2_cols = c("code", "last_sold_price", "owner_id")))
+  
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ##
+  ## "SELECT id, measuretype_id, playerround_id, gamesession_name, group_name, player_id, player_code,
+  ##  groupround_round_number, round_income, cost_house_measures_bought, final_housegroup_id, mortgage_payment,
+  ##  code AS house_code, last_sold_price, owner_id
+  ##  FROM personalmeasure_df"
+  
+  personalmeasure_df <- sqldf(rename_cols_sqlquery(personalmeasure_df, "code", "house_code"))
+  
+  
+  ## Add to personalmeasure the measuretype selection to compare it with the costs of measures per round
+  ##
+  ## "SELECT dbtable1.*, dbtable2.short_alias, dbtable2.cost_absolute, dbtable2.cost_percentage_income, dbtable2.cost_percentage_house, dbtable2.satisfaction_delta_once, dbtable2.pluvial_protection_delta, dbtable2.fluvial_protection_delta
+  ##  FROM [personalmeasure_df] AS dbtable1
+  ##  LEFT JOIN [measuretype_df] AS dbtable2
+  ##  ON dbtable1.measuretype_id = dbtable2.id"
+  
+  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "measuretype_id", measuretype_df, "id",
+                                                 kept_dbtable2_cols = c("short_alias", "cost_absolute", "cost_percentage_income",
+                                                                        "cost_percentage_house", "satisfaction_delta_once",
+                                                                        "pluvial_protection_delta", "fluvial_protection_delta")))
+  
+  
+  ## Sort playerround_df by player_code ascendingly
+  ## "SELECT * FROM personalmeasure_df ORDER BY player_code ASC"
+  
+  personalmeasure_df <- sqldf(sort_dbtable_sqlquery(personalmeasure_df, "player_code"))
+  
+  
+  ## calculate costs for personal measures
+  personalmeasure_df <- append_personalmeasure_calculated_costs(personalmeasure_df, CALCULATED_COSTS_COL)
+  
+  
+  # Create table with cumulative costs for personal measures
   personalmeasure_cumulative_df <- create_personalmeasure_cumulative_df(personalmeasure_df)
   
   
@@ -247,19 +286,19 @@ preprocess_dbtables <- function(dbtable_list) {
   # ORDER BY ihm.house_id ASC
   # ")
   
-  manipulate_initialhousemeasure <- function(initialhousemeasure_df, house_df, measuretype_df) {
-    
-    house_df <- sqldf(rename_cols_sqlquery(house_df, "code", "house_code"))
-    
-    initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "house_id", house_df, "id",
-                                                       kept_dbtable2_vars = c("house_code", "rating", "initial_pluvial_protection", "initial_fluvial_protection", "community_id")))
-    
-    initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "measuretype_id", measuretype_df, "id", kept_dbtable2_vars = "short_alias"))
-    
-    initialhousemeasure_df <- sqldf(sort_dbtable_sqlquery(initialhousemeasure_df, "house_id"))
-    
-    return(initialhousemeasure_df)
-  }
+  
+  
+  
+  
+  initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "house_id", house_df, "id",
+                                                     kept_dbtable2_vars = c("code", "rating", "initial_pluvial_protection", "initial_fluvial_protection", "community_id")))
+  
+  initialhousemeasure_df <- sqldf(rename_cols_sqlquery(initialhousemeasure_df, "code", "house_code"))
+  
+  initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "measuretype_id", measuretype_df, "id", kept_dbtable2_vars = "short_alias"))
+  
+  initialhousemeasure_df <- sqldf(sort_dbtable_sqlquery(initialhousemeasure_df, "house_id"))
+  
   
   initialhousemeasure_df <- manipulate_initialhousemeasure(initialhousemeasure_df, house_df, measuretype_df)
   

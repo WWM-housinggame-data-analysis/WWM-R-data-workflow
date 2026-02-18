@@ -4,15 +4,21 @@
 ## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
-## Check data frame is in the expected format and columns exist, and are numeric
+## Check data frame is in the expected format and columns exist
 check_df_cols <- function(df, cols) {
   
   ## Check data frame is in the expected format
-  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  stopifnot("df expected to be a data frame" = is.data.frame(df),
+            "No columns names found in data frame" = length(names(df)) > 0,
+            "No rows found in data frame" = nrow(df) > 0)
+  
+  ## Check cols are character
+  stopifnot("cols expected to be character" = is.character(cols),
+            "No cols found" = length(cols) > 0)
   
   ## Check columns are found in data frame
   if (any(cols %in% names(df) == FALSE)){
-    stop(paste0("These personalmeasure_df columns could not be found: ",
+    stop(paste0("These df columns could not be found: ",
                 paste(cols[cols %in% names(df) == FALSE], collapse = ", "),
                 "."))
   }
@@ -43,7 +49,7 @@ check_char_cols <- function(df, cols) {
   check_df_cols(df, cols)
   
   ## Check character columns are defined as such or as factor
-  detect_char <- unlist(lapply(pm_df[,nonnum_cols], is.character)) + unlist(lapply(pm_df[,nonnum_cols], is.factor))
+  detect_char <- unlist(lapply(df[, cols], is.character)) + unlist(lapply(df[, cols], is.factor))
   
   if (any(detect_char == 0)) {
     stop(paste0("These df columns expected to be factor or character: ",

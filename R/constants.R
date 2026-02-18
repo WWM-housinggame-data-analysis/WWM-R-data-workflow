@@ -28,6 +28,8 @@ PREPROCESSED_DBTABLES <- c("income_dist_df")
 
 TYPE_COST_COLS <- c("cost_fluvial_damage", "cost_pluvial_damage")
 
+CALCULATED_COSTS_COL <- "calculated_costs"
+
 CALCULATED_COSTS_PERSONAL_COL <- "calculated_costs_personal_measures"
 
 CALCULATED_COSTS_HOUSE_COL <- "calculated_costs_house_measures"
