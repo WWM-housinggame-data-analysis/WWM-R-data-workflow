@@ -38,6 +38,8 @@ COST_HOUSE_COL <- "cost_house_measures_bought"
 
 names(CALCULATED_COLS) <- c(COST_HOUSE_COL, "cost_personal_measures_bought")
 
+
+## "paid_debt" not used in the calculations because is taken already when the spendable income comes as a negative value
 ALL_COST_COLS <- c("living_costs", "cost_taxes", "spent_savings_for_buying_house",
                    "mortgage_payment", "cost_house_measures_bought", "cost_personal_measures_bought",
                    "cost_fluvial_damage", "cost_pluvial_damage")
@@ -74,7 +76,7 @@ CUMULATIVE_COSTS_HOUSE_COL <- "cum_costs"
 
 CUMULATIVE_HOUSE_TOTAL_DIFFCOL <- "cum_differences"
 
-CALCULATED_COSTS_DIFF <- "calculated_costs_measures_difference"
+REPORTED_CALCULATED_COSTS_DIFFCOL <- "calculated_costs_measures_difference"
 
 TOTAL_DAMAGE_COL <- "total_damage_costs"
 

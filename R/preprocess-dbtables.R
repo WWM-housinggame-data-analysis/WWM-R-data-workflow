@@ -5,7 +5,19 @@ FUNCTION_PATH <- file.path("R")
 # Load required functions
 source(here(file.path(FUNCTION_PATH, "constants.R")))
 source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
+
+source(here(file.path(FUNCTION_PATH, "create-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
+
+stopifnot("Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
+          "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(REPORTED_CALCULATED_COSTS_DIFFCOL))),
+          "Default variable TOTAL_DAMAGE_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_DAMAGE_COL))),
+          "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
+          "Default variable TOTAL_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_COSTS_COL))),
+          "Default variable CALCULATED_SPENDABLE_COL not found in R/constants.R" = exists(deparse(substitute(CALCULATED_SPENDABLE_COL))),
+          "Default variable SPENDABLE_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(SPENDABLE_DIFFCOL))),
+          "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))),
+          "Default variable HOUSEMOVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSEMOVING_DIFFCOL))))
 
 preprocess_dbtables <- function(dbtable_list) {
   
@@ -209,12 +221,12 @@ preprocess_dbtables <- function(dbtable_list) {
   
   personalmeasure_df <- manipulate_personalmeasure(personalmeasure_df, playerround_df, housegroup_df, measuretype_df)
   
-  personalmeasure_df <- calculate_personalmeasure_costs(personalmeasure_df, CALCULATED_COSTS_PERSONAL_COL)
+  personalmeasure_df <- append_personalmeasure_calculated_costs(personalmeasure_df, CALCULATED_COSTS_PERSONAL_COL)
     
   
   # CHANGES vjcortesa-3: Corrected the calculation of the personal measure with the last_sold price instead of the mortgage_payment*10
   
-  personalmeasure_cumulative <- retrieve_personalmeasure_cumulative(personalmeasure_df)
+  personalmeasure_cumulative_df <- create_personalmeasure_cumulative_df(personalmeasure_df)
   
   
   # Add to the initialhouse measure the house code to identify in the housemeasure table which houses had measures already implemented
@@ -329,14 +341,14 @@ preprocess_dbtables <- function(dbtable_list) {
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
   #exclude the costs of the housemeasures that came implemented in the house when bought
   
-  housemeasure_cumulative <- retrieve_housemeasure_cumulative(housemeasure_df)
+  create_housemeasure_cumulative_df <- create_housemeasure_cumulative_df(housemeasure_df)
   
   
   #Add to playerround_df the calculated costs of measures
   # playerround_df <- sqldf("
   # SELECT pr.*, calculated_costs_house_measures
   # FROM [playerround_df] AS pr
-  # LEFT JOIN [housemeasure_cumulative] AS hmc
+  # LEFT JOIN [housemeasure_cumulative_df] AS hmc
   # ON pr.player_code = hmc.player_code AND pr.groupround_round_number = hmc.groupround_round_number
   # ORDER BY pr.player_code ASC
   # ")
@@ -344,7 +356,7 @@ preprocess_dbtables <- function(dbtable_list) {
   # playerround_df <- sqldf("
   # SELECT pr.*, calculated_costs_personal_measures
   # FROM [playerround_df] AS pr
-  # LEFT JOIN [personalmeasure_cumulative] AS pmc
+  # LEFT JOIN [personalmeasure_cumulative_df] AS pmc
   # ON pr.player_code = pmc.player_code AND pr.groupround_round_number = pmc.groupround_round_number
   # ORDER BY pr.player_code ASC
   # ")
@@ -352,28 +364,28 @@ preprocess_dbtables <- function(dbtable_list) {
   # playerround_df <- append_playerround_costmeas(playerround_df, dataset_date)
     
   
-  manipulate2_playerround <- function(playerround_df, housemeasure_cumulative, personalmeasure_cumulative) {
+  manipulate2_playerround <- function(playerround_df, housemeasure_cumulative_df, personalmeasure_cumulative_df) {
     
-    playerround_df <- append_welfare_labels(playerround_df)
+    playerround_df <- append_welfare_labels(playerround_df, WELFARE_LABEL_COL)
     
     playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
-                                               housemeasure_cumulative, c("player_code", "groupround_round_number"),
+                                               housemeasure_cumulative_df, c("player_code", "groupround_round_number"),
                                                kept_dbtable2_vars = "calculated_costs_house_measures"))
     
     
     playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
-                                               personalmeasure_cumulative, c("player_code", "groupround_round_number"),
+                                               personalmeasure_cumulative_df, c("player_code", "groupround_round_number"),
                                                kept_dbtable2_vars = "calculated_costs_personal_measures"))
     
     playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
     
   }
   
-  playerround_df <- manipulate2_playerround(playerround_df, housemeasure_cumulative, personalmeasure_cumulative)
+  playerround_df <- manipulate2_playerround(playerround_df, housemeasure_cumulative_df, personalmeasure_cumulative_df)
   
-  playerround_df <- calculate_costs_measures_difference(playerround_df)
+  playerround_df <- append_reported_calculated_difference(playerround_df, REPORTED_CALCULATED_COSTS_DIFFCOL)
   
-  playerround_df <- calculate_total_damage_costs(playerround_df)
+  playerround_df <- append_total_damage_costs(playerround_df, TOTAL_DAMAGE_COL)
     
 
   # questionitem_df <- sqldf("
@@ -469,18 +481,18 @@ preprocess_dbtables <- function(dbtable_list) {
   
   income_dist_df <- income_dist_df %>% mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
   
-  income_dist_df <- append_income_grp(income_dist_df)
+  income_dist_df <- append_income_grp(income_dist_df, INCOME_GRP_COL)
   
   income_dist_df <- income_dist_df %>%
     mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))], as.numeric)
   
-  income_dist_df <- calculate_total_costs(income_dist_df)
+  income_dist_df <- append_total_costs(income_dist_df, TOTAL_COSTS_COL)
   
-  income_dist_df <- calculate_spendable_income(income_dist_df)
+  income_dist_df <- append_spendable_income_cols(income_dist_df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
   
-  income_dist_df <- append_income_living_diff(income_dist_df)
+  income_dist_df <- append_income_living_diff(income_dist_df, INCOME_LIVING_DIFFCOL)
   
-  income_dist_df <- append_housemoving_diff(income_dist_df)
+  income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
   
   # Step 3: Income distribution specification ---------------------------------------------------
   # CHANGES vjcortesa-7: Added to the dbtable_list file the tables added in the code
