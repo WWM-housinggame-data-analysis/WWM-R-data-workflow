@@ -400,26 +400,6 @@ preprocess_dbtables <- function(dbtable_list) {
   #exclude the costs of the housemeasures that came implemented in the house when bought
   
   housemeasure_cumulative_df <- create_housemeasure_cumulative_df(housemeasure_df)
-  
-  
-  #Add to playerround_df the calculated costs of measures
-  # playerround_df <- sqldf("
-  # SELECT pr.*, calculated_costs_house_measures
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [housemeasure_cumulative_df] AS hmc
-  # ON pr.player_code = hmc.player_code AND pr.groupround_round_number = hmc.groupround_round_number
-  # ORDER BY pr.player_code ASC
-  # ")
-  
-  # playerround_df <- sqldf("
-  # SELECT pr.*, calculated_costs_personal_measures
-  # FROM [playerround_df] AS pr
-  # LEFT JOIN [personalmeasure_cumulative_df] AS pmc
-  # ON pr.player_code = pmc.player_code AND pr.groupround_round_number = pmc.groupround_round_number
-  # ORDER BY pr.player_code ASC
-  # ")
-  
-  # playerround_df <- append_playerround_costmeas(playerround_df, dataset_date)
     
   
   ## append human‑readable ordered categories matching numeric welfare IDs  
@@ -450,41 +430,48 @@ preprocess_dbtables <- function(dbtable_list) {
   
   ##  Sort playerround_df by player_code ascendingly
   ## "SELECT * FROM playerround_df ORDER BY player_code ASC"
+  
   playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
   
   
+  ## Append difference between reported and calculated measures
   playerround_df <- append_reported_calculated_difference(playerround_df, REPORTED_CALCULATED_COSTS_DIFFCOL)
   
+  
+  ## Append pluvial + fluvial costs as total_damage
   playerround_df <- append_total_damage_costs(playerround_df, TOTAL_DAMAGE_COL)
   
   
-  # questionitem_df <- sqldf("
-  # SELECT 
-  #   qi.id AS questionitem_id, qi.code AS answer_code, qi.name AS answer_name, 
-  #   CAST(qi.code AS INTEGER) || ' - ' || qi.name AS answercode_plus_name,
-  #   q.name AS question_name, q.description AS question_description
-  # FROM questionitem_df AS qi
-  # LEFT JOIN question_df AS q
-  #   ON qi.question_id = q.id
-  # ")  
+  ## Rename columns in the dataframe
+  ## "SELECT id AS questionitem_id, code AS answer_code, name AS answer_name, question_id FROM questionitem_df"
   
-  manipulate_questionitem <- function(questionitem_df, question_df) {
-    
-    question_df <- sqldf(rename_cols_sqlquery(question_df, c("name", "description"), c("question_name", "question_description")))
-    
-    questionitem_df <- sqldf(rename_cols_sqlquery(questionitem_df, c("id", "code", "name"), c("questionitem_id", "answer_code", "answer_name")))
-    
-    questionitem_df <- sqldf(combine_cols_sqlquery(questionitem_df, "answer_code", "integer", "answer_name", "string", "answercode_plus_name"))
-    
-    questionitem_df <- sqldf(left_join_sqlquery(questionitem_df, "question_id", question_df, "id",
-                                                kept_dbtable1_cols = c("questionitem_id", "answer_code", "answer_name", "answercode_plus_name", "question_id"),
-                                                kept_dbtable2_cols = c("question_name", "question_description")))
-    
-    return(questionitem_df)
-    
-  }
-
-  questionitem_df <- manipulate_questionitem(questionitem_df, question_df)
+  questionitem_df <- sqldf(rename_cols_sqlquery(questionitem_df, c("id", "code", "name"), c("questionitem_id", "answer_code", "answer_name")))
+  
+  
+  ## Append column "answercode_plus_name" that combines integer column "answer_code" and character column "answer_name"
+  ## "SELECT *, CAST(answer_code AS INTEGER) || ' - ' || answer_name AS answercode_plus_name FROM questionitem_df"
+  
+  questionitem_df <- sqldf(combine_cols_sqlquery(questionitem_df, "answer_code", "integer", "answer_name", "string", "answercode_plus_name"))
+  
+  
+  ## Add to question item the question name and description
+  ## "SELECT dbtable1.questionitem_id, dbtable1.answer_code, dbtable1.answer_name, dbtable1.answercode_plus_name, dbtable1.question_id, dbtable2.name, dbtable2.description
+  ##  FROM [questionitem_df] AS dbtable1
+  ##  LEFT JOIN [question_df] AS dbtable2
+  ##  ON dbtable1.question_id = dbtable2.id"
+  
+  questionitem_df <- sqldf(left_join_sqlquery(questionitem_df, "question_id",
+                                              question_df, "id",
+                                              kept_dbtable1_cols = c("questionitem_id", "answer_code", "answer_name", "answercode_plus_name", "question_id"),
+                                              kept_dbtable2_cols = c("name", "description")))
+  
+  
+  ##  Rename the added columns in the dataframe to know from which table first come from
+  ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_id, name AS question_name, description AS question_description FROM questionitem_df"
+  
+  questionitem_df <- sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
+  
+  
   
   
   # Add to question score the question, question item and player_round tables relevant variables
@@ -502,71 +489,100 @@ preprocess_dbtables <- function(dbtable_list) {
   # LEFT JOIN  playerround_df AS pr
   #  ON qs.playerround_id = pr.playerround_id
   # ")
+
   
-  manipulate_questionscore <- function(questionscore_df, questionitem_df) {
-    
-    questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, "id", "answer_id"))
-    
-    questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, c("answer", "question_id"),
-                                                 questionitem_df, c("answer_code", "question_id"),
-                                                 kept_dbtable1_cols = c("answer_id", "answer", "late_answer", "question_id", "playerround_id"),
-                                                 kept_dbtable2_cols = c("answer_name", "answercode_plus_name", "question_name", "question_description")))
-    
-    questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, c("answer_name", "answercode_plus_name"), c("answer_option", "answer_plus_option")))
-    
-    questionscore_df <- sqldf(select_sqlquery(questionscore_df, c("answer_id", "answer", "late_answer", "answer_option", "answer_plus_option",
-                                                                  "question_id", "question_name", "question_description", "playerround_id")))
-    
-    questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, "playerround_id", playerround_df, "playerround_id",
-                                                 kept_dbtable2_cols = c("groupround_round_number", "player_code", "group_name", "gamesession_name")))
-    
-    
-    return(questionscore_df)
-  }
+  ## Rename columns in the dataframe
+  ## "SELECT id AS answer_id, answer, late_answer, playerround_id, question_id FROM questionscore_df"  
   
-  questionscore_df <- manipulate_questionscore(questionscore_df, questionitem_df)
+  questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, "id", "answer_id"))
+
+  
+  ## Add to question score the relevant columns from question and question item tables
+  ## "SELECT dbtable1.answer_id, dbtable1.answer, dbtable1.late_answer, dbtable1.question_id, dbtable1.playerround_id, dbtable2.answer_name, dbtable2.answercode_plus_name, dbtable2.question_name, dbtable2.question_description
+  ##  FROM [questionscore_df] AS dbtable1
+  ##  LEFT JOIN [questionitem_df] AS dbtable2
+  ##  ON dbtable1.answer = dbtable2.answer_code AND dbtable1.question_id = dbtable2.question_id"
+  
+  questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, c("answer", "question_id"),
+                                               questionitem_df, c("answer_code", "question_id"),
+                                               kept_dbtable1_cols = c("answer_id", "answer", "late_answer", "question_id", "playerround_id"),
+                                               kept_dbtable2_cols = c("answer_name", "answercode_plus_name", "question_name", "question_description")))
+  
+  
+  ## Rename the added columns in the dataframe to know from which table first come from
+  ## "SELECT answer_id, answer, late_answer, question_id, playerround_id, answer_name AS answer_option,
+  ##  answercode_plus_name AS answer_plus_option, question_name, question_description
+  ##  FROM questionscore_df"
+  
+  questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, c("answer_name", "answercode_plus_name"), c("answer_option", "answer_plus_option")))
+  
+  
+  ## Rename columns in the dataframe
+  ## "SELECT answer_id, answer, late_answer, answer_option, answer_plus_option, question_id, question_name, question_description, playerround_id
+  ##  FROM questionscore_df"
+  
+  questionscore_df <- sqldf(select_sqlquery(questionscore_df, c("answer_id", "answer", "late_answer", "answer_option", "answer_plus_option",
+                                                                "question_id", "question_name", "question_description", "playerround_id")))
+    
+  
+  ## Add to question score the relevant columns from player_round tables
+  ##"SELECT dbtable1.*, dbtable2.groupround_round_number, dbtable2.player_code, dbtable2.group_name, dbtable2.gamesession_name
+  ##  FROM [questionscore_df] AS dbtable1
+  ##  LEFT JOIN [playerround_df] AS dbtable2
+  ##  ON dbtable1.playerround_id = dbtable2.playerround_id"
+  
+  questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, "playerround_id",
+                                               playerround_df, "playerround_id",
+                                               kept_dbtable2_cols = c("groupround_round_number", "player_code", "group_name", "gamesession_name")))
+    
+  
+  ## Remove "question_id" from questionitem_df
+  ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_name, question_description FROM questionitem_df"
   
   questionitem_df <- sqldf(select_sqlquery(questionitem_df, names(questionitem_df)[names(questionitem_df) %in% "question_id" == F]))
   
   
-  # Filter the playerround_df dataset for the income distribution
+  ## Run the query to filter the playerround_df dataframe with the var_income_dist
+  ## "SELECT gamesession_name, group_name, playerround_id, player_id, player_code, house_code, groupround_id, groupround_round_number,
+  ##  round_income, living_costs, paid_debt, profit_sold_house, spent_savings_for_buying_house, cost_taxes, mortgage_payment,
+  ##  cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage, cost_pluvial_damage, spendable_income,
+  ##  calculated_costs_personal_measures, calculated_costs_house_measures, calculated_costs_measures_difference,
+  ##  satisfaction_total, welfaretype_id, total_damage_costs, community_name, fluvial_house_delta, pluvial_house_delta
+  ##  FROM playerround_df"
   
-  # Select the variables for the income distribution plot
-  # CHANGES vjcortesa-5: # Updated the var_income_dist list with the variables added by vcortesa and annehuitema2003, except for the welfare level to be added in the plot function
-  ## Add the new calculated columns for the measures costs
-  
-  income_dist_cols <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
-                       "groupround_id", "groupround_round_number", "round_income", "living_costs", "paid_debt",
-                       "profit_sold_house", "spent_savings_for_buying_house", "cost_taxes", "mortgage_payment",
-                       "cost_house_measures_bought", "cost_personal_measures_bought", "cost_fluvial_damage", "cost_pluvial_damage",
-                       "spendable_income", "calculated_costs_personal_measures", "calculated_costs_house_measures", "calculated_costs_measures_difference",
-                       "satisfaction_total", "welfaretype_id", "total_damage_costs",
-                       "community_name", "fluvial_house_delta", "pluvial_house_delta")
+  income_dist_df <- sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
   
   
-  
-  
-  # Run the query to filter the playerround_df dataframe with the var_income_dist 
-  income_dist_df <- sqldf(select_sqlquery(playerround_df, income_dist_cols))
-  
+  ## Convert INCOME_DIST_CATEGCOLS to factor
   income_dist_df <- income_dist_df %>% mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
   
+  
+  ## Append income_grp labels based on round_income to dataframe
   income_dist_df <- append_income_grp(income_dist_df, INCOME_GRP_COL)
   
+  
+  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
   income_dist_df <- income_dist_df %>%
     mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))], as.numeric)
   
+  
+  ## Calculate the round costs to check the spendable income
   income_dist_df <- append_total_costs(income_dist_df, TOTAL_COSTS_COL)
   
+  
+  ## Calculate the spendable income
   income_dist_df <- append_spendable_income_cols(income_dist_df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
   
+  
+  ## Calculate income - living costs
   income_dist_df <- append_income_living_diff(income_dist_df, INCOME_LIVING_DIFFCOL)
   
+  
+  ## Calculate  "profit - spent savings house moving"
   income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
   
-  # Step 3: Income distribution specification ---------------------------------------------------
-  # CHANGES vjcortesa-7: Added to the dbtable_list file the tables added in the code
-  # Create a list with the tables used in the calculation
+
+  ## Update list to be returned with the tables used in the calculation 
   dbtable_list <- list(
     income_dist_df = income_dist_df,
     playerround = playerround_df,

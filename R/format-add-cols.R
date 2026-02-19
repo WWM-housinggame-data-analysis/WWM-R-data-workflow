@@ -150,7 +150,7 @@ append_income_grp <- function(df, label_col) {
   check_df_cols(df, ROUND_INCOME_COL)
   
   ## Save unique income labels. labels sorted ascendingly, as in WELFARE_LABELS match
-  income_labels <- sort(unique(paste0(df[, ROUND_INCOME_COL] / K_FACTOR, names(K_FACTOR))))
+  income_labels <- paste0(sort(unique(df[, ROUND_INCOME_COL])) / K_FACTOR, names(K_FACTOR))
   
   ## append income groups based on ROUND_INCOME_COL values
   df <- df %>%
@@ -213,10 +213,14 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
   check_num_cols(df, c(SPENDABLE_INCOME_COL, ROUND_INCOME_COL, PROFIT_HOUSE_COL, TOTAL_COSTS_COL))
   
+  ## Sort df needed before checking that players found match those expected
+  df <- df %>%
+    arrange(across(all_of(c(PLAYER_CODE_COL, ROUND_NUMBER_COL))))
+  
   ## Check that players found match those expected
   expected_players <- unique(df[, PLAYER_CODE_COL])
   
-  found_players <- df %>% filter(ROUND_NUMBER_COL %in% 0) %>% pull(PLAYER_CODE_COL)
+  found_players <- df %>% filter(.data[[ROUND_NUMBER_COL]] %in% 0) %>% pull(.data[[PLAYER_CODE_COL]])
   
   ## mismatch between found and expected players stops run, otherwise columns calc_col and diff_col are calculated
   if (any(expected_players %in% found_players) == FALSE) {
@@ -224,9 +228,6 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
     stop(paste("Missing Round Number 0 value detected for players", paste(expected_players[expected_players %in% found_players == FALSE], collapse = ", ")))
   
   } else {
-    
-    df <- df %>%
-      arrange(across(all_of(c(PLAYER_CODE_COL, ROUND_NUMBER_COL))))
     
     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, calc_col] <-
       rowSums(cbind(df[which(df[, ROUND_NUMBER_COL] %in% 0 == FALSE) - 1, SPENDABLE_INCOME_COL],

@@ -113,6 +113,16 @@ LIVING_COSTS_COL <- "living_costs"
 
 INCOME_LIVING_DIFFCOL <- "income_minus_living"
 
+
+# Select the variables for the income distribution plot
+INCOME_DIST_ALLCOLS <- c("gamesession_name", "group_name", "playerround_id", "player_id", "player_code", "house_code",
+                         "groupround_id", "groupround_round_number", "round_income", "living_costs", "paid_debt",
+                         "profit_sold_house", "spent_savings_for_buying_house", "cost_taxes", "mortgage_payment",
+                         "cost_house_measures_bought", "cost_personal_measures_bought", "cost_fluvial_damage", "cost_pluvial_damage",
+                         "spendable_income", "calculated_costs_personal_measures", "calculated_costs_house_measures", "calculated_costs_measures_difference",
+                         "satisfaction_total", "welfaretype_id", "total_damage_costs",
+                         "community_name", "fluvial_house_delta", "pluvial_house_delta")
+
 # Central colour/label dictionaries (names must match cost_type in data)
 EXPENSE_BARCOLS <- c("total_damage_costs",
                      "cost_personal_measures_bought",
