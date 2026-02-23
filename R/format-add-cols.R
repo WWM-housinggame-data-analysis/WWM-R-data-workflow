@@ -229,6 +229,9 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
   
   } else {
     
+    df[df[, ROUND_NUMBER_COL] %in% 0, calc_col] <- 
+      df[df[, ROUND_NUMBER_COL] %in% 0, SPENDABLE_INCOME_COL]
+    
     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, calc_col] <-
       rowSums(cbind(df[which(df[, ROUND_NUMBER_COL] %in% 0 == FALSE) - 1, SPENDABLE_INCOME_COL],
                     df[df[, ROUND_NUMBER_COL] %in% 0 == FALSE, ROUND_INCOME_COL],
