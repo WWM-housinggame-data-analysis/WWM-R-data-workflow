@@ -45,7 +45,7 @@ source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-source(here(file.path(FUNCTION_PATH, "table-data.R")))
+source(here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
 
 ### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
@@ -89,7 +89,7 @@ for (session_name in names(gamesession_data_list)) {
 }
 
 gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = "All")
-role_selection <- process_config_selection(as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name)),
+role_selection <- process_config_selection(as.character(unique(preprocess_data_list[["housinggame_session_20_251007_VerzekeraarsMasterClass"]][["income_dist_df"]]$group_name)),
                                            SELECTED_USERNAME,
                                            fallback = "All")
 
@@ -217,53 +217,51 @@ server <- function(input, output, session) {
   
   selected_gamesession <- mod_input_reset_server(
     id = "gamesession",
-    default_value = reactive(gamesession_selection),
-    get_choices = reactive(gamesession_selection)
+    default_value = reactive(gamesession_choices()[length(gamesession_choices())]),
+    get_choices = gamesession_choices
   )
   
-  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% selected_gamesession())]][["income_dist_df"]]})
+  income_dist_df <- reactive({
+    preprocess_data_list[[ selected_gamesession() ]][["income_dist_df"]]
+    })
   
+  # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
+  #Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
+  # role_selection from YAML, falling back to "All" if needed
   role_selection <- reactive({
-    process_config_selection(as.character(unique(income_dist_df()$group_name)), SELECTED_USERNAME, fallback = "All")
+    df <- income_dist_df()
+    groups <- character(0)
+    if (!is.null(df) && nrow(df) > 0 && "group_name" %in% names(df)) {
+      groups <- as.character(unique(df$group_name))
+    }
+    process_config_selection(groups, SELECTED_USERNAME, fallback = "All")
   })
   
   
-  if (identical(role_selection(), "All")) {
+  # Reactive table choices
+  
+  # table choices: lock to a single role if YAML default is not "All"
+  table_choices <- reactive({
+    df <- income_dist_df()
+    # If no data yet, at least offer "All" to keep module happy
+    if (is.null(df) || nrow(df) == 0 || !"group_name" %in% names(df)) {
+      return("All")
+    }
     
-    # Reactive table choices
-    table_choices <- reactive({
-      c("All", as.character(unique(income_dist_df()$group_name)))
-    })
-    
-    # 3. Update table selectInput when session changes
-    observeEvent(input$selected_gamesession, {
-      updateSelectInput(
-        session, "selected_table",
-        choices = table_choices(),
-        selected = role_selection()
-      )
-    }, ignoreInit = TRUE)
-    
-  } else {
-    table_choices <- role_selection
-  }
+    if (identical(role_selection(), "All")) {
+      c("All", as.character(unique(df$group_name)))
+    } else {
+      # lock to YAML-selected role
+      role_selection()
+    }
+  })
+  
   
   selected_table <- mod_input_reset_server(
     id = "table",
     default_value = role_selection,
     get_choices = table_choices
   )
-  
-  # Reset only the session selectInput
-  observeEvent(input$reset_session, {
-    # Clear to empty; for selectize inputs, character(0) or NULL works
-    updateSelectInput(session, "selected_gamesession", selected = gamesession_selection)
-  })
-  
-  # Reset only the table selectInput
-  observeEvent(input$reset_table, {
-    updateSelectInput(session, "selected_table", selected = role_selection())
-  })
   
   # Reset only the checkboxGroupInput
   observeEvent(input$reset_cost, {
@@ -273,15 +271,12 @@ server <- function(input, output, session) {
   
   # Optional: global "Reset all filters"
   observeEvent(input$reset_all_filters, {
-    updateSelectInput(session, "selected_gamesession", selected = gamesession_selection)
-    updateSelectInput(session, "selected_table",      selected = role_selection())
+    if (!is.null(session$userData$gamesession_reset)) session$userData$gamesession_reset()
+    if (!is.null(session$userData$table_reset))       session$userData$table_reset()
     updateCheckboxGroupInput(session, "bar_segment",    selected = "All")
   })
   
-  
-  required_tables <- reactive({as.character(unique(income_dist_df()$group_name))})
-  
-  selected_table <- reactive({filter_selected_categs(input$selected_table, required_tables())})
+  #selected_table <- reactive({filter_selected_categs(selected_table(), table_choices())})
   
   selected_bar_segments <- reactive({filter_selected_categs(input$bar_segment, names(EXPENSE_BARCOLS))})
   
