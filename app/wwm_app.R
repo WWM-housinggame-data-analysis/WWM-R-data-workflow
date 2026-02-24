@@ -224,6 +224,9 @@ server <- function(input, output, session) {
   
   income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
   
+  role_selection <- reactive({
+    process_config_selection(as.character(unique(income_dist_df()$group_name)), SELECTED_USERNAME, fallback = "All")
+  })
   
   # Reactive table choices
   table_choices <- reactive({
@@ -236,7 +239,7 @@ server <- function(input, output, session) {
     updateSelectInput(
       session, "selected_table",
       choices = table_choices(),
-      selected = role_selection
+      selected = role_selection()
     )
   }, ignoreInit = TRUE)
   
@@ -250,7 +253,7 @@ server <- function(input, output, session) {
   
   # Reset only the table selectInput
   observeEvent(input$reset_table, {
-    updateSelectInput(session, "selected_table", selected = role_selection)
+    updateSelectInput(session, "selected_table", selected = role_selection())
   })
   
   # Reset only the checkboxGroupInput
@@ -262,7 +265,7 @@ server <- function(input, output, session) {
   # Optional: global "Reset all filters"
   observeEvent(input$reset_all_filters, {
     updateSelectInput(session, "selected_gamesession", selected = gamesession_selection)
-    updateSelectInput(session, "selected_table",      selected = role_selection)
+    updateSelectInput(session, "selected_table",      selected = role_selection())
     updateCheckboxGroupInput(session, "bar_segment",    selected = "All")
   })
   
