@@ -1,66 +1,90 @@
 # Load necessary libraries ----
+
+## Load for handling file location
+library(here)
+
+## Load importing/exporting data
 library(readxl)
 library(readr)
 library(openxlsx)
-
-## Load for database manipulation
-library(sqldf)
+library(writexl)
 
 ## Load for data manipulation
+library(sqldf)
 library(dplyr)
 library(stringr)
 library(tidyr)
 library(tibble)
 
-## Load for excel manipulation
-library(writexl)
-
 ## Load for data visualisation
 library(ggplot2)
 library(ggtext)
-
-library(here)
 library(shiny)
 library(bslib)
 library(plotly)
 
-# Set defaults ----
-# Set all default variables or global options and all the path variables at the top of the code.
 
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
+
+## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
+
+## Load all default variables or global options. Please check this file for visual check loaded variables 
+source(here(file.path(FUNCTION_PATH, "constants.R")))
+
 
 # Source files ----
 
-# Get the path of the current script
-## when you open Rstudio by clinking on .Rproj, default working directory is folder where .Rproj is stored
-getwd()
+## Load required functions
 
-# Load required functions
-source(here(file.path(FUNCTION_PATH, "constants.R")))
+### Load functions required for listing, uploading and exporting data
 source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
+
+### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
-source(here(file.path(FUNCTION_PATH, "transform-data.R")))
-source(here(file.path(FUNCTION_PATH, "plot-data.R")))
+
+### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
-source(here(file.path(FUNCTION_PATH, "interact-data.R")))
-source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
+
+### Load function containing the transformation of data tables to fit the format required for GP1 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
+
+### Load functions required to handle dashboard filter actions
+source(here(file.path(FUNCTION_PATH, "interact-data.R")))
+
+### Load functions required to setup plotly visualizations
+source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 
 
 # Data Workflow ----
 
-# Read all tables in the database folder to create accordingly the dataframe tables inside list
-gamesession_data_list <- upload_selected_dbtables(RAWDATA_PATH, "housinggame")
+## Read all tables in the database folders into a single list variable:
+##
+## list(gamesession_data_list)
+##  |
+##  |-- list(gamessession_data_session1)
+##  |     |
+##  |     |-- df(table1)
+##  |     |-- df(table2)
+##  |     |-- df(table3)
+##  |     ...
+##  |
+##  |-- list(gamessession_data_session2)
+##  |     |
+##       ...
+##  ...
+##
 
-income_dist_list <- list()
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
 
-for (session_path in names(gamesession_data_list)) {
-  income_dist_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
+## Preprocess tables available for each session, being returned in a single list with same  overarching structure as the input gamesession_data_list
+preprocess_data_list <- list()
+
+for (session_name in names(gamesession_data_list)) {
+  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-gamesession_paths <- names(income_dist_list)
-gamesession_names <- sapply(strsplit(names(income_dist_list), split = "/", fixed = TRUE), function(parts) tail(parts, 1))
-names(gamesession_paths) <- gamesession_names
 
 # Shiny App ----
 
@@ -81,24 +105,24 @@ ui <- page_navbar(
           accordion_panel("1: Select Game Session",
                           
                           # Input + small reset button
-                          layout_columns(col_widths = c(9, 3),
-      
-                          selectInput("selected_gamesession", "Session:",
-                                      names(gamesession_paths),
-                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
-                          
-                          actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            
+                            selectInput("selected_gamesession", "Session:",
+                                        names(preprocess_data_list),
+                                        selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
+                            
+                            actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
           accordion_panel("2: Select Table",
                           
-                          layout_columns(col_widths = c(9, 3),
-                          
-                          selectInput("selected_table", "Table:",
-                                         c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass"]]][["income_dist_df"]]$group_name))),
-                                         selected = "All"),
-                          actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            
+                            selectInput("selected_table", "Table:",
+                                        c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name))),
+                                        selected = "All"),
+                            actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
@@ -108,12 +132,11 @@ ui <- page_navbar(
                           
                           
                           # checkboxGroupInput and its reset
-                          layout_columns(col_widths = c(9, 3),
-                                         
-                                         checkboxGroupInput("bar_segment", "Cost_Types:",
-                                                            choices = c("All", names(EXPENSE_BARCOLS)),
-                                                            selected = "All"),
-                                         actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            checkboxGroupInput("bar_segment", "Cost_Types:",
+                                               choices = c("All", names(EXPENSE_BARCOLS)),
+                                               selected = "All"),
+                            actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
@@ -216,7 +239,7 @@ server <- function(input, output, session) {
   })
 
   
-  income_dist_df <- reactive({income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
+  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
   
   required_tables <- reactive({as.character(unique(income_dist_df()$group_name))})
   
@@ -254,7 +277,7 @@ server <- function(input, output, session) {
   
   observe({
     updateSelectInput(session, "selected_table",
-                      choices = c("All", as.character(unique(income_dist_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]$group_name))),
+                      choices = c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]$group_name))),
     )})
 }
 
