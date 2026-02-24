@@ -1,15 +1,38 @@
+
+#Right now it stops when valid_values is empty. For robustness, allow empty and return the fallback (with a warning). Also, ensure fallback is length 1 and not empty.
+# Why this helps: During initial reactivity when data hasn’t arrived, you’ll get a sane fallback instead of a hard error.
 process_config_selection <- function(valid_values, default_value, fallback = character(0)) {
   
-  stopifnot("At least one choice needs to be provided in valid_values"  = length(valid_values) > 0,
-            "(Only) one choice needs to be provided in default_value" = length(default_value) == 1)
+  # Coerce to character to avoid factor issues
+  valid_values <- as.character(valid_values)
+  default_value <- as.character(default_value)
+  fallback <- as.character(fallback)
+  
+  
+  
+  # If no valid values yet, return fallback (or stop with a clear message)
+  if (length(valid_values) == 0) {
+    if (length(fallback) == 1 && nzchar(fallback)) {
+      return(fallback)
+    } else {
+      stop("process_config_selection: No valid_values available and fallback is missing/invalid.")
+    }
+  }
+  
+  
+  stopifnot("(Only) one choice needs to be provided in default_value" = length(default_value) == 1)
   
   chosen_value <- valid_values[grep(default_value, valid_values)]
   
+  
   if (length(chosen_value) == 0) {
-    
-    chosen_value <- fallback
-      
-  }  
+    if (length(fallback) == 1 && nzchar(fallback)) {
+      chosen_value <- fallback
+    } else {
+      stop("process_config_selection: default not found and fallback is missing/invalid.")
+    }
+  }
+  
                                                
   stopifnot("(Only) one choice needs to be found in chosen_value" = length(chosen_value) == 1)
   

@@ -13,6 +13,10 @@ prepare_GP1_data <- function(df, selected_columns, selected_table, game_round, f
   # Guard against empty states
   req(nrow(df) > 0, length(selected_columns) > 0)
   
+  if (identical(selected_table, "All")) {
+    selected_table <- as.character(unique(df$group_name))
+  }
+  
   group_col <- update_group_col(df, selected_table)
   
   # Build xlabels on the row-level data
