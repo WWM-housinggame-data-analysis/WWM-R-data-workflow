@@ -76,18 +76,15 @@ source(here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = TRUE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
 
 ## Preprocess tables available for each session, being returned in a single list with same  overarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 
-for (session_path in names(gamesession_data_list)) {
-  preprocess_data_list[[session_path]] <- preprocess_dbtables(gamesession_data_list[[session_path]])
+for (session_name in names(gamesession_data_list)) {
+  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-gamesession_paths <- names(preprocess_data_list)
-gamesession_names <- sapply(strsplit(names(preprocess_data_list), split = "/", fixed = TRUE), function(parts) tail(parts, 1))
-names(gamesession_paths) <- gamesession_names
 
 # Shiny App ----
 
@@ -108,24 +105,24 @@ ui <- page_navbar(
           accordion_panel("1: Select Game Session",
                           
                           # Input + small reset button
-                          layout_columns(col_widths = c(9, 3),
-      
-                          selectInput("selected_gamesession", "Session:",
-                                      names(gamesession_paths),
-                                      selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
-                          
-                          actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            
+                            selectInput("selected_gamesession", "Session:",
+                                        names(preprocess_data_list),
+                                        selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
+                            
+                            actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
           accordion_panel("2: Select Table",
                           
-                          layout_columns(col_widths = c(9, 3),
-                          
-                          selectInput("selected_table", "Table:",
-                                         c("All", as.character(unique(preprocess_data_list[[gamesession_paths[names(gamesession_paths) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass"]]][["income_dist_df"]]$group_name))),
-                                         selected = "All"),
-                          actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            
+                            selectInput("selected_table", "Table:",
+                                        c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name))),
+                                        selected = "All"),
+                            actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
@@ -135,12 +132,11 @@ ui <- page_navbar(
                           
                           
                           # checkboxGroupInput and its reset
-                          layout_columns(col_widths = c(9, 3),
-                                         
-                                         checkboxGroupInput("bar_segment", "Cost_Types:",
-                                                            choices = c("All", names(EXPENSE_BARCOLS)),
-                                                            selected = "All"),
-                                         actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm")
+                          div(
+                            checkboxGroupInput("bar_segment", "Cost_Types:",
+                                               choices = c("All", names(EXPENSE_BARCOLS)),
+                                               selected = "All"),
+                            actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
           
@@ -243,7 +239,7 @@ server <- function(input, output, session) {
   })
 
   
-  income_dist_df <- reactive({preprocess_data_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]})
+  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
   
   required_tables <- reactive({as.character(unique(income_dist_df()$group_name))})
   
@@ -281,7 +277,7 @@ server <- function(input, output, session) {
   
   observe({
     updateSelectInput(session, "selected_table",
-                      choices = c("All", as.character(unique(preprocess_data_list[[gamesession_paths[names(gamesession_paths) %in% input$selected_gamesession]]][["income_dist_df"]]$group_name))),
+                      choices = c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]$group_name))),
     )})
 }
 

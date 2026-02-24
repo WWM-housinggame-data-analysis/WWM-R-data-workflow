@@ -9,6 +9,7 @@ source(here(file.path(FUNCTION_PATH, "constants.R")))
 source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "create-dbtables.R")))
 source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
+source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
 
 # Functions ----
@@ -23,7 +24,7 @@ unpack_dbtable_list <- function(dblist, suffix = "_df") {
 }
 
 
-preprocess_dbtables <- function(dbtable_list) {
+preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
   ## Check constants used in preprocessing exist
   stopifnot("Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
@@ -599,6 +600,10 @@ preprocess_dbtables <- function(dbtable_list) {
     player = player_df,
     gamesession = gamesession_df
   )
+  
+  if (excel) {
+    export_excel(dbtable_list, session_name, preprocessed = TRUE)
+  }
   
   return(dbtable_list)
 }
