@@ -123,16 +123,10 @@ ui <- page_navbar(
           
           accordion_panel("3: Where players live"),
           
+          # checkboxGroupInput and its reset
           accordion_panel("4: Player spending",
+                          mod_multicheck_reset_ui("cost_types", "Cost Types:")
                           
-                          
-                          # checkboxGroupInput and its reset
-                          div(
-                            checkboxGroupInput("bar_segment", "Cost_Types:",
-                                               choices = c("All", names(EXPENSE_BARCOLS)),
-                                               selected = "All"),
-                            actionButton("reset_cost", "Reset", class = "btn-outline-secondary btn-sm mt-3")
-                          )
           ),
           
           accordion_panel("5: Selected measures"),
@@ -150,10 +144,10 @@ ui <- page_navbar(
       ),
       
       mainPanel(width = 10,
-        accordion(
-          open = c("All Rounds"),
-          accordion_panel(
-            "All Rounds",
+                accordion(
+                  open = c("All Rounds"),
+                  accordion_panel(
+                    "All Rounds",
             tabsetPanel(type = "tabs",
                         tabPanel("Plot", plotlyOutput("plot_all"), verbatimTextOutput("debug")),
                         tabPanel("Summary", verbatimTextOutput("summary_all")),
@@ -227,6 +221,7 @@ server <- function(input, output, session) {
   
   # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
   #Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
+  
   # role_selection from YAML, falling back to "All" if needed
   role_selection <- reactive({
     df <- income_dist_df()
@@ -263,24 +258,47 @@ server <- function(input, output, session) {
     get_choices = table_choices
   )
   
-  # Reset only the checkboxGroupInput
-  observeEvent(input$reset_cost, {
-    # If your "All" is a semantic choice, reselect it:
-    updateCheckboxGroupInput(session, "bar_segment", selected = "All")
+  # --- Cost Types (checkbox) ---
+  
+  # Choices reactive (can be dynamic if needed)
+  cost_types_choices <- reactive({
+    c("All", names(EXPENSE_BARCOLS))
   })
+  
+  # Default selection reactive (from config or static)
+  # If you have a YAML default like CONFIG$defaults$cost_types, wire it here.
+  # Otherwise, default to "All".
+  cost_types_default <- reactive({
+    "All"
+    # or CONFIG$defaults$cost_types
+  })
+  
+  selected_cost_types <- mod_multicheck_reset_server(
+    id            = "cost_types",
+    default_values = cost_types_default,   # reactive() returning a vector (e.g., "All" or c("Mortgage payment", ...))
+    get_choices    = cost_types_choices,
+    all_label      = "All",
+    expand_all     = FALSE                  # keep only "All" when All is selected (set TRUE to expand to all)
+  )
   
   # Optional: global "Reset all filters"
   observeEvent(input$reset_all_filters, {
     if (!is.null(session$userData$gamesession_reset)) session$userData$gamesession_reset()
     if (!is.null(session$userData$table_reset))       session$userData$table_reset()
-    updateCheckboxGroupInput(session, "bar_segment",    selected = "All")
+    if (!is.null(session$userData$cost_types_reset))  session$userData$cost_types_reset()
   })
   
-  #selected_table <- reactive({filter_selected_categs(selected_table(), table_choices())})
   
-  selected_bar_segments <- reactive({filter_selected_categs(input$bar_segment, names(EXPENSE_BARCOLS))})
+  selected_bar_segments <- reactive({
+    # selected_cost_types() already normalized. Still filter to known keys.
+    sel <- selected_cost_types()
+    filter_selected_categs(sel, c("All", names(EXPENSE_BARCOLS)))
+  })
   
-  selected_columns <- reactive({EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments()]})
+  selected_columns <- reactive({
+    EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments()]
+  })
+  
 
   summary_df <- reactive({retrieve_summary_table(income_dist_df(), selected_table())})
   

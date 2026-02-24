@@ -61,20 +61,90 @@ mod_input_reset_server <- function(id, default_value, get_choices) {
 }
 
 
-# 
-# accordion_panel("2: Select Table",
-#                 mod_input_reset_ui("table", "Table")
-# )
+# ==== Multi-select (checkboxGroupInput) + Reset module ====
 
+mod_multicheck_reset_ui <- function(id, label) {
+  ns <- NS(id)
+  tagList(
+    checkboxGroupInput(
+      ns("input_values"),
+      label = label,
+      choices = NULL
+    ),
+    actionButton(ns("reset"), "Reset", class = "btn-outline-secondary btn-sm mt-3")
+  )
+}
 
-# selected_gamesession <- mod_input_reset_server(
-#   id = "gamesession",
-#   default_value = reactive(gamesession_selection),
-#   get_choices = reactive(names(preprocess_data_list))
-# )
-# 
-# selected_table <- mod_input_reset_server(
-#   id = "table",
-#   default_value = reactive(role_selection),
-#   get_choices = reactive(c("All", unique(income_dist_df()$group_name)))
-# )
+# Handle multi-select with "All" semantics (optional helper)
+# If user selects "All", you can choose to keep only "All" OR expand to all real choices.
+normalize_multicheck_selection <- function(selection, choices, all_label = "All", expand_all = FALSE) {
+  if (is.null(selection) || length(selection) == 0) return(character(0))
+  selection <- intersect(selection, choices)  # sanitize
+  if (all_label %in% choices && all_label %in% selection) {
+    if (expand_all) {
+      # Expand to all (excluding All if you want)
+      # return(setdiff(choices, all_label))  # if you want all except "All"
+      return(choices)                         # include "All" too if desired
+    } else {
+      # Keep only "All"
+      return(all_label)
+    }
+  }
+  selection
+}
+
+mod_multicheck_reset_server <- function(id, default_values, get_choices, all_label = "All", expand_all = FALSE) {
+  moduleServer(id, function(input, output, session) {
+    ns <- session$ns
+    
+    # Initialize / update when choices or defaults change
+    observe({
+      choices <- get_choices()
+      req(length(choices) > 0)
+      
+      # default_values is reactive(): can be a single value "All" or a vector of types
+      sel <- default_values()
+      
+      # Ensure selection is within choices; fallback to "All" if available, else first choice
+      if (is.null(sel) || length(intersect(sel, choices)) == 0) {
+        sel <- if (all_label %in% choices) all_label else choices[[1]]
+      }
+      
+      updateCheckboxGroupInput(session, "input_values",
+                               choices = choices,
+                               selected = sel)
+    })
+    
+    # Reset button -> back to defaults, normalized
+    observeEvent(input$reset, {
+      choices <- get_choices()
+      req(length(choices) > 0)
+      
+      sel <- default_values()
+      if (is.null(sel) || length(intersect(sel, choices)) == 0) {
+        sel <- if (all_label %in% choices) all_label else choices[[1]]
+      }
+      
+      updateCheckboxGroupInput(session, "input_values", selected = sel)
+    })
+    
+    
+    # Inside mod_multicheck_reset_server after the observeEvent for reset:
+    session$userData[[paste0(id, "_reset")]] <- function() {
+      choices <- get_choices()
+      req(length(choices) > 0)
+      sel <- default_values()
+      if (is.null(sel) || length(intersect(sel, choices)) == 0) {
+        sel <- if ("All" %in% choices) "All" else choices[[1]]
+      }
+      updateCheckboxGroupInput(session, "input_values", selected = sel)
+    }
+    
+    
+    # Returned reactive selection, normalized (enforce All semantics consistently)
+    return(reactive({
+      choices <- get_choices()
+      normalize_multicheck_selection(input$input_values, choices, all_label = all_label, expand_all = expand_all)
+    }))
+  })
+}
