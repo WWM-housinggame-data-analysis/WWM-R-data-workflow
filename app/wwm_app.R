@@ -45,6 +45,8 @@ source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
+source(here(file.path(FUNCTION_PATH, "table-data.R")))
+
 ### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
 source(here(file.path(FUNCTION_PATH, "table-data.R")))
 
@@ -86,7 +88,7 @@ for (session_name in names(gamesession_data_list)) {
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION)
+gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = "All")
 role_selection <- process_config_selection(as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name)),
                                            SELECTED_USERNAME,
                                            fallback = "All")
@@ -111,27 +113,12 @@ ui <- page_navbar(
           multiple = FALSE,   # only one open at a time
           
           accordion_panel("1: Select Game Session",
+                          mod_input_reset_ui("gamesession", "Session")
                           
-                          # Input + small reset button
-                          div(
-                            
-                            selectInput("selected_gamesession", "Session:",
-                                        names(preprocess_data_list),
-                                        selected = gamesession_selection),
-                            
-                            actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm mt-3")
-                          )
           ),
           
           accordion_panel("2: Select Table",
-                          
-                          div(
-                            
-                            selectInput("selected_table", "Table:",
-                                        c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name))),
-                                        selected = role_selection),
-                            actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm mt-3")
-                          )
+                          mod_input_reset_ui("table", "Table")
           ),
           
           accordion_panel("3: Where players live"),
@@ -222,28 +209,50 @@ ui <- page_navbar(
 
 server <- function(input, output, session) {
   
-  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
+  if (identical(gamesession_selection, "All")) {
+    gamesession_choices <- reactive(names(preprocess_data_list))
+  } else {
+    gamesession_choices <- reactive(gamesession_selection)
+  }
+  
+  selected_gamesession <- mod_input_reset_server(
+    id = "gamesession",
+    default_value = reactive(gamesession_selection),
+    get_choices = reactive(gamesession_selection)
+  )
+  
+  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% selected_gamesession())]][["income_dist_df"]]})
   
   role_selection <- reactive({
     process_config_selection(as.character(unique(income_dist_df()$group_name)), SELECTED_USERNAME, fallback = "All")
   })
   
-  # Reactive table choices
-  table_choices <- reactive({
-    c("All", as.character(unique(income_dist_df()$group_name)))
-  })
   
+  if (identical(role_selection(), "All")) {
+    
+    # Reactive table choices
+    table_choices <- reactive({
+      c("All", as.character(unique(income_dist_df()$group_name)))
+    })
+    
+    # 3. Update table selectInput when session changes
+    observeEvent(input$selected_gamesession, {
+      updateSelectInput(
+        session, "selected_table",
+        choices = table_choices(),
+        selected = role_selection()
+      )
+    }, ignoreInit = TRUE)
+    
+  } else {
+    table_choices <- role_selection
+  }
   
-  # 3. Update table selectInput when session changes
-  observeEvent(input$selected_gamesession, {
-    updateSelectInput(
-      session, "selected_table",
-      choices = table_choices(),
-      selected = role_selection()
-    )
-  }, ignoreInit = TRUE)
-  
-  
+  selected_table <- mod_input_reset_server(
+    id = "table",
+    default_value = role_selection,
+    get_choices = table_choices
+  )
   
   # Reset only the session selectInput
   observeEvent(input$reset_session, {
