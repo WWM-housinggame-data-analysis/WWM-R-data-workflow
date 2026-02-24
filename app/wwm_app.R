@@ -89,7 +89,7 @@ for (session_name in names(gamesession_data_list)) {
 gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION)
 role_selection <- process_config_selection(as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name)),
                                            SELECTED_USERNAME,
-                                           else_categ = "All")
+                                           fallback = "All")
 
   
 
