@@ -1,3 +1,22 @@
+process_config_selection <- function(valid_values, default_value, fallback = character(0)) {
+  
+  stopifnot("At least one choice needs to be provided in valid_values"  = length(valid_values) > 0,
+            "(Only) one choice needs to be provided in default_value" = length(default_value) == 1)
+  
+  chosen_value <- valid_values[grep(default_value, valid_values)]
+  
+  if (length(chosen_value) == 0) {
+    
+    chosen_value <- fallback
+      
+  }  
+                                               
+  stopifnot("(Only) one choice needs to be found in chosen_value" = length(chosen_value) == 1)
+  
+  return(chosen_value)
+}
+
+
 filter_selected_categs <- function(input_categs, required_categs) {
   
     req(input_categs)

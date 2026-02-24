@@ -1,3 +1,11 @@
+
+
+CONFIG <- yaml::read_yaml(here::here("config.yml"))
+
+SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
+SELECTED_USERNAME    <- CONFIG$defaults$selected_username
+
+
 # Set all default variables or global options and all the path variables at the top of the code.
 
 FUNCTION_PATH <- file.path("R")

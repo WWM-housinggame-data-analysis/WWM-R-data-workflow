@@ -8,6 +8,7 @@ library(readxl)
 library(readr)
 library(openxlsx)
 library(writexl)
+library(yaml)
 
 ## Load for data manipulation
 library(sqldf)
@@ -85,6 +86,13 @@ for (session_name in names(gamesession_data_list)) {
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
+gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION)
+role_selection <- process_config_selection(as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name)),
+                                           SELECTED_USERNAME,
+                                           else_categ = "All")
+
+  
+
 
 # Shiny App ----
 
@@ -109,7 +117,7 @@ ui <- page_navbar(
                             
                             selectInput("selected_gamesession", "Session:",
                                         names(preprocess_data_list),
-                                        selected = "housinggame_session_20_251007_VerzekeraarsMasterClass"),
+                                        selected = gamesession_selection),
                             
                             actionButton("reset_session", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
@@ -121,7 +129,7 @@ ui <- page_navbar(
                             
                             selectInput("selected_table", "Table:",
                                         c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% "housinggame_session_20_251007_VerzekeraarsMasterClass")]][["income_dist_df"]]$group_name))),
-                                        selected = "All"),
+                                        selected = role_selection),
                             actionButton("reset_table", "Reset", class = "btn-outline-secondary btn-sm mt-3")
                           )
           ),
@@ -214,15 +222,35 @@ ui <- page_navbar(
 
 server <- function(input, output, session) {
   
+  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
+  
+  
+  # Reactive table choices
+  table_choices <- reactive({
+    c("All", as.character(unique(income_dist_df()$group_name)))
+  })
+  
+  
+  # 3. Update table selectInput when session changes
+  observeEvent(input$selected_gamesession, {
+    updateSelectInput(
+      session, "selected_table",
+      choices = table_choices(),
+      selected = role_selection
+    )
+  }, ignoreInit = TRUE)
+  
+  
+  
   # Reset only the session selectInput
   observeEvent(input$reset_session, {
     # Clear to empty; for selectize inputs, character(0) or NULL works
-    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
+    updateSelectInput(session, "selected_gamesession", selected = gamesession_selection)
   })
   
   # Reset only the table selectInput
   observeEvent(input$reset_table, {
-    updateSelectInput(session, "selected_table", selected = "All")
+    updateSelectInput(session, "selected_table", selected = role_selection)
   })
   
   # Reset only the checkboxGroupInput
@@ -233,13 +261,11 @@ server <- function(input, output, session) {
   
   # Optional: global "Reset all filters"
   observeEvent(input$reset_all_filters, {
-    updateSelectInput(session, "selected_gamesession", selected = "housinggame_session_20_251007_VerzekeraarsMasterClass")
-    updateSelectInput(session, "selected_table",      selected = "All")
+    updateSelectInput(session, "selected_gamesession", selected = gamesession_selection)
+    updateSelectInput(session, "selected_table",      selected = role_selection)
     updateCheckboxGroupInput(session, "bar_segment",    selected = "All")
   })
-
   
-  income_dist_df <- reactive({preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]})
   
   required_tables <- reactive({as.character(unique(income_dist_df()$group_name))})
   
@@ -274,11 +300,6 @@ server <- function(input, output, session) {
   output$table_r1  <- renderTable({ summary_df() })
   output$table_r2  <- renderTable({ summary_df() })
   output$table_r3  <- renderTable({ summary_df() })
-  
-  observe({
-    updateSelectInput(session, "selected_table",
-                      choices = c("All", as.character(unique(preprocess_data_list[[which(names(preprocess_data_list) %in% input$selected_gamesession)]][["income_dist_df"]]$group_name))),
-    )})
 }
 
 shinyApp(ui, server)
