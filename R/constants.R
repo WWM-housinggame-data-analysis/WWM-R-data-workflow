@@ -7,7 +7,7 @@ SELECTED_USERNAME    <- CONFIG$defaults$selected_username
 
 if (length(grep("fac", SELECTED_USERNAME)) == 1) {
   
-  SELECTED_USERTABLE <- paste0("TABLE", gsub("fac", "", SELECTED_USERNAME))
+  SELECTED_USERTABLE <- paste0("Table", gsub("fac", "", SELECTED_USERNAME))
   
   stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
     
