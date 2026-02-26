@@ -8,8 +8,6 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
   default_value <- as.character(default_value)
   fallback <- as.character(fallback)
   
-  
-  
   # If no valid values yet, return fallback (or stop with a clear message)
   if (length(valid_values) == 0) {
     if (length(fallback) == 1 && nzchar(fallback)) {
