@@ -11,13 +11,16 @@ if (length(grep("fac", SELECTED_USERNAME)) == 1) {
   
   stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
     
-}
-
-if (length(grep("coord", SELECTED_USERNAME)) == 1) {
+} else if (length(grep("coord", SELECTED_USERNAME)) == 1) {
   
   SELECTED_USERTABLE <- "All"
   
   stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
+  
+} else {
+  
+  SELECTED_USERTABLE <- "All"
+  SELECTED_GAMESESSION <- "All"
   
 }
 
