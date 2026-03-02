@@ -1,6 +1,6 @@
 
 
-CONFIG <- read_yaml(here("./config.yml"))
+CONFIG <- yaml::read_yaml(here("./config.yml"))
 
 SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
 SELECTED_USERNAME    <- CONFIG$defaults$selected_username
