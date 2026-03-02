@@ -46,10 +46,11 @@ Here we followed guidelines for structuring software projects from the following
 
 For the system requirements to use the codebase in this repository, follow the instructions in [INSTALL.md](INSTALL.md) to get started.
 
- using `git clone https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow.git`
-
 - If you are using RStudio in your own machine, open the project file `WWM-R-data-workflow.Rproj` to automatically activate the `renv` environment. If you are either using another IDE or running app.R in a server environment, make sure to activate the `renv` environment in R by running `renv::activate()`.
+
 - Install the required R packages by running `renv::restore()` in your R console. This will install all the packages specified in the `renv.lock` file, ensuring that you have the correct versions for reproducibility.
+
+> **Note**: If you encounter any issues with the R version, please ensure that you are using a compatible version of R and that all dependencies are correctly installed.
 
 To run the Shiny dashboard application, simply run `app.R` in RStudio. If you are using the command line, run the app by executing `Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"` and check the display in http://localhost:3838.
 

@@ -51,14 +51,11 @@ You can copy the repository to your local machine by either:
 
 - or via one of the [terminal options recommended bellow](#options-for-terminal-installation):
 
-````bash
+```bash
 git clone https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow.git`
 ```
 
 > **Note**: For reproducing the code it is possible to download the repository as a ZIP file and extract it in your local machine. However, we recommend using GitHub Desktop or terminal for easier access to contribute to the codebase and for version control.
-
-
-##
 
 ## Options for terminal installation
 
