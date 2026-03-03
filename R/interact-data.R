@@ -1,4 +1,10 @@
 
+
+# -----------------------------------------------
+# Robust selection of configuration defaults
+# -----------------------------------------------
+
+
 #Right now it stops when valid_values is empty. For robustness, allow empty and return the fallback (with a warning). Also, ensure fallback is length 1 and not empty.
 # Why this helps: During initial reactivity when data hasn’t arrived, you’ll get a sane fallback instead of a hard error.
 process_config_selection <- function(valid_values, default_value, fallback = character(0)) {
@@ -38,9 +44,13 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
 }
 
 
+# -----------------------------------------------
+# Handle "All" and selected filtering
+# -----------------------------------------------
+
 filter_selected_categs <- function(input_categs, required_categs) {
   
-    req(input_categs)
+    shiny::req(input_categs)
   
     # remove the special label
     req_types <- required_categs
@@ -49,21 +59,29 @@ filter_selected_categs <- function(input_categs, required_categs) {
     
     if ("All" %in% as.vector(input_categs)) {
       
-      req_types
+      return(req_types)
       
     } else {
       
-      intersect(input_categs, req_types)
+      return(intersect(input_categs, req_types))
     }
 }
 
+
+# -----------------------------------------------
+# Determine grouping column for plot logic
+# -----------------------------------------------
+
+
 update_group_col <- function(plot_data, selected_table) {
   
-  if (all(as.character(unique(plot_data$group_name)) %in% selected_table)) {
+  groups <- as.character(unique(plot_data$group_name))
+  
+  if (all(groups %in% selected_table)) {
     
     group_col <- "income_grp"
     
-  } else if (any(as.character(unique(plot_data$group_name)) %in% selected_table) && length(selected_table) == 1) {
+  } else if (any(groups %in% selected_table) && length(selected_table) == 1) {
     
     group_col <- "player_code"
     
