@@ -1,8 +1,17 @@
-# Set defaults ----
+
+# R/check-df-cols.R
+
 ## Set all default variables or global options and all the path variables.
 
 ## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
+
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
+
+# ---------------------------------------------------------------
+# Validate columns exist in dataframe
+# --------------------------------------------------------------
 
 ## Check data frame is in the expected format and columns exist
 check_df_cols <- function(df, cols) {
@@ -49,7 +58,8 @@ check_char_cols <- function(df, cols) {
   check_df_cols(df, cols)
   
   ## Check character columns are defined as such or as factor
-  detect_char <- unlist(lapply(df[, cols], is.character)) + unlist(lapply(df[, cols], is.factor))
+  #detect_char <- unlist(lapply(df[, cols], is.character)) + unlist(lapply(df[, cols], is.factor))
+  detect_char <- unlist(lapply(df[, cols], function(x) is.character(x) || is.factor(x)))
   
   if (any(detect_char == 0)) {
     stop(paste0("These df columns expected to be factor or character: ",

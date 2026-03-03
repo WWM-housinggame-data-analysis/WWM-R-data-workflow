@@ -5,8 +5,8 @@
 FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
-source(here(file.path(FUNCTION_PATH, "constants.R")))
-source(here(file.path(FUNCTION_PATH, "check-df-cols.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # Functions ---
 

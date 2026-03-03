@@ -5,7 +5,7 @@
 FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
-source(here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 # Functions ---
 
@@ -20,7 +20,7 @@ list_matching_subfolders <- function(folder_path, subfolder_pattern) {
             "subfolder_pattern expected to have only element 1" = length(subfolder_pattern) == 1)
 
   ## List all subfolders inside the main folder
-  subfolder_paths <- list.dirs(path = here(folder_path), full.names = TRUE, recursive = FALSE)
+  subfolder_paths <- list.dirs(path = here::here(folder_path), full.names = TRUE, recursive = FALSE)
   
   ## Check any subfolder found
   if (length(subfolder_paths) == 0) {
@@ -55,7 +55,7 @@ list_matching_dbtables <- function(folder_path, subfolder_pattern) {
     
     i <- length(dbtable_filenames) + 1
     
-    dbtable_filenames[[i]] <- list.files(path = here(subfolder_path), pattern = paste("\\", IMPORTED_TABLE_TYPE, "$", sep = ""), full.names = TRUE)
+    dbtable_filenames[[i]] <- list.files(path = here::here(subfolder_path), pattern = paste("\\", IMPORTED_TABLE_TYPE, "$", sep = ""), full.names = TRUE)
     
     ## Warning if no .csv table is found within a given subfolder
     if (length(dbtable_filenames[[i]]) == 0) {
@@ -115,7 +115,7 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   # Export data available for a given session to excel file
   tryCatch({
     write_xlsx(sessiontable_list,
-               here(file.path(excel_outpath,
+               here::here(file.path(excel_outpath,
                               paste0(paste(session_name, timestamp, workflow_stage, sep = "-"), ".xlsx"))))
     
     message("File written successfully.")
