@@ -1,70 +1,212 @@
 # Contributing Guidelines
 
-[In this document shall describe how you would like others to contribute to your code and what code of conduct shall they follow to avoid conflicts and misunderstandings during the collaboration process.]
+This repository supports collaboration between a **supervisor** and **students** developing R analysis code.  
+To avoid conflicts and ensure a clear development process, we follow a structured **Git branching workflow**.
 
-## Installation for Developers
-[Describe the steps  that *developer* should follow to install the source code and set up a development environment for each of the intended platforms (e.g. Windows 10, macOS, etc.).]
+In order to facilitate healthy, constructive behavior in an open and inclusive community, we all respect and abide by our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-**Requirements** 
-- [List the software and/or technologies on which the code depends, and add hyperlinks to the sources whenever possible.]
-- [State any relevant hardware requirements.]
+Please read these instructions before contributing.
 
-#### [For Patform A]
+<br>
 
-[List and describe each step required to set up a development environment and install the source code. Use a description/example format.] [For example:]
+# 📚 Overview of the Workflow
 
-[1. Create and activate a virtual environment using `virtualenv`]
+We maintain the following Git branches:
 
-```bash
-[$ virtualenv ./myvenv]
-[$ source ./myvenv/bin/activate]
+- **`main`** → stable, production-ready code  
+- **`develop`** → integration branch for all ongoing work  
+- **`develop-studentGITHUBNAME`** → *one branch per student*, created by the supervisor  
+
+<br>
+
+Workflow summary:
+
+1. Repository contains `main` and `develop`.
+2. Supervisor creates `develop-studentGITHUBNAME` rooted in `develop`.
+3. Student clones repository, works on their branch, and pushes updates.
+4. Supervisor creates a pull request (PR) from the student branch into `develop`.
+5. Student continues committing and pushing updates.
+6. The cycle repeats until the work is complete.
+
+> **Additional help:** Check [the DCC Guides](https://tu-delft-dcc.github.io/) pages on [Collaboration](https://tu-delft-dcc.github.io/docs/software/development_workflow/collaboration.html) and [Branch Management](https://tu-delft-dcc.github.io/docs/software/development_workflow/branch_management.html) for more information on Git workflows and best practices.
+
+<br>
+
+# 🔧 Tool Setup Instructions
+
+To contribute to this project, you need to set up your local environment. Follow the instructions in [INSTALL.md](INSTALL.md) to get started.
+
+In short, contributors to this project may submit their changes with **GitHub Desktop** (recommended for beginners) or via the **terminal** (Mac Terminal, Windows WSL, or Git Bash).
+
+# 🧑‍🏫 Supervisor Workflow
+
+### Step 1 — Create Student Branch
+
+1. Go to the GitHub repository page.
+2. Open the branch dropdown.
+3. Create a new branch named:
+
+```
+develop-studentGITHUBNAME
 ```
 
-[2. Install dependencies ]
-```bash
-[$ pip install -r requirements.txt]
+4. Ensure the base branch is:
+
+```
+develop
 ```
 
-## Types of Contributions
+5. Inform the student that the branch is ready for use.
 
-A contribution can be one of the following cases:
+> **Branching help:** https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository
 
-[List all ways you want others to contribute with the code. Below is a list of typical cases as examples:]
-    
-1. [you have a question;]
-2. [you think you may have found a bug (including unexpected behaviour);]
-3. [you want to make some changes to the code base (e.g. to fix a bug, to add a new feature, to update 4. documentation).]
+---
 
-[The sections below outline the steps in each case.]
+### Step 2 — Create Pull Requests (PRs)
 
-## Questions
-    
-[Edit the section accordingly, though the text below is generic and a common practice]
-1. use the search functionality `[here](<link-to-issues-page>)` to see if someone already filed the same issue;
-2. if your issue search did not yield any relevant results, make a new issue;
-3. apply the "Question" label; apply other labels when relevant.
+Once the student pushes new work:
 
-## Find Bugs
+1. Open Pull Requests on GitHub.
+2. Click New Pull Request.
+3. Set:
+    - Base branch: develop
+    - Compare branch: develop-studentGITHUBNAME
+4. Review changes and comment as needed.
+5. Merge when ready.
 
-If you think you may have found a bug:
+> **PR help:** https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
 
-1. use the search functionality `[here](<link-to-issues-page>)` to see if someone already filed the same issue;
-2. if your issue search did not yield any relevant results, make a new issue, making sure to provide enough information to the rest of the community to understand the cause and context of the problem. Depending on the issue, you may want to include:
-    - the [SHA hashcode](https://help.github.com/articles/autolinked-references-and-urls/#commit-shas) of the commit that is causing your problem;
-    - some identifying information (name and version number) for dependencies you're using;
-    - information about the operating system;
-    - detailed steps to reproduce the bug.
-3. apply relevant labels to the newly created issue.
+<br>
 
-## Changes to Source Code: fix bugs and add features
+# 🎓 Student Workflow
 
-1. (important) announce your plan to the rest of the community before you start working. This announcement should be in the form of a (new) issue;
-2. (important) wait until some consensus is reached about your idea is a good idea;
-3. if needed, fork the repository to your own Github profile and create your feature branch out of the latest master commit. While working on your feature branch, make sure to stay up to date with the master branch by pulling in changes;
-4. make sure the existing tests still work;
-5. add your tests (if applicable);
-6. update or expand the documentation;
-7. push your feature branch to (your fork of) this repository on GitHub;
-8. create the pull request, e.g. following the instructions [here](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+### Step 1 — Clone the Repository
 
-> If you feel like you have a valuable contribution to make, but you don't know how to write or run tests for it or create the documentation: don't let this discourage you from making the pull request; we can help you! Just go ahead and submit the pull request, but keep in mind that you might be asked to append additional commits to your pull request.
+#### Using GitHub Desktop
+
+1. Open GitHub Desktop.
+2. File → Clone Repository.
+3. Select the repository [WWM-R-data-workflow](https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow) from your GitHub account.
+4. Clone to your computer.
+
+> **Cloning help:** https://docs.github.com/en/desktop/adding-and-cloning-repositories
+
+#### Using Terminal (Mac, WSL, Git Bash) with HTTPS connection
+
+```bash
+git clone https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow.git
+cd WWM-R-data-workflow
+```
+
+---
+
+### Step 2 — Switch to Your Assigned Branch
+
+#### GitHub Desktop
+
+Select the branch using the branch selector dropdown:
+
+```
+develop-studentGITHUBNAME
+```
+
+#### Terminal
+
+```bash
+git checkout develop-studentGITHUBNAME
+```
+
+### Step 3 — Make Changes in R
+
+Add/Edit R scripts in inside the folder`./WWM-R-data-workflow/scripts`.
+Check the [DCC Guides](https://tu-delft-dcc.github.io/docs/data/data_collection/data_conventions.html) for data and code conventions.
+Test your code before committing.
+
+---
+
+### Step 4 — Commit and Push Changes
+
+#### GitHub Desktop
+
+1. Stage changes (checkboxes).
+2. Write a meaningful commit message.
+3. Click Commit to develop-studentGITHUBNAME.
+4. Click Push origin.
+
+#### Terminal
+
+```bash
+git add .
+git commit -m "Describe your change"
+git push origin develop-studentGITHUBNAME
+```
+
+---
+
+### Step 5 — Continue Work or Respond to Supervisor Pull Requests
+
+If you intend to make further changes in your work, either to make progress or to make changes requested by your supervisor, here is how you, the student, should respond.
+
+#### GitHub Desktop
+
+1. Open GitHub Desktop and make sure you're on your branch. You can select it from the Current Branch dropdown.
+
+```
+develop-studentGITHUBNAME
+```
+
+2. Pull the latest changes (if the supervisor added comments or edits) by clicking `Repository → Pull`. If GitHub Desktop prompts you to "fetch origin", do that first.
+
+3. For comments, requested changes or other suggestions from your supervisor, go to [PR comments](https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow/pulls) in WWM-R-data-workflow.
+
+4. Open your R scripts and implement the necessary fixes or improvements.
+
+5. Commit your changes by:
+    - selecting  the changed files (checkboxes)
+    - writing a clear commit message (e.g. "Address supervisor comments: fix plotting function")
+    - clicking `Commit to develop-studentGITHUBNAME`
+
+6. Push changes to GitHub by clicking `Push origin`.
+
+#### Terminal
+
+1. Make sure your branch is checked out
+
+```bash
+git checkout develop-studentGITHUBNAME
+```
+
+2. Pull the latest changes from GitHub
+
+```bash
+git pull
+```
+
+3. For comments, requested changes or other suggestions from your supervisor, go to [PR comments](https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow/pulls) in WWM-R-data-workflow.
+
+4. Open your R scripts and implement the necessary fixes or improvements.
+
+5. Commit and push changes
+
+```bash
+git add .
+git commit -m "Describe your change"
+git push origin develop-studentGITHUBNAME
+```
+
+**Note**: if a Pull Request is open with your branch as **compare branch**, your new commits are automatically added to the it — no further action needed.
+
+<br>
+
+# 🧹 Code Style Suggestions
+
+- Write clear, concise commit messages.
+- Keep commits small and focused.
+
+<br>
+
+# 🙋 Need Help?
+
+- Git fundamentals (Software Carpentry): https://swcarpentry.github.io/git-novice/
+- TU Delft DCC GitHub Guide: https://tu-delft-dcc.github.io/GitHub-Guide/
+- For repository‑specific questions, consult your supervisor.

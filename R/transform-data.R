@@ -1,56 +1,90 @@
+# R/transform-data.R
 # Filter and prepare just before plotting
 
-retrieve_pivot_table <- function(plot_data, selected_players_vec, stacked_vec) {
-  plot_data <- plot_data %>%
-    filter(player_code %in% selected_players_vec) %>%
-    droplevels() %>%
-    pivot_longer(cols = where(is.numeric), names_to = "cost_type", values_to = "cost_value") %>%
-    mutate(cost_type = factor(cost_type)) %>%
-    filter(cost_type %in% stacked_vec) %>%
-    droplevels() %>%
-    mutate(
-      cost_type  = forcats::fct_relevel(cost_type, stacked_vec),
-      cost_value = as.numeric(gsub(",", "", as.character(cost_value))) # safe numeric
-    )
+# Build xlabels on the row-level data
+create_GP1_xlabels <- function(plot_data, group_col) {
+  
+  if (identical(group_col, "income_grp")) {
+    
+    plot_data <- plot_data |>
+      dplyr::mutate(
+        xlabels = factor(
+          paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))], .data[[group_col]], sep = "<br>"),
+          levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = "<br>")
+        )
+      )
+    
+  } else if (identical(group_col, "player_code")) {
+    
+    plot_data <- plot_data |>
+      dplyr::mutate(
+        xlabels = factor(
+          paste(.data[[group_col]], .data[["income_grp"]], sep = "<br>"),
+          levels = paste(.data[["player_code"]][match(names(WELFARE_LABELS), .data[["income_grp"]])], names(WELFARE_LABELS), sep = "<br>")
+        )
+      )
+  }
+  
   return(plot_data)
 }
 
-# Pre-aggregate: mean and count per bar segment (round_income × cost_type)
-retrieve_summary_table <- function(plot_data, group_col) {
+retrieve_n_table <- function(df, group_col, id_col = "player_code") {
   
-  summary_df <- plot_data %>%
-    group_by(across(all_of(c(group_col, "cost_type")))) %>%
-    summarise(
-      mean_value = mean(cost_value, na.rm = TRUE),
-      n          = n(),
-      .groups    = "drop"
+  if (identical(group_col, id_col)) {
+    n_df <- df |>
+      dplyr::select(tidyselect::all_of(id_col)) |>
+      dplyr::summarise(N = dplyr::n())
+    
+  } else {
+    n_df <- df |>
+      dplyr::select(tidyselect::all_of(c(group_col, id_col))) |>
+      dplyr::group_by(.data[[group_col]]) |>
+      dplyr::summarise(N = dplyr::n())
+  }
+  return(n_df)
+}
+
+retrieve_pivot_table <- function(df, selected_columns, column_name, column_value) {
+  
+  pivoted_df <- df |>
+    
+    tidyr::pivot_longer(cols = tidyselect::where(is.numeric), names_to = column_name, values_to = column_value) |>
+    
+    dplyr::mutate(!!column_name := factor(.data[[column_name]])) |>
+    
+    dplyr::filter(.data[[column_name]] %in% selected_columns) |>
+    
+    droplevels() |>
+    
+    dplyr::mutate(
+      !!column_name := forcats::fct_relevel(.data[[column_name]], selected_columns)
     )
+  return(pivoted_df)
+}
+
+retrieve_mean_table <- function(df, group_col, in_cols, out_cols) {
   
-  return(summary_df)
+  stopifnot(length(in_cols) == length(out_cols))
+  
+  names(in_cols) <- out_cols
+  
+  lookup <- tibble::enframe(in_cols, name = "mean_label", value = "column_name")
+  
+  pivoted_df <- retrieve_pivot_table(df, in_cols, "column_name", "column_value")
+  
+  mean_df <- pivoted_df |>
+    dplyr::group_by(dplyr::across(tidyselect::all_of(c(group_col, "column_name")))) |>
+    
+    dplyr::summarise(
+      mean_value = round(mean(.data[["column_value"]], na.rm = TRUE), 2),
+      N          = dplyr::n(),
+      .groups = "drop"
+    ) |>
+    dplyr::left_join(lookup, by = "column_name") |>
+    dplyr::arrange(xlabels) |>
+    as.data.frame()
+  
+  return(mean_df)
 }
 
-retrieve_average_table <- function(plot_data) {
-  plot_data %>%
-    group_by(income_grp) %>%
-    summarise(
-      ave_income_minus_living = round(mean(income_minus_living, na.rm = TRUE), 2),
-      ave_profit_minus_spent_savings_house_moving = round(mean(profit_minus_spent_savings_house_moving, na.rm = TRUE), 2),
-      ave_mortgage = round(mean(mortgage_payment, na.rm = TRUE), 2),
-      ave_taxes = round(mean(cost_taxes, na.rm = TRUE), 2),
-      ave_debt = round(mean(paid_debt, na.rm = TRUE), 2),
-      ave_measures = round(mean(cost_house_measures_bought, na.rm = TRUE), 2),
-      ave_satisfaction = round(mean(cost_personal_measures_bought, na.rm = TRUE), 2),
-      ave_fluvial_damage  = round(mean(cost_fluvial_damage, na.rm = TRUE), 2),
-      ave_pluvial_damage = round(mean(cost_pluvial_damage, na.rm = TRUE), 2),
-      ave_Spendable = round(mean(spendable_income, na.rm = TRUE), 2)
-    ) %>%
-    ungroup()
-}
 
-retrieve_n_table <- function(plot_data) {
-  plot_data %>%
-  select(income_grp, player_code) %>%
-  group_by(income_grp) %>%
-  summarise(N = n()) %>%
-  ungroup()
-}
