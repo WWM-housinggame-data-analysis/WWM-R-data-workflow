@@ -103,4 +103,4 @@ Alexander Verbraecken, The Netherlands.
 
 ## Acknowlegdements
 
-[Name anyone who deserves it.]
+This repository was supported by [João Guimarães](https://www.tudelft.nl/digital-competence-centre/team/joao-guimaraes) from the Digital Competence Centre, Delft University of Technology. 
