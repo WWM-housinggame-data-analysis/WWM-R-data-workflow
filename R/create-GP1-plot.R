@@ -140,7 +140,7 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_tit
     segment_df <- bar_df %>% dplyr::filter(mean_label == label)
     
     # label + color fallbacks
-    bar_color <- fill_values_all[names(fill_values_all) %in% label] %||% "#808080"
+    bar_color <- rlang::`%||%`(fill_values_all[names(fill_values_all) %in% label], "#808080")
     
     out_plot <- out_plot %>%
       plotly::add_bars(
