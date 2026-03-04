@@ -1,28 +1,38 @@
-# Set defaults ----
+# R/preprocess-dbtables.R
+# ---------------------------------------------------------------
+# Load constants and helper components
+# ---------------------------------------------------------------
+
 ## Set all default variables or global options and all the path variables.
 
 ## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
-source(here(file.path(FUNCTION_PATH, "constants.R")))
-source(here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
-source(here(file.path(FUNCTION_PATH, "create-dbtables.R")))
-source(here(file.path(FUNCTION_PATH, "format-add-cols.R")))
-source(here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
+source(here::here(file.path(FUNCTION_PATH, "create-dbtables.R")))
+source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
+source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
 
 # Functions ----
 
-## Unpack dataframes in list and save them as independent variables
+# ---------------------------------------------------------------
+# Helper: unpack list of data frames into environment
+# ---------------------------------------------------------------
+
 unpack_dbtable_list <- function(dblist, suffix = "_df") {
   if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {
     stop("Missing dbtables needed for preprocessing")
   }
-  dblist <- setNames(dblist, paste0(names(dblist), suffix))
+  dblist <- stats::setNames(dblist, paste0(names(dblist), suffix))
   list2env(dblist, envir = parent.frame())
 }
 
+# ---------------------------------------------------------------
+# Main preprocessing function
+# ---------------------------------------------------------------
 
 preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
@@ -40,10 +50,14 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Unpack into global environment
   unpack_dbtable_list(dbtable_list, "_df")
   
+  # -----------------------------------------------------------
+  # SQL transformations
+  # -----------------------------------------------------------
+  
   ## Rename the session name variable in the dataframe to avoid name overlap with the group name variable
   ## "SELECT id, name AS gamesession_name, password, location, create_time, date, start_time, end_time, gameversion_id, description FROM gamesession_df" 
   
-  gamesession_df <- sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
+  gamesession_df <- sqldf::sqldf(rename_cols_sqlquery(gamesession_df, "name", "gamesession_name"))
   
   
   ## Add to the group dataframe the gamesession_name by the group_df id = gamesession_df
@@ -54,7 +68,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [gamesession_df] AS dbtable2
   ##  ON dbtable1.gamesession_id = dbtable2.id"
   
-  group_df <- sqldf(left_join_sqlquery(group_df, "gamesession_id",
+  group_df <- sqldf::sqldf(left_join_sqlquery(group_df, "gamesession_id",
                                        gamesession_df, "id",
                                        kept_dbtable2_cols = "gamesession_name"))
 
@@ -66,7 +80,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [group_df] AS dbtable2
   ##  ON dbtable1.group_id = dbtable2.id"
     
-  groupround_df <- sqldf(left_join_sqlquery(groupround_df, "group_id",
+  groupround_df <- sqldf::sqldf(left_join_sqlquery(groupround_df, "group_id",
                                             group_df, "id",
                                             kept_dbtable2_cols = c("name", "gamesession_id",
                                                                    "gamesession_name", "scenario_id")))
@@ -75,7 +89,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Rename the added columns in the dataframe to know from which table first come from
   ## "SELECT id, timestamp, pluvial_flood_intensity, fluvial_flood_intensity, group_state, round_number, group_id, name AS group_name, gamesession_id, gamesession_name, scenario_id AS group_scenario_id FROM groupround_df"
   
-  groupround_df <- sqldf(rename_cols_sqlquery(groupround_df, c("name", "scenario_id"), c("group_name", "group_scenario_id")))
+  groupround_df <- sqldf::sqldf(rename_cols_sqlquery(groupround_df, c("name", "scenario_id"), c("group_name", "group_scenario_id")))
   
   
   ## Added community name to houde_df
@@ -85,7 +99,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## LEFT JOIN [community_df] AS dbtable2
   ## ON dbtable1.community_id = dbtable2.id"
   
-  house_df <- sqldf(left_join_sqlquery(house_df, "community_id",
+  house_df <- sqldf::sqldf(left_join_sqlquery(house_df, "community_id",
                                        community_df, "id",
                                        kept_dbtable2_cols = "name"))
   
@@ -93,7 +107,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Rename the added columns in the dataframe to know from which table first come from
   ## "SELECT id, price, code, available_round, address, rating, initial_pluvial_protection, initial_fluvial_protection, community_id, name AS community_name FROM house_df"
   
-  house_df <- sqldf(rename_cols_sqlquery(house_df, "name", "community_name"))
+  house_df <- sqldf::sqldf(rename_cols_sqlquery(house_df, "name", "community_name"))
 
   
   ## Rename playerround_df column "id" with the table prefix to avoid id ambiguity , i.e. "playerround_id"
@@ -107,7 +121,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  fluvial_community_delta, pluvial_house_delta, fluvial_house_delta, player_state, player_id, groupround_id, start_housegroup_id,
   ##  final_housegroup_id, active_transaction_id FROM playerround_df"
   
-  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "id", "playerround_id"))
+  playerround_df <- sqldf::sqldf(rename_cols_sqlquery(playerround_df, "id", "playerround_id"))
   
   
   ## Add to playerround_df the groupround_df selection to filter per round, group_df and session id and names by playerround_df = groupround_df id, with "playerround_id" as first column
@@ -117,7 +131,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [groupround_df] AS dbtable2
   ##  ON dbtable1.groupround_id = dbtable2.id"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "groupround_id",
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, "groupround_id",
                                              groupround_df, "id",
                                              kept_dbtable1_cols = unique(c("playerround_id", names(playerround_df))),
                                              kept_dbtable2_cols = c("round_number", "group_id",
@@ -136,7 +150,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  player_state, player_id, groupround_id, start_housegroup_id, final_housegroup_id, active_transaction_id,
   ##  round_number AS groupround_round_number, group_id, group_name, gamesession_id, gamesession_name, group_scenario_id FROM playerround_df"
   
-  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "round_number", "groupround_round_number"))
+  playerround_df <- sqldf::sqldf(rename_cols_sqlquery(playerround_df, "round_number", "groupround_round_number"))
   
   
   ## Add to the playerround_df the player code and welfaretype_id
@@ -146,7 +160,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [player_df] AS dbtable2
   ##  ON dbtable1.player_id = dbtable2.id"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "player_id",
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, "player_id",
                                              player_df, "id",
                                              kept_dbtable2_cols = c("code", "welfaretype_id")))
   
@@ -163,7 +177,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  groupround_id, start_housegroup_id, final_housegroup_id, active_transaction_id, groupround_round_number, group_id, group_name, gamesession_id,
   ##  gamesession_name, group_scenario_id, code AS player_code, welfaretype_id FROM playerround_df"
   
-  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "code", "player_code"))
+  playerround_df <- sqldf::sqldf(rename_cols_sqlquery(playerround_df, "code", "player_code"))
   
   
   ## Add to the playerround_df the house code
@@ -173,7 +187,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [housegroup_df] AS dbtable2
   ##  ON dbtable1.final_housegroup_id = dbtable2.id"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "final_housegroup_id",
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, "final_housegroup_id",
                                              housegroup_df, "id",
                                              kept_dbtable2_cols = "code"))
   
@@ -191,7 +205,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  group_id, group_name, gamesession_id, gamesession_name, group_scenario_id, player_code, welfaretype_id, code AS house_code
   ##  FROM playerround_df"
   
-  playerround_df <- sqldf(rename_cols_sqlquery(playerround_df, "code", "house_code"))
+  playerround_df <- sqldf::sqldf(rename_cols_sqlquery(playerround_df, "code", "house_code"))
   
   
   ## Add to the playerround_df the community_name
@@ -201,7 +215,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [house_df] AS dbtable2
   ##  ON dbtable1.house_code = dbtable2.code"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, "house_code",
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, "house_code",
                                              house_df, "code",
                                              kept_dbtable2_cols = "community_name"))
   
@@ -209,7 +223,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Sort playerround_df by player_code ascendingly
   ## "SELECT * FROM playerround_df ORDER BY player_code ASC"
   
-  playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
+  playerround_df <- sqldf::sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
   
  
   ##  Add to the personalmeasure the playerround_df selection to filter per player, table, round and cost of measures
@@ -219,7 +233,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [playerround_df] AS dbtable2
   ##  ON dbtable1.playerround_id = dbtable2.playerround_id"
   
-  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "playerround_id",
+  personalmeasure_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, "playerround_id",
                                                  playerround_df, "playerround_id",
                                                  kept_dbtable2_cols = c("gamesession_name", "group_name",
                                                                         "player_id", "player_code", "groupround_round_number",
@@ -233,7 +247,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  groupround_round_number, round_income, cost_house_measures_bought, final_housegroup_id, mortgage_payment
   ##  FROM personalmeasure_df"
   
-  personalmeasure_df <- sqldf(select_sqlquery(personalmeasure_df, unique(c("gamesession_name", names(personalmeasure_df)))))
+  personalmeasure_df <- sqldf::sqldf(select_sqlquery(personalmeasure_df, unique(c("gamesession_name", names(personalmeasure_df)))))
   
   
   ## Add to the personalmeasure the housegroup selection to calculate the cost of measures
@@ -243,7 +257,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [housegroup_df] AS dbtable2
   ##  ON dbtable1.final_housegroup_id = dbtable2.id"
   
-  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "final_housegroup_id",
+  personalmeasure_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, "final_housegroup_id",
                                                  housegroup_df, "id",
                                                  kept_dbtable2_cols = c("code", "last_sold_price", "owner_id")))
   
@@ -255,7 +269,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  code AS house_code, last_sold_price, owner_id
   ##  FROM personalmeasure_df"
   
-  personalmeasure_df <- sqldf(rename_cols_sqlquery(personalmeasure_df, "code", "house_code"))
+  personalmeasure_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure_df, "code", "house_code"))
   
   
   ## Add to personalmeasure the measuretype selection to compare it with the costs of measures per round
@@ -265,7 +279,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [measuretype_df] AS dbtable2
   ##  ON dbtable1.measuretype_id = dbtable2.id"
   
-  personalmeasure_df <- sqldf(left_join_sqlquery(personalmeasure_df, "measuretype_id",
+  personalmeasure_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, "measuretype_id",
                                                  measuretype_df, "id",
                                                  kept_dbtable2_cols = c("short_alias", "cost_absolute", "cost_percentage_income",
                                                                         "cost_percentage_house", "satisfaction_delta_once",
@@ -275,7 +289,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Sort playerround_df by player_code ascendingly
   ## "SELECT * FROM personalmeasure_df ORDER BY player_code ASC"
   
-  personalmeasure_df <- sqldf(sort_dbtable_sqlquery(personalmeasure_df, "player_code"))
+  personalmeasure_df <- sqldf::sqldf(sort_dbtable_sqlquery(personalmeasure_df, "player_code"))
   
   
   ## calculate costs for personal measures
@@ -293,7 +307,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [house_df] AS dbtable2
   ##  ON dbtable1.house_id = dbtable2.id"
   
-  initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "house_id",
+  initialhousemeasure_df <- sqldf::sqldf(left_join_sqlquery(initialhousemeasure_df, "house_id",
                                                      house_df, "id",
                                                      kept_dbtable2_cols = c("code", "rating", "initial_pluvial_protection",
                                                                             "initial_fluvial_protection", "community_id")))
@@ -303,7 +317,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## "SELECT id, name, round_number, measuretype_id, house_id, code AS house_code, rating, initial_pluvial_protection,
   ##  initial_fluvial_protection, community_id FROM initialhousemeasure_df"
   
-  initialhousemeasure_df <- sqldf(rename_cols_sqlquery(initialhousemeasure_df, "code", "house_code"))
+  initialhousemeasure_df <- sqldf::sqldf(rename_cols_sqlquery(initialhousemeasure_df, "code", "house_code"))
   
   
   ## Added to the initialhouse measure the measure type
@@ -313,14 +327,14 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [measuretype_df] AS dbtable2
   ##  ON dbtable1.measuretype_id = dbtable2.id"
   
-  initialhousemeasure_df <- sqldf(left_join_sqlquery(initialhousemeasure_df, "measuretype_id",
+  initialhousemeasure_df <- sqldf::sqldf(left_join_sqlquery(initialhousemeasure_df, "measuretype_id",
                                                      measuretype_df, "id",
                                                      kept_dbtable2_cols = "short_alias"))
   
   
   ## Sort initialhousemeasure_df by house_id ascendingly
   ## "SELECT * FROM initialhousemeasure_df ORDER BY house_id ASC"
-  initialhousemeasure_df <- sqldf(sort_dbtable_sqlquery(initialhousemeasure_df, "house_id"))
+  initialhousemeasure_df <- sqldf::sqldf(sort_dbtable_sqlquery(initialhousemeasure_df, "house_id"))
   
   
   ## Add to the housemeasure_df the housegroup selection to calculate the cost of measures
@@ -330,7 +344,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [housegroup_df] AS dbtable2
   ##  ON dbtable1.housegroup_id = dbtable2.id"
   
-  housemeasure_df <- sqldf(left_join_sqlquery(housemeasure_df, "housegroup_id",
+  housemeasure_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, "housegroup_id",
                                               housegroup_df, "id",
                                               kept_dbtable2_cols = c("code", "owner_id")))
   
@@ -338,7 +352,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  Rename the added columns in the dataframe to know from which table first come from
   ## "SELECT id, bought_in_round, measuretype_id, housegroup_id, used_in_round, code AS house_code, owner_id FROM housemeasure_df"
   
-  housemeasure_df <- sqldf(rename_cols_sqlquery(housemeasure_df, "code", "house_code"))
+  housemeasure_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_df, "code", "house_code"))
   
   
   ## Add playerround data to the house measures table
@@ -348,7 +362,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [playerround_df] AS dbtable2
   ##  ON dbtable1.owner_id = dbtable2.player_id AND dbtable1.bought_in_round = dbtable2.groupround_round_number"
   
-  housemeasure_df <- sqldf(left_join_sqlquery(housemeasure_df, c("owner_id", "bought_in_round"),
+  housemeasure_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, c("owner_id", "bought_in_round"),
                                               playerround_df, c("player_id", "groupround_round_number"),
                                               kept_dbtable2_cols = c("gamesession_name", "group_name", "player_id",
                                                                      "player_code", "groupround_round_number",
@@ -360,7 +374,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  owner_id, group_name, player_id, player_code, groupround_round_number, round_income, cost_house_measures_bought
   ##  FROM housemeasure_df"
   
-  housemeasure_df <- sqldf(select_sqlquery(housemeasure_df, unique(c("gamesession_name", names(housemeasure_df)))))
+  housemeasure_df <- sqldf::sqldf(select_sqlquery(housemeasure_df, unique(c("gamesession_name", names(housemeasure_df)))))
   
   
   ## Add the measuretype variables to calculate the costs of house measures per round 
@@ -370,7 +384,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [measuretype_df] AS dbtable2
   ##  ON dbtable1.measuretype_id = dbtable2.id"
   
-  housemeasure_df <- sqldf(left_join_sqlquery(housemeasure_df, "measuretype_id",
+  housemeasure_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, "measuretype_id",
                                               measuretype_df, "id",
                                               kept_dbtable2_cols = c("short_alias", 'cost_absolute', "satisfaction_delta_once",
                                                                      "pluvial_protection_delta", "fluvial_protection_delta")))
@@ -386,7 +400,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##    END AS is_initialhousemeasure 
   ##  FROM [housemeasure_df] AS dbtable1"
   
-  housemeasure_df <- sqldf(compare_dbtables_sqlquery(housemeasure_df, c("measuretype_id", "house_code"),
+  housemeasure_df <- sqldf::sqldf(compare_dbtables_sqlquery(housemeasure_df, c("measuretype_id", "house_code"),
                                                      initialhousemeasure_df, c("measuretype_id", "house_code"),
                                                      compare_col = "is_initialhousemeasure"))
   
@@ -394,7 +408,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Sort housemeasure_df by player_code ascendingly
   ## "SELECT * FROM housemeasure_df ORDER BY player_code ASC"
   
-  housemeasure_df <- sqldf(sort_dbtable_sqlquery(housemeasure_df, "player_code"))
+  housemeasure_df <- sqldf::sqldf(sort_dbtable_sqlquery(housemeasure_df, "player_code"))
   
   
   #calculate the cumulative of the house measures to compare it against the cost of house measures bought
@@ -414,7 +428,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [housemeasure_cumulative_df] AS dbtable2
   ##  ON dbtable1.player_code = dbtable2.player_code AND dbtable1.groupround_round_number = dbtable2.groupround_round_number"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
                                              housemeasure_cumulative_df, c("player_code", "groupround_round_number"),
                                              kept_dbtable2_cols = "calculated_costs_house_measures"))
   
@@ -424,7 +438,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## LEFT JOIN [personalmeasure_cumulative_df] AS dbtable2
   ## ON dbtable1.player_code = dbtable2.player_code AND dbtable1.groupround_round_number = dbtable2.groupround_round_number"
   
-  playerround_df <- sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
+  playerround_df <- sqldf::sqldf(left_join_sqlquery(playerround_df, c("player_code", "groupround_round_number"),
                                              personalmeasure_cumulative_df, c("player_code", "groupround_round_number"),
                                              kept_dbtable2_cols = "calculated_costs_personal_measures"))
   
@@ -432,7 +446,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  Sort playerround_df by player_code ascendingly
   ## "SELECT * FROM playerround_df ORDER BY player_code ASC"
   
-  playerround_df <- sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
+  playerround_df <- sqldf::sqldf(sort_dbtable_sqlquery(playerround_df, "player_code"))
   
   
   ## Append difference between reported and calculated measures
@@ -446,13 +460,13 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Rename columns in the dataframe
   ## "SELECT id AS questionitem_id, code AS answer_code, name AS answer_name, question_id FROM questionitem_df"
   
-  questionitem_df <- sqldf(rename_cols_sqlquery(questionitem_df, c("id", "code", "name"), c("questionitem_id", "answer_code", "answer_name")))
+  questionitem_df <- sqldf::sqldf(rename_cols_sqlquery(questionitem_df, c("id", "code", "name"), c("questionitem_id", "answer_code", "answer_name")))
   
   
   ## Append column "answercode_plus_name" that combines integer column "answer_code" and character column "answer_name"
   ## "SELECT *, CAST(answer_code AS INTEGER) || ' - ' || answer_name AS answercode_plus_name FROM questionitem_df"
   
-  questionitem_df <- sqldf(combine_cols_sqlquery(questionitem_df, "answer_code", "integer", "answer_name", "string", "answercode_plus_name"))
+  questionitem_df <- sqldf::sqldf(combine_cols_sqlquery(questionitem_df, "answer_code", "integer", "answer_name", "string", "answercode_plus_name"))
   
   
   ## Add to question item the question name and description
@@ -461,7 +475,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [question_df] AS dbtable2
   ##  ON dbtable1.question_id = dbtable2.id"
   
-  questionitem_df <- sqldf(left_join_sqlquery(questionitem_df, "question_id",
+  questionitem_df <- sqldf::sqldf(left_join_sqlquery(questionitem_df, "question_id",
                                               question_df, "id",
                                               kept_dbtable1_cols = c("questionitem_id", "answer_code", "answer_name", "answercode_plus_name", "question_id"),
                                               kept_dbtable2_cols = c("name", "description")))
@@ -470,7 +484,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  Rename the added columns in the dataframe to know from which table first come from
   ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_id, name AS question_name, description AS question_description FROM questionitem_df"
   
-  questionitem_df <- sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
+  questionitem_df <- sqldf::sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
   
   
   
@@ -495,7 +509,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Rename columns in the dataframe
   ## "SELECT id AS answer_id, answer, late_answer, playerround_id, question_id FROM questionscore_df"  
   
-  questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, "id", "answer_id"))
+  questionscore_df <- sqldf::sqldf(rename_cols_sqlquery(questionscore_df, "id", "answer_id"))
 
   
   ## Add to question score the relevant columns from question and question item tables
@@ -504,7 +518,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [questionitem_df] AS dbtable2
   ##  ON dbtable1.answer = dbtable2.answer_code AND dbtable1.question_id = dbtable2.question_id"
   
-  questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, c("answer", "question_id"),
+  questionscore_df <- sqldf::sqldf(left_join_sqlquery(questionscore_df, c("answer", "question_id"),
                                                questionitem_df, c("answer_code", "question_id"),
                                                kept_dbtable1_cols = c("answer_id", "answer", "late_answer", "question_id", "playerround_id"),
                                                kept_dbtable2_cols = c("answer_name", "answercode_plus_name", "question_name", "question_description")))
@@ -515,14 +529,14 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  answercode_plus_name AS answer_plus_option, question_name, question_description
   ##  FROM questionscore_df"
   
-  questionscore_df <- sqldf(rename_cols_sqlquery(questionscore_df, c("answer_name", "answercode_plus_name"), c("answer_option", "answer_plus_option")))
+  questionscore_df <- sqldf::sqldf(rename_cols_sqlquery(questionscore_df, c("answer_name", "answercode_plus_name"), c("answer_option", "answer_plus_option")))
   
   
   ## Rename columns in the dataframe
   ## "SELECT answer_id, answer, late_answer, answer_option, answer_plus_option, question_id, question_name, question_description, playerround_id
   ##  FROM questionscore_df"
   
-  questionscore_df <- sqldf(select_sqlquery(questionscore_df, c("answer_id", "answer", "late_answer", "answer_option", "answer_plus_option",
+  questionscore_df <- sqldf::sqldf(select_sqlquery(questionscore_df, c("answer_id", "answer", "late_answer", "answer_option", "answer_plus_option",
                                                                 "question_id", "question_name", "question_description", "playerround_id")))
     
   
@@ -532,7 +546,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  LEFT JOIN [playerround_df] AS dbtable2
   ##  ON dbtable1.playerround_id = dbtable2.playerround_id"
   
-  questionscore_df <- sqldf(left_join_sqlquery(questionscore_df, "playerround_id",
+  questionscore_df <- sqldf::sqldf(left_join_sqlquery(questionscore_df, "playerround_id",
                                                playerround_df, "playerround_id",
                                                kept_dbtable2_cols = c("groupround_round_number", "player_code", "group_name", "gamesession_name")))
     
@@ -540,7 +554,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Remove "question_id" from questionitem_df
   ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_name, question_description FROM questionitem_df"
   
-  questionitem_df <- sqldf(select_sqlquery(questionitem_df, names(questionitem_df)[names(questionitem_df) %in% "question_id" == F]))
+  questionitem_df <- sqldf::sqldf(select_sqlquery(questionitem_df, names(questionitem_df)[names(questionitem_df) %in% "question_id" == F]))
   
   
   ## Run the query to filter the playerround_df dataframe with the var_income_dist
@@ -551,11 +565,15 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  satisfaction_total, welfaretype_id, total_damage_costs, community_name, fluvial_house_delta, pluvial_house_delta
   ##  FROM playerround_df"
   
-  income_dist_df <- sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
+  income_dist_df <- sqldf::sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
   
+  # -----------------------------------------------------------
+  # tidyverse operations
+  # -----------------------------------------------------------
   
   ## Convert INCOME_DIST_CATEGCOLS to factor
-  income_dist_df <- income_dist_df %>% mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
+  income_dist_df <- income_dist_df |>
+    dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
   
   
   ## Append income_grp labels based on round_income to dataframe
@@ -563,8 +581,11 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
   
   ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
-  income_dist_df <- income_dist_df %>%
-    mutate_at(names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))], as.numeric)
+  income_dist_df <- income_dist_df |>
+    dplyr::mutate_at(
+      names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
+      as.numeric
+    )
   
   
   ## Calculate the round costs to check the spendable income
@@ -582,6 +603,9 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## Calculate  "profit - spent savings house moving"
   income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
   
+  # -----------------------------------------------------------
+  # Collect results
+  # -----------------------------------------------------------
 
   ## Update list to be returned with the tables used in the calculation 
   dbtable_list <- list(

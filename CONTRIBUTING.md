@@ -20,61 +20,21 @@ We maintain the following Git branches:
 Workflow summary:
 
 1. Repository contains `main` and `develop`.
-2. Supervisor creates `develop-student1githubname` rooted in `develop`.
+2. Supervisor creates `develop-studentGITHUBNAME` rooted in `develop`.
 3. Student clones repository, works on their branch, and pushes updates.
 4. Supervisor creates a pull request (PR) from the student branch into `develop`.
 5. Student continues committing and pushing updates.
 6. The cycle repeats until the work is complete.
 
-> **Additional help:** Check [the DCC Guides](https://tu-delft-dcc.github.io/) pages on [Collaboration](https://tu-delft-dcc.github.io/docs/software/development_workflow/collaboration.html) and [Branch Management](https://tu-delft-dcc.github.io/docs/software/development_workflow/branch_management.html)
+> **Additional help:** Check [the DCC Guides](https://tu-delft-dcc.github.io/) pages on [Collaboration](https://tu-delft-dcc.github.io/docs/software/development_workflow/collaboration.html) and [Branch Management](https://tu-delft-dcc.github.io/docs/software/development_workflow/branch_management.html) for more information on Git workflows and best practices.
 
 <br>
 
 # 🔧 Tool Setup Instructions
 
-You may work with **GitHub Desktop** (recommended for beginners) or via **terminal** (Mac Terminal, Windows WSL, or Git Bash).
+To contribute to this project, you need to set up your local environment. Follow the instructions in [INSTALL.md](INSTALL.md) to get started.
 
-Below are step‑by‑step installation instructions plus links for extra guidance.
-
-### 🖥️ Option A: GitHub Desktop (Windows or macOS)
-
-> **Recommended for new Git users.**
-
-#### Installation
-1. Download: https://desktop.github.com  
-2. Install and log in with your GitHub account.
-
-> **Additional help:** [Getting started with GitHub Desktop](https://docs.github.com/en/desktop/overview/getting-started-with-github-desktop)
-
----
-
-### 🪟 Option B: Windows Subsystem for Linux (WSL)
-
-WSL provides a full Linux environment. For installation check [the official Microsoft guidelines](https://learn.microsoft.com/en-us/windows/wsl/install) or [the Carpentries course setup instructions](https://carpentries.github.io/workshop-template/#shell-install-wsl).
-
----
-
-### 🐧 Option C: Git Bash (Windows)
-
-Simpler alternative to WSL for users comfortable with Bash. For installation check [the Carpentries course setup instructions](https://carpentries.github.io/workshop-template/#shell-install-gitbash)
-
----
-
-### 🍏 Option D: macOS Terminal
-
-macOS typically includes Git by default.
-
-#### Verify Git:
-
-``` bash
-git --version
-```
-
-If prompted to install developer tools, accept.
-
-> **Additional help:** If you need or prefer to communicate with the remote Github repo using **SSH connection**: https://coderefinery.github.io/installation/ssh/
-
-<br>
+In short, contributors to this project may submit their changes with **GitHub Desktop** (recommended for beginners) or via the **terminal** (Mac Terminal, Windows WSL, or Git Bash).
 
 # 🧑‍🏫 Supervisor Workflow
 
@@ -156,7 +116,8 @@ git checkout develop-studentGITHUBNAME
 
 ### Step 3 — Make Changes in R
 
-Edit R scripts as needed.
+Add/Edit R scripts in inside the folder`./WWM-R-data-workflow/scripts`.
+Check the [DCC Guides](https://tu-delft-dcc.github.io/docs/data/data_collection/data_conventions.html) for data and code conventions.
 Test your code before committing.
 
 ---
@@ -201,7 +162,7 @@ develop-studentGITHUBNAME
 5. Commit your changes by:
     - selecting  the changed files (checkboxes)
     - writing a clear commit message (e.g. "Address supervisor comments: fix plotting function")
-    - clicking `Commit to develop-yourgithubname`
+    - clicking `Commit to develop-studentGITHUBNAME`
 
 6. Push changes to GitHub by clicking `Push origin`.
 

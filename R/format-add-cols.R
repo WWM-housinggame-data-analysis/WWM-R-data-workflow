@@ -1,16 +1,23 @@
+# R/format-add-cols.R
+
+# ---------------------------------------------------------------
 # Set defaults ----
+# ---------------------------------------------------------------
+
 ## Set all default variables or global options and all the path variables.
 
 ## Set path to source files with functions
 FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
-source(here(file.path(FUNCTION_PATH, "constants.R")))
-source(here(file.path(FUNCTION_PATH, "check-df-cols.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
+# ---------------------------------------------------------------
 # Functions ----
+# ---------------------------------------------------------------
 
-## calculate the costs of the personal measures bough
+## calculate the costs of the personal measures bought
 append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
   
   ## Check constants used in calculation exist
@@ -25,20 +32,17 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
   check_num_cols(pm_df, c(COST_ABSOLUTE_COL, PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL, ROUND_INCOME_COL, LAST_PRICE_COL))
   
-  
   ## Calculate costs by summing absolute costs, amount of income and house-related costs 
-  pm_df <- pm_df %>%
-    mutate(
-      !!sum_col :=
-        rowSums(
-          cbind(
-            .data[[COST_ABSOLUTE_COL]],
-            (.data[[PERCENTAGE_INCOME_COL]] / PERCENTAGE_FACTOR) * .data[[ROUND_INCOME_COL]],
-            (.data[[PERCENTAGE_HOUSE_COL]] / PERCENTAGE_FACTOR) * .data[[LAST_PRICE_COL]]
-          ),
-          na.rm = TRUE
-        )
+  pm_df[[sum_col]] <-
+    rowSums(
+      cbind(
+        pm_df[[COST_ABSOLUTE_COL]],
+        (pm_df[[PERCENTAGE_INCOME_COL]] / PERCENTAGE_FACTOR) * pm_df[[ROUND_INCOME_COL]],
+        (pm_df[[PERCENTAGE_HOUSE_COL]] / PERCENTAGE_FACTOR) * pm_df[[LAST_PRICE_COL]]
+      ),
+      na.rm = TRUE
     )
+
   
   return(pm_df)
 }
@@ -64,8 +68,8 @@ append_welfare_labels <- function(pr_df, label_col) {
   ## Otherwise, it warns you that the mapping isn’t valid.
   if (length(WELFARE_LABELS) == length(welfare_ids)) {
     
-      pr_df <- pr_df %>%
-        mutate(
+      pr_df <- pr_df |>
+        dplyr::mutate(
           !!label_col := factor(WELFARE_LABELS[match(.data[[WELFARE_ID_COL]], welfare_ids)],
                                         levels = WELFARE_LABELS,
                                         ordered = TRUE
@@ -97,7 +101,7 @@ append_reported_calculated_difference <- function(df, diff_col) {
   if(missing_all == FALSE) {
     
     ## filter complete reported-calculated cost pairs and calculate difference between those
-    col_cross <- as.logical(names(CALCULATED_COLS) %in% names(df) * names(CALCULATED_COLS) %in% names(df))
+    col_cross <- (names(CALCULATED_COLS) %in% names(df)) & (CALCULATED_COLS %in% names(df))
     
     calc_cols <- CALCULATED_COLS[col_cross]
     repor_cols <- names(CALCULATED_COLS)[col_cross]
@@ -106,7 +110,9 @@ append_reported_calculated_difference <- function(df, diff_col) {
     check_num_cols(df, c(repor_cols, calc_cols))
     
     ## calculate difference between reported-calculated cost pairs
-    df[, diff_col] <- rowSums(df[names(df) %in% repor_cols], na.rm = TRUE) - rowSums(df[names(df) %in% calc_cols], na.rm = TRUE)
+    df[, diff_col] <- 
+      rowSums(df[, names(df) %in% repor_cols, drop = FALSE], na.rm = TRUE) -
+      rowSums(df[, names(df) %in% calc_cols, drop = FALSE], na.rm = TRUE)
   }
   
   return(df)
@@ -131,7 +137,7 @@ append_total_damage_costs <- function(df, sum_col) {
     ## Check numeric columns are defined as such
     check_num_cols(df, TYPE_COST_COLS[TYPE_COST_COLS %in% names(df)])
     
-    df[, sum_col] <- rowSums(df[names(df) %in% TYPE_COST_COLS], na.rm = TRUE)
+    df[, sum_col] <- rowSums(df[, names(df) %in% TYPE_COST_COLS, drop = FALSE], na.rm = TRUE)
   }
   
   return(df)
@@ -147,14 +153,14 @@ append_income_grp <- function(df, label_col) {
             "Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))))
   
   ## Check data frame is in the expected format and columns to which constants refer in calculation exist
-  check_df_cols(df, ROUND_INCOME_COL)
+  check_num_cols(df, ROUND_INCOME_COL)
   
   ## Save unique income labels. labels sorted ascendingly, as in WELFARE_LABELS match
   income_labels <- paste0(sort(unique(df[, ROUND_INCOME_COL])) / K_FACTOR, names(K_FACTOR))
   
   ## append income groups based on ROUND_INCOME_COL values
-  df <- df %>%
-    mutate(!!label_col := factor(paste0(.data[[ROUND_INCOME_COL]] / K_FACTOR, names(K_FACTOR)),
+  df <- df |>
+    dplyr::mutate(!!label_col := factor(paste0(.data[[ROUND_INCOME_COL]] / K_FACTOR, names(K_FACTOR)),
                                       levels = income_labels,
                                       ordered = TRUE))
   
@@ -188,7 +194,7 @@ append_total_costs <- function(df, sum_col) {
     check_num_cols(df, ALL_COST_COLS[ALL_COST_COLS %in% names(df)])
     
     # If either column has NA, the sum will also be NA unless the sum is done this way
-    df[, sum_col] <- rowSums(df[names(df) %in% ALL_COST_COLS], na.rm = TRUE) 
+    df[, sum_col] <- rowSums(df[, names(df) %in% ALL_COST_COLS, drop = FALSE], na.rm = TRUE) 
   }
   
   return(df)
@@ -214,13 +220,16 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
   check_num_cols(df, c(SPENDABLE_INCOME_COL, ROUND_INCOME_COL, PROFIT_HOUSE_COL, TOTAL_COSTS_COL))
   
   ## Sort df needed before checking that players found match those expected
-  df <- df %>%
-    arrange(across(all_of(c(PLAYER_CODE_COL, ROUND_NUMBER_COL))))
+  df <- df |>
+    dplyr::arrange(dplyr::across(tidyselect::all_of(c(PLAYER_CODE_COL, ROUND_NUMBER_COL))))
   
   ## Check that players found match those expected
   expected_players <- unique(df[, PLAYER_CODE_COL])
   
-  found_players <- df %>% filter(.data[[ROUND_NUMBER_COL]] %in% 0) %>% pull(.data[[PLAYER_CODE_COL]])
+  found_players <-
+    df |>
+    dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% 0) |>
+    dplyr::pull(.data[[PLAYER_CODE_COL]])
   
   ## mismatch between found and expected players stops run, otherwise columns calc_col and diff_col are calculated
   if (any(expected_players %in% found_players) == FALSE) {
@@ -249,14 +258,14 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
 append_income_living_diff <- function(df, diff_col) {
 
   ## Check constants used in calculation exist
-  stopifnot("Default variable ROUND_NUMBER_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
+  stopifnot("Default variable ROUND_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(ROUND_INCOME_COL))),
             "Default variable LIVING_COSTS_COL not found in R/constants.R" = exists(deparse(substitute(LIVING_COSTS_COL))))
   
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
   check_num_cols(df, c(ROUND_INCOME_COL, LIVING_COSTS_COL))
   
   df[, diff_col] <- rowSums(cbind(df[, ROUND_INCOME_COL],
-                                  -df[ ,LIVING_COSTS_COL]), na.rm = TRUE)
+                                  -df[, LIVING_COSTS_COL]), na.rm = TRUE)
   
   return(df)
 }
