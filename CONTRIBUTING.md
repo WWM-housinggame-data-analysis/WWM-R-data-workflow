@@ -3,6 +3,8 @@
 This repository supports collaboration between a **supervisor** and **students** developing R analysis code.  
 To avoid conflicts and ensure a clear development process, we follow a structured **Git branching workflow**.
 
+In order to facilitate healthy, constructive behavior in an open and inclusive community, we all respect and abide by our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
 Please read these instructions before contributing.
 
 <br>
