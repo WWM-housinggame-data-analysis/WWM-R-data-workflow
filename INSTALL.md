@@ -1,6 +1,6 @@
 # 🔧 Tool Setup Instructions
 
-To reproduce the analysis in scripts/ or the Shiny dashboard application in app.R, you can follow the instructions below.
+Please follow the instructions below to set up your environment for working with the WWM R data workflow project. This guide covers the requirements for the R environment, version control, and project contribution.
 
 ## Requirements for R environment
 
@@ -8,7 +8,7 @@ To reproduce the analysis in scripts/ or the Shiny dashboard application in app.
 
 - Install R from [CRAN](https://cran.r-project.org/).
 - Install the `renv` package for R package management by running `install.packages("renv")` in your R console.
-- Install RStudio from [Posit](https://posit.co/download/rstudio-desktop/) if you want to run the code locally in your machine. WE recommend RStudio, but you can also run the code in any other IDE that supports `R` and `renv`.
+- Install RStudio from [Posit](https://posit.co/download/rstudio-desktop/) if you want to run the code locally in your machine. We recommend RStudio, but you can also run the code in any other IDE that supports `R` and `renv`.
 
 ### Option B: Terminal
 
@@ -39,23 +39,19 @@ sudo apt install -y \
 
 ## Requirements for version control and project contribution
 
-To contribute to this project, you need to set up your local environment. You can either use:
+To contribute to this project, you need to copy the repository to your local machine. You can do this using either:
 
-- **GitHub Desktop** (recommended for beginners). Check [this guide](https://docs.github.com/en/desktop/overview/getting-started-with-github-desktop) for installation; or
+- **GitHub Desktop** (recommended for beginners):
+    - Install it following [this guide](https://docs.github.com/en/desktop/overview/getting-started-with-github-desktop);
+    - Go to [WWM-R-data-workflow Github](https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow), click on the green "Code" button, and select "Open with GitHub Desktop". This will clone the repository to your local machine.
 
-- One of the [terminal options recommended bellow](#options-for-terminal-installation)
-
-## Copy the repository to your local machine
-
-You can copy the repository to your local machine by either:
-
-- using **GitHub Desktop** directly through the [WWM-R-data-workflow Github](https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow).
-
-- or via one of the [terminal options recommended bellow](#options-for-terminal-installation):
-
-```bash
-git clone https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow.git`
-```
+- One of the [terminal options recommended bellow](#options-for-terminal-installation):
+    - Open your terminal and navigate to the directory where you want to clone the repository.
+    - Run the following command to clone the repository:
+    
+    ```bash
+    git clone https://github.com/WWM-housinggame-data-analysis/WWM-R-data-workflow.git
+    ```
 
 > **Note**: For reproducing the code it is possible to download the repository as a ZIP file and extract it in your local machine. However, we recommend using GitHub Desktop or terminal for easier access to contribute to the codebase and for version control.
 
