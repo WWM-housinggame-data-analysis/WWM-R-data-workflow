@@ -1,6 +1,7 @@
 # WWM R Data Workflow
 
-This repository hosts the codebase to preprocess, analyze and visualize data from the WhereWeMove game sessions in R. This can be done statically with RStudio or dynamically using a Shiny dashboard application.
+This repository hosts the R codebase to preprocess, analyze and visualize data from the WhereWeMove game sessions.
+This can be done statically with RStudio or dynamically using a Shiny dashboard application.
 
 ## Project Organization
 
@@ -46,15 +47,38 @@ Here we followed guidelines for structuring software projects from the following
 
 For the system requirements to use the codebase in this repository, follow the instructions in [INSTALL.md](INSTALL.md) to get started.
 
-- If you are using RStudio in your own machine, open the project file `WWM-R-data-workflow.Rproj` to automatically activate the `renv` environment. If you are either using another IDE or running app.R in a server environment, make sure to activate the `renv` environment in R by running `renv::activate()`.
+### RStudio
+
+To use the codebase in this repository in your own machine, we recommend using RStudio. After following the respective installation instructions in [INSTALL.md](./INSTALL.md#option-a-rstudio) and [copying the repository](./INSTALL.md#copy-the-repository-to-your-local-machine), Follow the instructions below:
+
+- Open the project file `WWM-R-data-workflow.Rproj` to automatically activate the `renv` environment.
+
+> **Note**: If you are either using R in another IDE or via the terminal, make sure to activate the `renv` environment in R by running `renv::activate()`.
 
 - Install the required R packages by running `renv::restore()` in your R console. This will install all the packages specified in the `renv.lock` file, ensuring that you have the correct versions for reproducibility.
 
 > **Note**: If you encounter any issues with the R version, please ensure that you are using a compatible version of R and that all dependencies are correctly installed.
 
-To run the Shiny dashboard application, simply run `app.R` in RStudio. If you are using the command line, run the app by executing `Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"` and check the display in http://localhost:3838.
+- To run the Shiny dashboard application, simply run `app.R` in RStudio.
 
-> **Note**: Make sure you have all the necessary dependencies installed as specified in the `renv.lock` file.
+### Terminal
+
+If you are using the terminal, e.g. in a server environment, make sure you have [R and the respective system libraries installed](./INSTALL.md#option-b-terminal), [the repository copied](./INSTALL.md#copy-the-repository-to-your-local-machine) to "path/to/WWM-R-data-workflow" and follow the instructions below:
+
+- Move to the project directory in the terminal and run `R`.
+
+```bash
+cd "path/to/WWM-R-data-workflow"
+R
+```
+
+> **Note**: If R does not recognize the project environment, make sure to activate the `renv` environment in R by running `renv::activate()`.
+
+- Install the required R packages by running `renv::restore()` in your R console. This will install all the packages specified in the `renv.lock` file, ensuring that you have the correct versions for reproducibility.
+
+> **Note**: If you encounter any issues with the R version, please ensure that you are using a compatible version of R and that all dependencies are correctly installed.
+
+- Run the app by executing `Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"` and check the display in http://localhost:3838.
 
 ## Community
 If you want to contribute with the development of WWM R Data Workflow, read our [contributing guidelines](CONTRIBUTING.md).

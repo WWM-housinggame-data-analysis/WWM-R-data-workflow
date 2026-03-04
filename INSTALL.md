@@ -35,6 +35,8 @@ sudo apt install -y \
     build-essential
 ```
 
+- Install the `renv` package for R package management by running `install.packages("renv")` in your R console.
+
 ## Requirements for version control and project contribution
 
 To contribute to this project, you need to set up your local environment. You can either use:
