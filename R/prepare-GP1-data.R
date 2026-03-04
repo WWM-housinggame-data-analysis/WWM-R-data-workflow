@@ -5,7 +5,7 @@ FUNCTION_PATH <- file.path("R")
 # Load required functions
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
-source(here::here(file.path(FUNCTION_PATH, "plot-data.R")))
+#source(here::here(file.path(FUNCTION_PATH, "plot-data.R")))
 
 # Reactive plot based on user input
 prepare_GP1_data <- function(df, selected_columns, selected_table, game_round, fill_values_all) {
