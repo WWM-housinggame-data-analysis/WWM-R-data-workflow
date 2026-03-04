@@ -3,15 +3,15 @@
 FUNCTION_PATH <- file.path("R")
 
 # Load required functions
-source(here(file.path(FUNCTION_PATH, "constants.R")))
-source(here(file.path(FUNCTION_PATH, "transform-data.R")))
-source(here(file.path(FUNCTION_PATH, "plot-data.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
+source(here::here(file.path(FUNCTION_PATH, "plot-data.R")))
 
 # Reactive plot based on user input
 prepare_GP1_data <- function(df, selected_columns, selected_table, game_round, fill_values_all) {
   
   # Guard against empty states
-  req(nrow(df) > 0, length(selected_columns) > 0)
+  shiny::req(nrow(df) > 0, length(selected_columns) > 0)
   
   if (identical(selected_table, "All")) {
     selected_table <- as.character(unique(df$group_name))
@@ -22,14 +22,18 @@ prepare_GP1_data <- function(df, selected_columns, selected_table, game_round, f
   # Build xlabels on the row-level data
   if (identical(group_col, "player_code")) {
     
-    df <- df %>% filter(group_name %in% selected_table) %>% droplevels()
+    df <- df |>
+      dplyr::filter(group_name %in% selected_table) |>
+      droplevels()
   }
   
   df <- create_GP1_xlabels(df, group_col)
   
   if (game_round %in% INTERM_ROUNDS) {
     
-    df <- df %>% filter(groupround_round_number %in% game_round) %>% droplevels()
+    df <- df |>
+      dplyr::filter(groupround_round_number %in% game_round) |>
+      droplevels()
   }
   
   # satisfaction series
@@ -51,17 +55,17 @@ prepare_GP1_data <- function(df, selected_columns, selected_table, game_round, f
   xlevels <- scatter_xlevels
   
   # Ensure ordering matches for all traces
-  bar_df <- bar_df %>%
-    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
-    arrange(xlabels)
+  bar_df <- bar_df |>
+    dplyr::mutate(xlabels = factor(xlabels, levels = xlevels)) |>
+    dplyr::arrange(xlabels)
   
-  scatter_df <- scatter_df %>%
-    mutate(xlabels = factor(xlabels, levels = xlevels)) %>%
-    arrange(xlabels)
+  scatter_df <- scatter_df |>
+    dplyr::mutate(xlabels = factor(xlabels, levels = xlevels)) |>
+    dplyr::arrange(xlabels)
   
   # Convert bars to k for left axis # ---- ensure negatives for "spent savings" (EDIT this code to match your real cost_type) ----
-  bar_df <- bar_df %>%
-    mutate(
+  bar_df <- bar_df |>
+    dplyr::mutate(
       #mean_value = if_else(cost_type == "spent_savings", -abs(mean_value), mean_value),
       mean_k = mean_value / K_FACTOR
     )

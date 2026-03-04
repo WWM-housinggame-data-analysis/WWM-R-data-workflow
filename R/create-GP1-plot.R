@@ -1,35 +1,37 @@
+#R/create-GP1-plot.R
+
 # Set all default variables or global options and all the path variables at the top of the code.
 
 FUNCTION_PATH <- file.path("R")
 
 # Load required functions
-source(here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
-    filter(.data[[y_col]] > 0) %>%
+    dplyr::filter(rlang::.data[[y_col]] > 0) %>%
     droplevels() %>%
-    group_by(.data[[group_col]]) %>%
-    summarise(
-      bar_max = sum(.data[[y_col]]),
+    dplyr::group_by(rlang::.data[[group_col]]) %>%
+    dplyr::summarise(
+      bar_max = sum(rlang::.data[[y_col]]),
       .groups    = "drop"
     ) %>%
-    pull(bar_max)
+    dplyr::pull(bar_max)
   
   return(bar_maxs)
 }
 
 calculate_bar_mins <- function(bar_df, group_col, y_col) {
   bar_mins <- bar_df %>%
-    filter(.data[[y_col]] < 0) %>%
+    dplyr::filter(rlang::.data[[y_col]] < 0) %>%
     droplevels() %>%
-    group_by(.data[[group_col]]) %>%
-    summarise(
-      bar_min = sum(.data[[y_col]]),
+    dplyr::group_by(rlang::.data[[group_col]]) %>%
+    dplyr::summarise(
+      bar_min = sum(rlang::.data[[y_col]]),
       .groups    = "drop"
     ) %>%
-    ungroup() %>%
-    pull(bar_min)
+    dplyr::ungroup() %>%
+    dplyr::pull(bar_min)
 
   return(bar_mins)
 }
@@ -62,8 +64,8 @@ create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_titl
   y_title <- signal_newline(y_title, nl_char)
   y2_title <- ifelse(is.na(y2_title), NA, signal_newline(y2_title, " - "))
   
-  out_plot <- plot_ly() %>%
-    layout(
+  out_plot <- plotly::plot_ly() %>%
+    plotly::layout(
       barmode   = "relative",
       hovermode = "closest",
       
@@ -109,7 +111,7 @@ create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_titl
   if (is.na(y2_title) == FALSE) {
     
     out_plot <- out_plot %>%
-      layout(
+      plotly::layout(
         yaxis2 = list(
           title     = y2_title,
           overlaying = "y",
@@ -135,13 +137,13 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_tit
   # --- Add stacked bar traces ---
   for (label in legend_label_match) {
     
-    segment_df <- bar_df %>% filter(mean_label == label)
+    segment_df <- bar_df %>% dplyr::filter(mean_label == label)
     
     # label + color fallbacks
     bar_color <- fill_values_all[names(fill_values_all) %in% label] %||% "#808080"
     
     out_plot <- out_plot %>%
-      add_bars(
+      plotly::add_bars(
         data = segment_df,
         x = ~xlabels,
         y = ~mean_k,
@@ -176,11 +178,11 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
   
   for (label in unique(scatter_df$mean_label)) {
     
-    line_df <- scatter_df %>% filter(mean_label == label)
+    line_df <- scatter_df %>% dplyr::filter(mean_label == label)
     
     
     out_plot <- out_plot %>%
-      add_trace(
+      plotly::add_trace(
         data = line_df,
         x = ~xlabels,
         y = ~mean_value,
