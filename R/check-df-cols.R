@@ -7,7 +7,6 @@
 FUNCTION_PATH <- file.path("R")
 
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
-source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # ---------------------------------------------------------------
 # Validate columns exist in dataframe

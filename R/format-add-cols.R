@@ -32,20 +32,17 @@ append_personalmeasure_calculated_costs <- function(pm_df, sum_col) {
   ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
   check_num_cols(pm_df, c(COST_ABSOLUTE_COL, PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL, ROUND_INCOME_COL, LAST_PRICE_COL))
   
-  
   ## Calculate costs by summing absolute costs, amount of income and house-related costs 
-  pm_df <- pm_df |>
-    dplyr::mutate(
-      !!sum_col :=
-        rowSums(
-          cbind(
-            rlang::.data[[COST_ABSOLUTE_COL]],
-            (rlang::.data[[PERCENTAGE_INCOME_COL]] / PERCENTAGE_FACTOR) * rlang::.data[[ROUND_INCOME_COL]],
-            (rlang::.data[[PERCENTAGE_HOUSE_COL]] / PERCENTAGE_FACTOR) * rlang::.data[[LAST_PRICE_COL]]
-          ),
-          na.rm = TRUE
-        )
+  pm_df[[sum_col]] <-
+    rowSums(
+      cbind(
+        pm_df[[COST_ABSOLUTE_COL]],
+        (pm_df[[PERCENTAGE_INCOME_COL]] / PERCENTAGE_FACTOR) * pm_df[[ROUND_INCOME_COL]],
+        (pm_df[[PERCENTAGE_HOUSE_COL]] / PERCENTAGE_FACTOR) * pm_df[[LAST_PRICE_COL]]
+      ),
+      na.rm = TRUE
     )
+
   
   return(pm_df)
 }
@@ -73,7 +70,7 @@ append_welfare_labels <- function(pr_df, label_col) {
     
       pr_df <- pr_df |>
         dplyr::mutate(
-          !!label_col := factor(WELFARE_LABELS[match(rlang::.data[[WELFARE_ID_COL]], welfare_ids)],
+          !!label_col := factor(WELFARE_LABELS[match(.data[[WELFARE_ID_COL]], welfare_ids)],
                                         levels = WELFARE_LABELS,
                                         ordered = TRUE
           )
@@ -163,7 +160,7 @@ append_income_grp <- function(df, label_col) {
   
   ## append income groups based on ROUND_INCOME_COL values
   df <- df |>
-    dplyr::mutate(!!label_col := factor(paste0(rlang::.data[[ROUND_INCOME_COL]] / K_FACTOR, names(K_FACTOR)),
+    dplyr::mutate(!!label_col := factor(paste0(.data[[ROUND_INCOME_COL]] / K_FACTOR, names(K_FACTOR)),
                                       levels = income_labels,
                                       ordered = TRUE))
   
@@ -231,8 +228,8 @@ append_spendable_income_cols <- function(df, calc_col, diff_col) {
   
   found_players <-
     df |>
-    dplyr::filter(rlang::.data[[ROUND_NUMBER_COL]] %in% 0) |>
-    dplyr::pull(rlang::.data[[PLAYER_CODE_COL]])
+    dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% 0) |>
+    dplyr::pull(.data[[PLAYER_CODE_COL]])
   
   ## mismatch between found and expected players stops run, otherwise columns calc_col and diff_col are calculated
   if (any(expected_players %in% found_players) == FALSE) {

@@ -9,7 +9,7 @@ create_GP1_xlabels <- function(plot_data, group_col) {
     plot_data <- plot_data |>
       dplyr::mutate(
         xlabels = factor(
-          paste(WELFARE_LABELS[match(rlang::.data[[group_col]], names(WELFARE_LABELS))], rlang::.data[[group_col]], sep = "<br>"),
+          paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))], .data[[group_col]], sep = "<br>"),
           levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = "<br>")
         )
       )
@@ -19,8 +19,8 @@ create_GP1_xlabels <- function(plot_data, group_col) {
     plot_data <- plot_data |>
       dplyr::mutate(
         xlabels = factor(
-          paste(rlang::.data[[group_col]], rlang::.data[["income_grp"]], sep = "<br>"),
-          levels = paste(rlang::.data[["player_code"]][match(names(WELFARE_LABELS), rlang::.data[["income_grp"]])], names(WELFARE_LABELS), sep = "<br>")
+          paste(.data[[group_col]], .data[["income_grp"]], sep = "<br>"),
+          levels = paste(.data[["player_code"]][match(names(WELFARE_LABELS), .data[["income_grp"]])], names(WELFARE_LABELS), sep = "<br>")
         )
       )
   }
@@ -38,7 +38,7 @@ retrieve_n_table <- function(df, group_col, id_col = "player_code") {
   } else {
     n_df <- df |>
       dplyr::select(tidyselect::all_of(c(group_col, id_col))) |>
-      dplyr::group_by(rlang::.data[[group_col]]) |>
+      dplyr::group_by(.data[[group_col]]) |>
       dplyr::summarise(N = dplyr::n())
   }
   return(n_df)
@@ -50,14 +50,14 @@ retrieve_pivot_table <- function(df, selected_columns, column_name, column_value
     
     tidyr::pivot_longer(cols = tidyselect::where(is.numeric), names_to = column_name, values_to = column_value) |>
     
-    dplyr::mutate(!!column_name := factor(rlang::.data[[column_name]])) |>
+    dplyr::mutate(!!column_name := factor(.data[[column_name]])) |>
     
-    dplyr::filter(rlang::.data[[column_name]] %in% selected_columns) |>
+    dplyr::filter(.data[[column_name]] %in% selected_columns) |>
     
     droplevels() |>
     
     dplyr::mutate(
-      !!column_name := forcats::fct_relevel(rlang::.data[[column_name]], selected_columns)
+      !!column_name := forcats::fct_relevel(.data[[column_name]], selected_columns)
     )
   return(pivoted_df)
 }
@@ -76,7 +76,7 @@ retrieve_mean_table <- function(df, group_col, in_cols, out_cols) {
     dplyr::group_by(dplyr::across(tidyselect::all_of(c(group_col, "column_name")))) |>
     
     dplyr::summarise(
-      mean_value = round(mean(rlang::.data[["column_value"]], na.rm = TRUE), 2),
+      mean_value = round(mean(.data[["column_value"]], na.rm = TRUE), 2),
       N          = dplyr::n(),
       .groups = "drop"
     ) |>

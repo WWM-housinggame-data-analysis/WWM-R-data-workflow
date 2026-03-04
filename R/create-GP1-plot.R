@@ -9,11 +9,11 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
-    dplyr::filter(rlang::.data[[y_col]] > 0) %>%
+    dplyr::filter(.data[[y_col]] > 0) %>%
     droplevels() %>%
-    dplyr::group_by(rlang::.data[[group_col]]) %>%
+    dplyr::group_by(.data[[group_col]]) %>%
     dplyr::summarise(
-      bar_max = sum(rlang::.data[[y_col]]),
+      bar_max = sum(.data[[y_col]]),
       .groups    = "drop"
     ) %>%
     dplyr::pull(bar_max)
@@ -23,11 +23,11 @@ calculate_bar_maxs <- function(bar_df, group_col, y_col) {
 
 calculate_bar_mins <- function(bar_df, group_col, y_col) {
   bar_mins <- bar_df %>%
-    dplyr::filter(rlang::.data[[y_col]] < 0) %>%
+    dplyr::filter(.data[[y_col]] < 0) %>%
     droplevels() %>%
-    dplyr::group_by(rlang::.data[[group_col]]) %>%
+    dplyr::group_by(.data[[group_col]]) %>%
     dplyr::summarise(
-      bar_min = sum(rlang::.data[[y_col]]),
+      bar_min = sum(.data[[y_col]]),
       .groups    = "drop"
     ) %>%
     dplyr::ungroup() %>%

@@ -48,8 +48,8 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
     #add up CALCULATED_COSTS_PERSONAL_COL within each round for each player and keep COST_HOUSE_COL value
     #summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),
     #          !!COST_HOUSE_COL := first(.data[[COST_HOUSE_COL]]),
-    dplyr::summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(rlang::.data[[CALCULATED_COSTS_COL]]),
-              !!TOTAL_BOUGHT_COL := dplyr::first(rlang::.data[[COST_HOUSE_COL]]),
+    dplyr::summarise(!!CALCULATED_COSTS_PERSONAL_COL := sum(.data[[CALCULATED_COSTS_COL]]),
+              !!TOTAL_BOUGHT_COL := dplyr::first(.data[[COST_HOUSE_COL]]),
               .groups = "drop"
     ) |>
     
@@ -58,12 +58,12 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
     #   !!PERSONAL_HOUSE_DIFFCOL := .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]]
     
     dplyr::mutate(
-      !!PERSONAL_HOUSE_DIFFCOL := rlang::.data[[CALCULATED_COSTS_PERSONAL_COL]] - rlang::.data[[TOTAL_BOUGHT_COL]]
+      !!PERSONAL_HOUSE_DIFFCOL := .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[TOTAL_BOUGHT_COL]]
     ) |>
     
     # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
-    dplyr::group_by(rlang::.data[[PLAYER_CODE_COL]]) |>
-    dplyr::arrange(rlang::.data[[ROUND_NUMBER_COL]]) |>
+    dplyr::group_by(.data[[PLAYER_CODE_COL]]) |>
+    dplyr::arrange(.data[[ROUND_NUMBER_COL]]) |>
     
     # compute the running total across rounds
     # mutate(
@@ -71,8 +71,8 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
     #   !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]])
     
     dplyr::mutate(
-      !!CUMULATIVE_COSTS_PERSONAL_COL     := cumsum(rlang::.data[[CALCULATED_COSTS_PERSONAL_COL]]),
-      !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(rlang::.data[[CALCULATED_COSTS_PERSONAL_COL]] - rlang::.data[[TOTAL_BOUGHT_COL]])
+      !!CUMULATIVE_COSTS_PERSONAL_COL     := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),
+      !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[TOTAL_BOUGHT_COL]])
     )
   
   return(pmc_df)
@@ -119,26 +119,26 @@ create_housemeasure_cumulative_df <- function(hm_df) {
     dplyr::summarise(
       
       # sum only cost_absolute where initialhousemeasure == FALSE
-      !!CALCULATED_COSTS_HOUSE_COL := sum(ifelse(rlang::.data[[IS_IHM_COL]], 0, rlang::.data[[COST_ABSOLUTE_COL]])),
+      !!CALCULATED_COSTS_HOUSE_COL := sum(ifelse(.data[[IS_IHM_COL]], 0, .data[[COST_ABSOLUTE_COL]])),
       
       # keep the round’s value
-      !!TOTAL_BOUGHT_COL := dplyr::first(rlang::.data[[COST_HOUSE_COL]]),
+      !!TOTAL_BOUGHT_COL := dplyr::first(.data[[COST_HOUSE_COL]]),
       .groups = "drop"
     ) |>
     
     #ensure cumulative totals are calculated separately for each player
     dplyr::mutate(
-      !!HOUSE_TOTAL_DIFFCOL := rlang::.data[[CALCULATED_COSTS_HOUSE_COL]] - rlang::.data[[TOTAL_BOUGHT_COL]]
+      !!HOUSE_TOTAL_DIFFCOL := .data[[CALCULATED_COSTS_HOUSE_COL]] - .data[[TOTAL_BOUGHT_COL]]
     ) |>
     
     # Sort and group data frame by PLAYER_CODE_COL and ROUND_NUMBER_COL
-    dplyr::group_by(rlang::.data[[PLAYER_CODE_COL]]) |>
-    dplyr::arrange(rlang::.data[[ROUND_NUMBER_COL]]) |>
+    dplyr::group_by(.data[[PLAYER_CODE_COL]]) |>
+    dplyr::arrange(.data[[ROUND_NUMBER_COL]]) |>
     
     # compute the running total across rounds
     dplyr::mutate(
-      !!CUMULATIVE_COSTS_HOUSE_COL     := cumsum(rlang::.data[[CALCULATED_COSTS_HOUSE_COL]]),
-      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(rlang::.data[[CALCULATED_COSTS_HOUSE_COL]] - rlang::.data[[TOTAL_BOUGHT_COL]])
+      !!CUMULATIVE_COSTS_HOUSE_COL     := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]]),
+      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]] - .data[[TOTAL_BOUGHT_COL]])
     )
   
   return(hmc_df)
