@@ -2,28 +2,30 @@
 
 CONFIG <- yaml::read_yaml(here::here("./config.yml"))
 
-SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
-SELECTED_USERNAME    <- CONFIG$defaults$selected_username
+# SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
+# SELECTED_USERNAME    <- CONFIG$defaults$selected_username
+# 
+# if (length(grep("fac", SELECTED_USERNAME)) == 1) {
+#   
+#   SELECTED_USERTABLE <- paste0("Table", gsub("fac", "", SELECTED_USERNAME))
+#   
+#   stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
+#     
+# } else if (length(grep("coord", SELECTED_USERNAME)) == 1) {
+#   
+#   SELECTED_USERTABLE <- "All"
+#   
+#   stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
+#   
+# } else {
+#   
+#   SELECTED_USERTABLE <- "All"
+#   SELECTED_GAMESESSION <- "All"
+#   
+# }
 
-if (length(grep("fac", SELECTED_USERNAME)) == 1) {
-  
-  SELECTED_USERTABLE <- paste0("Table", gsub("fac", "", SELECTED_USERNAME))
-  
-  stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
-    
-} else if (length(grep("coord", SELECTED_USERNAME)) == 1) {
-  
-  SELECTED_USERTABLE <- "All"
-  
-  stopifnot("Provided username cannot have access to all session. Please specify the session in `selected_gamesession`" = identical(SELECTED_GAMESESSION, "All") == FALSE)
-  
-} else {
-  
-  SELECTED_USERTABLE <- "All"
-  SELECTED_GAMESESSION <- "All"
-  
-}
-
+SELECTED_USERTABLE <- "All"
+SELECTED_GAMESESSION <- "All"
 SELECTED_USERNAME <- SELECTED_USERTABLE
 
 
