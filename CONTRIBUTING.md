@@ -28,6 +28,27 @@ Workflow summary:
 5. Student continues committing and pushing updates.
 6. The cycle repeats until the work is complete.
 
+```mermaid
+gitGraph
+    commit id: "Initial commit"
+    branch develop
+    checkout develop
+    commit id: "Setup develop"
+    branch develop-studentGITHUBNAME
+    checkout develop-studentGITHUBNAME
+    commit id: "Student work 1"
+    commit id: "Student work 2"
+    checkout develop
+    merge develop-studentGITHUBNAME id: "PR merge"
+    checkout main
+    merge develop id: "Release"
+    checkout develop-studentGITHUBNAME
+    commit id: "More work"
+    commit id: "Student work 3"
+    checkout develop
+    merge develop-studentGITHUBNAME id: "Another PR"
+```
+
 > **Additional help:** Check [the DCC Guides](https://tu-delft-dcc.github.io/) pages on [Collaboration](https://tu-delft-dcc.github.io/docs/software/development_workflow/collaboration.html) and [Branch Management](https://tu-delft-dcc.github.io/docs/software/development_workflow/branch_management.html) for more information on Git workflows and best practices.
 
 <br>
