@@ -164,60 +164,29 @@ ui <- bslib::page_navbar(
 
 server <- function(input, output, session) {
   
-  if (identical(gamesession_selection, "All")) {
-    gamesession_choices <- shiny::reactive(names(preprocess_data_list))
-  } else {
-    gamesession_choices <- shiny::reactive(gamesession_selection)
-  }
+
+  # --- centralize selection + derived data
+  gs <- make_gamesession_reactives(
+    preprocess_data_list    = preprocess_data_list,
+    gamesession_selection   = gamesession_selection,  # "All" or vector from config
+    id = "gamesession"                              # matches your UI module id
+  )
+
+  # Keep names for readability
+  selected_gamesession <- gs$selected_gamesession
+  income_dist_df       <- gs$income_dist_df
+
   
-  selected_gamesession <- mod_input_reset_server(
-    id = "gamesession",
-    default_value = shiny::reactive(gamesession_choices()[length(gamesession_choices())]),
-    get_choices = gamesession_choices
+  role_table <- make_role_table_reactives(
+    income_dist_df = income_dist_df,    # reactive returned from previous helper
+    selected_username = SELECTED_USERNAME,
+    id = "table"
   )
   
-  income_dist_df <- shiny::reactive({
-    preprocess_data_list[[ selected_gamesession() ]][["income_dist_df"]]
-    })
+  role_selection <- role_table$role_selection
+  table_choices  <- role_table$table_choices
+  selected_table <- role_table$selected_table
   
-  # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
-  #Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
-  
-  # role_selection from YAML, falling back to "All" if needed
-  role_selection <- shiny::reactive({
-    df <- income_dist_df()
-    groups <- character(0)
-    if (!is.null(df) && nrow(df) > 0 && "group_name" %in% names(df)) {
-      groups <- as.character(unique(df$group_name))
-    }
-    process_config_selection(groups, SELECTED_USERNAME, fallback = "All")
-  })
-  
-  
-  # Reactive table choices
-  
-  # table choices: lock to a single role if YAML default is not "All"
-  table_choices <- shiny::reactive({
-    df <- income_dist_df()
-    # If no data yet, at least offer "All" to keep module happy
-    if (is.null(df) || nrow(df) == 0 || !"group_name" %in% names(df)) {
-      return("All")
-    }
-    
-    if (identical(role_selection(), "All")) {
-      c("All", as.character(unique(df$group_name)))
-    } else {
-      # lock to YAML-selected role
-      role_selection()
-    }
-  })
-  
-  
-  selected_table <- mod_input_reset_server(
-    id = "table",
-    default_value = role_selection,
-    get_choices = table_choices
-  )
   
   # --- Cost Types (checkbox) ---
   
