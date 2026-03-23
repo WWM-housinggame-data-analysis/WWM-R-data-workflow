@@ -292,3 +292,51 @@ mod_multicheck_reset_server <- function(id, default_values, get_choices, all_lab
     }))
   })
 }
+
+
+make_cost_types_reactive <- function(id = "cost_types") {
+  
+  # --- Cost Types (checkbox) ---
+  
+  # Choices reactive (can be dynamic if needed)
+  cost_types_choices <- shiny::reactive({
+    c("All", names(EXPENSE_BARCOLS))
+  })
+  
+  # Default selection reactive (from config or static)
+  # If you have a YAML default like CONFIG$defaults$cost_types, wire it here.
+  # Otherwise, default to "All".
+  cost_types_default <- shiny::reactive({
+    "All"
+    # or CONFIG$defaults$cost_types
+  })
+  
+  selected_cost_types <- mod_multicheck_reset_server(
+    id            = "cost_types",
+    default_values = cost_types_default,   # reactive() returning a vector (e.g., "All" or c("Mortgage payment", ...))
+    get_choices    = cost_types_choices,
+    all_label      = "All",
+    expand_all     = FALSE                  # keep only "All" when All is selected (set TRUE to expand to all)
+  )
+  
+  return(selected_cost_types)
+}
+
+# ------------------------------------------------------------------------------
+# Helper: global reset-all-filters observer
+# 
+# Call this inside your server() AFTER modules have registered their
+# session$userData$<id>_reset functions.
+# ------------------------------------------------------------------------------
+
+add_global_reset_observer <- function(input, session, reset_button_id = "reset_all_filters") {
+  
+  shiny::observeEvent(input[[reset_button_id]], {
+    
+    # Only call reset functions that exist
+    if (!is.null(session$userData$gamesession_reset)) session$userData$gamesession_reset()
+    if (!is.null(session$userData$table_reset))       session$userData$table_reset()
+    if (!is.null(session$userData$cost_types_reset))  session$userData$cost_types_reset()
+    
+  })
+}

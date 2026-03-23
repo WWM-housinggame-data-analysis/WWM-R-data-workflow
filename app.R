@@ -188,35 +188,10 @@ server <- function(input, output, session) {
   selected_table <- role_table$selected_table
   
   
-  # --- Cost Types (checkbox) ---
-  
-  # Choices reactive (can be dynamic if needed)
-  cost_types_choices <- shiny::reactive({
-    c("All", names(EXPENSE_BARCOLS))
-  })
-  
-  # Default selection reactive (from config or static)
-  # If you have a YAML default like CONFIG$defaults$cost_types, wire it here.
-  # Otherwise, default to "All".
-  cost_types_default <- shiny::reactive({
-    "All"
-    # or CONFIG$defaults$cost_types
-  })
-  
-  selected_cost_types <- mod_multicheck_reset_server(
-    id            = "cost_types",
-    default_values = cost_types_default,   # reactive() returning a vector (e.g., "All" or c("Mortgage payment", ...))
-    get_choices    = cost_types_choices,
-    all_label      = "All",
-    expand_all     = FALSE                  # keep only "All" when All is selected (set TRUE to expand to all)
-  )
-  
-  # Optional: global "Reset all filters"
-  shiny::observeEvent(input$reset_all_filters, {
-    if (!is.null(session$userData$gamesession_reset)) session$userData$gamesession_reset()
-    if (!is.null(session$userData$table_reset))       session$userData$table_reset()
-    if (!is.null(session$userData$cost_types_reset))  session$userData$cost_types_reset()
-  })
+  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
+    
+  # global "Reset all filters"
+  add_global_reset_observer(input, session)
   
   
   selected_bar_segments <- shiny::reactive({
