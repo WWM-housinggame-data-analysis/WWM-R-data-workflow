@@ -1,6 +1,6 @@
 
 
-CONFIG <- yaml::read_yaml(here::here("./config.yml"))
+# CONFIG <- yaml::read_yaml(here::here("./config.yml"))
 
 # SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
 # SELECTED_USERNAME    <- CONFIG$defaults$selected_username
@@ -179,3 +179,37 @@ names(K_FACTOR) <- "k"
 
 BAR_WIDTH = 0.9
 INTERM_ROUNDS <- as.character(1:3)
+
+HEADER_TITLE <- "WhereWeMove Dashboard"
+HEADER_BACKCOLOR <- "#2D89C8"
+HEADER_THEME <- "dark"
+
+APP_NAVBAR_OPTIONS <- bslib::navbar_options(
+  bg = HEADER_BACKCOLOR,
+  theme = HEADER_THEME
+)
+
+HEADER_TAB1 <- "Game Play"
+
+SIDEBAR1_TITLE <- "Choices and effects"
+SIDEBAR1_BACKCOLOR <- "white"
+
+EXPAND_MULTIPLE_ACCORDIONS <- TRUE
+
+# Apply a top margin of 1rem (typically 16px) to the div.
+DIV_16PX_MARGIN <- "mt-3"
+
+ACTION_BUTTON_ID <- "reset_all_filters"
+ACTION_BUTTON_LABEL <- "Reset all filters"
+
+#Style this button with Bootstrap’s “warning” theme,
+ACTION_BUTTON_WARNING <- "btn-warning"
+
+# Optional: a global reset ill button for the whole sidebar
+RESET_ALL_BUTTON <- shiny::div(
+  class = DIV_16PX_MARGIN,
+  shiny::actionButton(ACTION_BUTTON_ID, ACTION_BUTTON_LABEL, class = ACTION_BUTTON_WARNING)
+)
+
+MAIN_PANEL_WIDTH <- 10
+DEFAULT_OPEN_ACCORDIONS <- c("All Rounds")

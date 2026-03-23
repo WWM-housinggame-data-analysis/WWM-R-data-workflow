@@ -99,18 +99,17 @@ default_role_selection <- process_config_selection(as.character(unique(preproces
 # Shiny App ----
 
 ui <- bslib::page_navbar(
-  title = "WhereWeMove Dashboard",
-  navbar_options = bslib::navbar_options(bg = "#2D89C8",
-                                  theme = "dark"),
+  title = HEADER_TITLE,
+  navbar_options = APP_NAVBAR_OPTIONS,
   
   bslib::nav_panel(
-    title = "Game Play",
+    title = HEADER_TAB1,
     bslib::page_sidebar(
       sidebar = bslib::sidebar(
-        title = "Choices and effects",
-        bg = "white",
+        title = SIDEBAR1_TITLE,
+        bg = SIDEBAR1_BACKCOLOR,
         bslib::accordion(
-          multiple = FALSE,   # only one open at a time
+          multiple = EXPAND_MULTIPLE_ACCORDIONS,
           
           bslib::accordion_panel("1: Select Game Session",
                           mod_input_reset_ui("gamesession", "Session")
@@ -136,49 +135,18 @@ ui <- bslib::page_navbar(
         
         
         # Optional: a global reset all button for the whole sidebar
-        shiny::div(
-          class = "mt-3",
-          shiny::actionButton("reset_all_filters", "Reset all filters", class = "btn-warning")
-        )
+        RESET_ALL_BUTTON
         
       ),
       
-      shiny::mainPanel(width = 10,
-                bslib::accordion(
-                  open = c("All Rounds"),
-                  bslib::accordion_panel(
-                    "All Rounds",
-            shiny::tabsetPanel(type = "tabs",
-                        shiny::tabPanel("Plot", plotly::plotlyOutput("plot_all"), shiny::verbatimTextOutput("debug")),
-                        shiny::tabPanel("Summary", shiny::verbatimTextOutput("summary_all")),
-                        shiny::tabPanel("Table", shiny::tableOutput("table_all"))
-            )
-          ),
-          bslib::accordion_panel(
-            "Round 1",
-            shiny::tabsetPanel(type = "tabs",
-                        shiny::tabPanel("Plot", plotly::plotlyOutput("plot_r1")),
-                        shiny::tabPanel("Summary", shiny::verbatimTextOutput("summary_r1")),
-                        shiny::tabPanel("Table", shiny::tableOutput("table_r1"))
-            )
-          ),
-          bslib::accordion_panel(
-            "Round 2",
-            shiny::tabsetPanel(type = "tabs",
-                        shiny::tabPanel("Plot", plotly::plotlyOutput("plot_r2")),
-                        shiny::tabPanel("Summary", shiny::verbatimTextOutput("summary_r2")),
-                        shiny::tabPanel("Table", shiny::tableOutput("table_r2"))
-            )
-          ),
-          bslib::accordion_panel(
-            "Round 3",
-            shiny::tabsetPanel(type = "tabs",
-                        shiny::tabPanel("Plot", plotly::plotlyOutput("plot_r3")),
-                        shiny::tabPanel("Summary", shiny::verbatimTextOutput("summary_r3")),
-                        shiny::tabPanel("Table", shiny::tableOutput("table_r3"))
-            )
-          )
-        )
+      shiny::mainPanel(width = MAIN_PANEL_WIDTH,
+                       bslib::accordion(
+                         open = DEFAULT_OPEN_ACCORDIONS,
+                         make_round_panel("all", "All Rounds"),
+                         make_round_panel("r1",  "Round 1"),
+                         make_round_panel("r2",  "Round 2"),
+                         make_round_panel("r3",  "Round 3")
+                       )
       )
     )
   ),

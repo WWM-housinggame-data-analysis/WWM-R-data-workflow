@@ -69,6 +69,28 @@ mod_input_reset_server <- function(id, default_value, get_choices) {
 }
 
 
+
+# Reusable accordion panel for a game round (or "All")
+make_round_panel <- function(round_id, label) {
+  
+  # Build output IDs dynamically
+  plot_id    <- paste0("plot_",  round_id)
+  summary_id <- paste0("summary_", round_id)
+  table_id   <- paste0("table_",   round_id)
+  
+  bslib::accordion_panel(
+    title = label,
+    shiny::tabsetPanel(
+      type = "tabs",
+      shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+      shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
+      shiny::tabPanel("Table",   shiny::tableOutput(table_id))
+    )
+  )
+}
+
+
+
 # ==================================
 # Multi-select (checkboxGroupInput) + Reset module ====
 # ==================================
