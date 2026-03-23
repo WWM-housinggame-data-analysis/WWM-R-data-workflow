@@ -211,5 +211,31 @@ RESET_ALL_BUTTON <- shiny::div(
   shiny::actionButton(ACTION_BUTTON_ID, ACTION_BUTTON_LABEL, class = ACTION_BUTTON_WARNING)
 )
 
+HEADER_TAB2 <- "Game Settings"
+
 MAIN_PANEL_WIDTH <- 10
 DEFAULT_OPEN_ACCORDIONS <- c("All Rounds")
+
+REFS_HEADER_TITLE <- "Links"
+REFS_HEADER_ALIGN <- "right"
+
+ABOUT_LINK <- "https://seriousgaming.tudelft.nl/games/"
+names(ABOUT_LINK) <- "About WhereWeMove"
+
+INFO_LINK <- "https://pure.tudelft.nl/ws/portalfiles/portal/180909041/WhereWeMove-Brochure_Final.pdf"
+names(INFO_LINK) <- "WhereWeMove info"
+
+FACILIT_LINK <- "https://housing-game.tbm.tudelft.nl/housinggame-facilitator/jsp/facilitator/login.jsp"
+names(FACILIT_LINK) <- "Facilitator website"
+
+PLAYER_LINK <- "https://housing-game.tbm.tudelft.nl/housinggame-player/jsp/player/login.jsp"
+names(PLAYER_LINK) <- "Player website"
+
+REFS_HEADER_TAB <- bslib::nav_menu(
+  title = REFS_HEADER_TITLE,
+  align = REFS_HEADER_ALIGN,
+  bslib::nav_item(shiny::tags$a(names(ABOUT_LINK), href = ABOUT_LINK)),
+  bslib::nav_item(shiny::tags$a(names(INFO_LINK), href = INFO_LINK)),
+  bslib::nav_item(shiny::tags$a(names(FACILIT_LINK), href = FACILIT_LINK)),
+  bslib::nav_item(shiny::tags$a(names(PLAYER_LINK), href = PLAYER_LINK))
+)

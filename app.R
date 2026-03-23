@@ -155,14 +155,7 @@ ui <- bslib::page_navbar(
   
   bslib::nav_panel(title = "Game Settings", shiny::p("First page content.")),
   bslib::nav_spacer(),
-  bslib::nav_menu(
-    title = "Links",
-    align = "right",
-    bslib::nav_item(shiny::tags$a("About WhereWeMove", href = "https://seriousgaming.tudelft.nl/games/")),
-    bslib::nav_item(shiny::tags$a("WhereWeMove info", href = "https://pure.tudelft.nl/ws/portalfiles/portal/180909041/WhereWeMove-Brochure_Final.pdf")),
-    bslib::nav_item(shiny::tags$a("Facilitator website", href = "https://housing-game.tbm.tudelft.nl/housinggame-facilitator/jsp/facilitator/login.jsp")),
-    bslib::nav_item(shiny::tags$a("Player website", href = "https://housing-game.tbm.tudelft.nl/housinggame-player/jsp/player/login.jsp"))
-  )
+  REFS_HEADER_TAB
 )
 
 
