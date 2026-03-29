@@ -1,6 +1,6 @@
 # WWM R Data Workflow
 
-This repository hosts the R codebase to preprocess, analyze and visualize data from the WhereWeMove game sessions.
+This repository hosts the R codebase to preprocess, analyze and visualize data from the WhereWeMove game sessions, facilitated using the WhereWeMove manual.
 This can be done statically with RStudio or dynamically using a Shiny dashboard application.
 
 ## Project Organization
