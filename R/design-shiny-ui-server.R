@@ -16,7 +16,7 @@ mod_input_reset_ui <- function(id, label) {
 }
 
 
-# Reusable accordion panel for a game round (or "All")
+# Reusable accordion panel for a game round (or SELECT_ALL)
 make_round_panel <- function(round_id, label) {
   
   # Build output IDs dynamically
@@ -106,7 +106,7 @@ make_gamesession_reactives <- function(preprocess_data_list, gamesession_selecti
   
   # 1) Choices reactive
   gamesession_choices <- shiny::reactive({
-    if (identical(gamesession_selection, "All")) {
+    if (identical(gamesession_selection, SELECT_ALL)) {
       names(preprocess_data_list)
     } else {
       # When YAML or config pre-filters the sessions
@@ -159,11 +159,11 @@ make_role_table_reactives <- function(income_dist_df,
     df <- income_dist_df()
     groups <- character(0)
     
-    if (!is.null(df) && nrow(df) > 0 && "group_name" %in% names(df)) {
-      groups <- as.character(unique(df$group_name))
+    if (!is.null(df) && nrow(df) > 0 && TABLE_GROUPCOL %in% names(df)) {
+      groups <- as.character(unique(df[, TABLE_GROUPCOL]))
     }
     
-    process_config_selection(groups, selected_username, fallback = "All")
+    process_config_selection(groups, selected_username, fallback = SELECT_ALL)
   })
   
   
@@ -171,14 +171,14 @@ make_role_table_reactives <- function(income_dist_df,
   table_choices <- shiny::reactive({
     df <- income_dist_df()
     
-    # Guard: return "All" if no usable data
-    if (is.null(df) || nrow(df) == 0 || !"group_name" %in% names(df)) {
-      return("All")
+    # Guard: return SELECT_ALL if no usable data
+    if (is.null(df) || nrow(df) == 0 || TABLE_GROUPCOL %in% names(df) == FALSE) {
+      return(SELECT_ALL)
     }
     
     # If user did not fix a particular role in YAML…
-    if (identical(role_selection(), "All")) {
-      c("All", as.character(unique(df$group_name)))
+    if (identical(role_selection(), SELECT_ALL)) {
+      c(SELECT_ALL, as.character(unique(df[, TABLE_GROUPCOL])))
     } else {
       # If YAML specified a single role → lock the choices to that
       role_selection()
@@ -219,25 +219,25 @@ mod_multicheck_reset_ui <- function(id, label) {
   )
 }
 
-# Handle multi-select with "All" semantics (optional helper)
-# If user selects "All", you can choose to keep only "All" OR expand to all real choices.
-normalize_multicheck_selection <- function(selection, choices, all_label = "All", expand_all = FALSE) {
+# Handle multi-select with SELECT_ALL semantics (optional helper)
+# If user selects SELECT_ALL, you can choose to keep only SELECT_ALL OR expand to all real choices.
+normalize_multicheck_selection <- function(selection, choices, all_label = SELECT_ALL, expand_all = FALSE) {
   if (is.null(selection) || length(selection) == 0) return(character(0))
   selection <- intersect(selection, choices)  # sanitize
   if (all_label %in% choices && all_label %in% selection) {
     if (expand_all) {
       # Expand to all (excluding All if you want)
-      # return(setdiff(choices, all_label))  # if you want all except "All"
-      return(choices)                         # include "All" too if desired
+      # return(setdiff(choices, all_label))  # if you want all except SELECT_ALL
+      return(choices)                         # include SELECT_ALL too if desired
     } else {
-      # Keep only "All"
+      # Keep only SELECT_ALL
       return(all_label)
     }
   }
   selection
 }
 
-mod_multicheck_reset_server <- function(id, default_values, get_choices, all_label = "All", expand_all = FALSE) {
+mod_multicheck_reset_server <- function(id, default_values, get_choices, all_label = SELECT_ALL, expand_all = FALSE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -246,10 +246,10 @@ mod_multicheck_reset_server <- function(id, default_values, get_choices, all_lab
       choices <- get_choices()
       shiny::req(length(choices) > 0)
       
-      # default_values is reactive(): can be a single value "All" or a vector of types
+      # default_values is reactive(): can be a single value SELECT_ALL or a vector of types
       sel <- default_values()
       
-      # Ensure selection is within choices; fallback to "All" if available, else first choice
+      # Ensure selection is within choices; fallback to SELECT_ALL if available, else first choice
       if (is.null(sel) || length(intersect(sel, choices)) == 0) {
         sel <- if (all_label %in% choices) all_label else choices[[1]]
       }
@@ -300,23 +300,23 @@ make_cost_types_reactive <- function(id = "cost_types") {
   
   # Choices reactive (can be dynamic if needed)
   cost_types_choices <- shiny::reactive({
-    c("All", names(EXPENSE_BARCOLS))
+    c(SELECT_ALL, names(COST_BAR_SEGMENTS))
   })
   
   # Default selection reactive (from config or static)
   # If you have a YAML default like CONFIG$defaults$cost_types, wire it here.
-  # Otherwise, default to "All".
+  # Otherwise, default to SELECT_ALL.
   cost_types_default <- shiny::reactive({
-    "All"
+    SELECT_ALL
     # or CONFIG$defaults$cost_types
   })
   
   selected_cost_types <- mod_multicheck_reset_server(
     id            = "cost_types",
-    default_values = cost_types_default,   # reactive() returning a vector (e.g., "All" or c("Mortgage payment", ...))
+    default_values = cost_types_default,   # reactive() returning a vector (e.g., SELECT_ALL or c("Mortgage payment", ...))
     get_choices    = cost_types_choices,
-    all_label      = "All",
-    expand_all     = FALSE                  # keep only "All" when All is selected (set TRUE to expand to all)
+    all_label      = SELECT_ALL,
+    expand_all     = FALSE                  # keep only SELECT_ALL when All is selected (set TRUE to expand to all)
   )
   
   return(selected_cost_types)

@@ -45,7 +45,7 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
 
 
 # -----------------------------------------------
-# Handle "All" and selected filtering
+# Handle SELECT_ALL and selected filtering
 # -----------------------------------------------
 
 filter_selected_categs <- function(input_categs, required_categs) {
@@ -57,7 +57,7 @@ filter_selected_categs <- function(input_categs, required_categs) {
     
     # if All is selected OR none selected -> treat as all
     
-    if ("All" %in% as.vector(input_categs)) {
+    if (SELECT_ALL %in% as.vector(input_categs)) {
       
       return(req_types)
       
@@ -73,17 +73,19 @@ filter_selected_categs <- function(input_categs, required_categs) {
 # -----------------------------------------------
 
 
-update_group_col <- function(plot_data, selected_table) {
+update_bar_groupcol <- function(df, selected_table) {
   
-  groups <- as.character(unique(plot_data$group_name))
+  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  if (all(groups %in% selected_table)) {
+  selected_table <- filter_selected_categs(selected_table, table_choices)
+  
+  if (all( table_choices %in% selected_table)) {
     
-    group_col <- "income_grp"
+    groupcol <- INCOME_GRP_COL
     
-  } else if (any(groups %in% selected_table) && length(selected_table) == 1) {
+  } else if (any( table_choices %in% selected_table) && length(selected_table) == 1) {
     
-    group_col <- "player_code"
+    groupcol <- PLAYER_CODE_COL
     
   } else {
     
@@ -91,5 +93,5 @@ update_group_col <- function(plot_data, selected_table) {
     
   }
   
-  return(group_col)
+  return(groupcol)
 }

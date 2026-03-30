@@ -1,4 +1,6 @@
+#R/constants.R
 
+SELECT_ALL <- "All"
 
 # CONFIG <- yaml::read_yaml(here::here("./config.yml"))
 
@@ -24,8 +26,8 @@
 #   
 # }
 
-SELECTED_USERTABLE <- "All"
-SELECTED_GAMESESSION <- "All"
+SELECTED_USERTABLE <- SELECT_ALL
+SELECTED_GAMESESSION <- SELECT_ALL
 SELECTED_USERNAME <- SELECTED_USERTABLE
 
 
@@ -155,24 +157,51 @@ INCOME_DIST_ALLCOLS <- c("gamesession_name", "group_name", "playerround_id", "pl
                          "community_name", "fluvial_house_delta", "pluvial_house_delta")
 
 # Central colour/label dictionaries (names must match cost_type in data)
-EXPENSE_BARCOLS <- c("total_damage_costs",
+COST_BAR_SEGMENTS <- c("total_damage_costs",
                      "cost_personal_measures_bought",
                      "cost_house_measures_bought",
                      "profit_minus_spent_savings_house_moving",
                      "mortgage_payment",
                      "paid_debt")
 
-names(EXPENSE_BARCOLS) <- c("Damage (river + rain)",
+names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
                             "Personal measures",
                             "House measures",
                             "Spent savings (buying house)",
                             "Mortgage payment",
                             "Paid debt")
 
+TABLE_GROUPCOL <- "group_name"
+GP1_XLABEL_COL <- "xlabels"
+
+COST_SCATTER_LINE <- "satisfaction_total"
+names(COST_SCATTER_LINE) <-  "Average total satisfaction"
+
+COST_TABLE_ENTRIES <- c("income_minus_living",
+                        "profit_minus_spent_savings_house_moving",
+                        "mortgage_payment",
+                        "cost_taxes",
+                        "paid_debt",
+                        "cost_house_measures_bought",
+                        "cost_personal_measures_bought",
+                        "cost_fluvial_damage",
+                        "cost_pluvial_damage", 
+                        "spendable_income")
+
+names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
+                               "Average Net Profit House Moving",
+                               "Average Mortgage Costs",
+                               "Average Taxes Costs",
+                               "Average Paid Debt",
+                               "Average House Measures Bought",
+                               "Average Personal Measures Bought",
+                               "Average Fluvial Damage Costs",
+                               "Average Pluvial Damage Costs",
+                               "Average Spendable Income")
 
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
 
-names(fill_values_all) <- names(EXPENSE_BARCOLS)
+names(fill_values_all) <- names(COST_BAR_SEGMENTS)
 
 K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
@@ -239,3 +268,5 @@ REFS_HEADER_TAB <- bslib::nav_menu(
   bslib::nav_item(shiny::tags$a(names(FACILIT_LINK), href = FACILIT_LINK)),
   bslib::nav_item(shiny::tags$a(names(PLAYER_LINK), href = PLAYER_LINK))
 )
+
+LINEBREAK<- "<br>"

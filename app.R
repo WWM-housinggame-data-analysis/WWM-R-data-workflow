@@ -88,10 +88,10 @@ for (session_name in names(gamesession_data_list)) {
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = "All")
-default_role_selection <- process_config_selection(as.character(unique(preprocess_data_list[["housinggame_session_20_251007_VerzekeraarsMasterClass"]][["income_dist_df"]]$group_name)),
+gamesession_selection <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
+default_role_selection <- process_config_selection(as.character(unique(preprocess_data_list[["housinggame_session_20_251007_VerzekeraarsMasterClass"]][["income_dist_df"]][, TABLE_GROUPCOL])),
                                            SELECTED_USERNAME,
-                                           fallback = "All")
+                                           fallback = SELECT_ALL)
 
   
 
@@ -142,7 +142,7 @@ ui <- bslib::page_navbar(
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
                        bslib::accordion(
                          open = DEFAULT_OPEN_ACCORDIONS,
-                         make_round_panel("all", "All Rounds"),
+                         make_round_panel(SELECT_ALL, "All Rounds"),
                          make_round_panel("r1",  "Round 1"),
                          make_round_panel("r2",  "Round 2"),
                          make_round_panel("r3",  "Round 3")
@@ -168,7 +168,7 @@ server <- function(input, output, session) {
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
     preprocess_data_list    = preprocess_data_list,
-    gamesession_selection   = gamesession_selection,  # "All" or vector from config
+    gamesession_selection   = gamesession_selection,  # SELECT_ALL or vector from config
     id = "gamesession"                              # matches your UI module id
   )
 
@@ -193,25 +193,14 @@ server <- function(input, output, session) {
   # global "Reset all filters"
   add_global_reset_observer(input, session)
   
-  
-  selected_bar_segments <- shiny::reactive({
-    # selected_cost_types() already normalized. Still filter to known keys.
-    sel <- selected_cost_types()
-    filter_selected_categs(sel, c("All", names(EXPENSE_BARCOLS)))
-  })
-  
-  selected_columns <- shiny::reactive({
-    EXPENSE_BARCOLS[names(EXPENSE_BARCOLS) %in% selected_bar_segments()]
-  })
-  
 
   summary_df <- shiny::reactive({retrieve_summary_table(income_dist_df(), selected_table())})
   
   
-  GP1_plotall_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "All", fill_values_all) })
-  GP1_plot1_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "1", fill_values_all) })
-  GP1_plot2_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "2", fill_values_all) })
-  GP1_plot3_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_columns(), selected_table(), game_round = "3", fill_values_all) })
+  GP1_plotall_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
+  GP1_plot1_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
+  GP1_plot2_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
+  GP1_plot3_data <- shiny::reactive({ prepare_GP1_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
   
   # Connect plots
   output$plot_all <- plotly::renderPlotly({ create_GP1_plotly(GP1_plotall_data()) })
