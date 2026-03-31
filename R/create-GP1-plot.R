@@ -2,10 +2,10 @@
 
 # Set all default variables or global options and all the path variables at the top of the code.
 
-FUNCTION_PATH <- file.path("R")
+# FUNCTION_PATH <- file.path("R")
 
 # Load required functions
-source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+# source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
@@ -145,8 +145,8 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title
     out_plot <- out_plot %>%
       plotly::add_bars(
         data = segment_df,
-        x = ~xlabels,
-        y = ~mean_k,
+        x = segment_df[, "xlabels"],
+        y = segment_df[, "mean_k"],
         name = label,
         marker = list(color = bar_color),
         
@@ -154,7 +154,7 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title
         legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
         legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
         
-        customdata = ~N,
+        customdata = segment_df[, "N"],
         hovertemplate = paste0(
           "<b>", label, "</b><br>",
           "Mean: %{y:.2f}k<br>",
@@ -184,8 +184,8 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
     out_plot <- out_plot %>%
       plotly::add_trace(
         data = line_df,
-        x = ~xlabels,
-        y = ~mean_value,
+        x = line_df[, "xlabels"],
+        y = line_df[, "mean_value"],
         type = "scatter",
         mode = "lines+markers",
         name = label,
@@ -202,7 +202,7 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
         line = list(color = line_color, width = line_width),
         marker = list(color = line_color, size = marker_size),
         
-        customdata = ~N,
+        customdata = line_df[, "N"],
         hovertemplate = paste0(
           "<b>", label, "</b><br>",
           "Mean: %{y:.2f}k<br>",
