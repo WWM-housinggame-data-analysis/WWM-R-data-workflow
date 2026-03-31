@@ -243,7 +243,11 @@ RESET_ALL_BUTTON <- shiny::div(
 HEADER_TAB2 <- "Game Settings"
 
 MAIN_PANEL_WIDTH <- 10
-DEFAULT_OPEN_ACCORDIONS <- c("All Rounds")
+
+ROUND_ACCORDION_ID <- c("all", "r1", "r2", "r3")
+names(ROUND_ACCORDION_ID) <- c("All Rounds", "Round 1", "Round 2", "Round 3")
+
+DEFAULT_OPEN_ACCORDIONS <- names(ROUND_ACCORDION_ID)[1]
 
 REFS_HEADER_TITLE <- "Links"
 REFS_HEADER_ALIGN <- "right"

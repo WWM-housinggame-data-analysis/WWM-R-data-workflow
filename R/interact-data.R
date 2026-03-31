@@ -48,22 +48,19 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
 # Handle SELECT_ALL and selected filtering
 # -----------------------------------------------
 
-filter_selected_categs <- function(input_categs, required_categs) {
+filter_selected_categs <- function(input_categs, req_categs) {
   
-    shiny::req(input_categs)
-  
-    # remove the special label
-    req_types <- required_categs
+    shiny::req(input_categs, req_categs)
     
     # if All is selected OR none selected -> treat as all
     
     if (SELECT_ALL %in% as.vector(input_categs)) {
       
-      return(req_types)
+      return(req_categs)
       
     } else {
       
-      return(intersect(input_categs, req_types))
+      return(intersect(input_categs, req_categs))
     }
 }
 

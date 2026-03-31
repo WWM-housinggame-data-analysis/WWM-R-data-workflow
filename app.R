@@ -142,15 +142,14 @@ ui <- bslib::page_navbar(
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
                        bslib::accordion(
                          open = DEFAULT_OPEN_ACCORDIONS,
-                         make_round_panel("all", "All Rounds"),
-                         make_round_panel("r1",  "Round 1"),
-                         make_round_panel("r2",  "Round 2"),
-                         make_round_panel("r3",  "Round 3")
+                         make_round_panel(ROUND_ACCORDION_ID[1], names(ROUND_ACCORDION_ID)[1]),
+                         make_round_panel(ROUND_ACCORDION_ID[2], names(ROUND_ACCORDION_ID)[2]),
+                         make_round_panel(ROUND_ACCORDION_ID[3], names(ROUND_ACCORDION_ID)[3]),
+                         make_round_panel(ROUND_ACCORDION_ID[4], names(ROUND_ACCORDION_ID)[4])
                        )
       )
     )
   ),
-  
   
   
   bslib::nav_panel(title = "Game Settings", shiny::p("First page content.")),
@@ -160,10 +159,7 @@ ui <- bslib::page_navbar(
 
 
 
-
-
 server <- function(input, output, session) {
-  
 
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
