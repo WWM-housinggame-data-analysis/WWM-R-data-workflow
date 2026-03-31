@@ -126,13 +126,13 @@ create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_titl
   return(out_plot)
 }
 
-add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
+add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title) {
   
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
   
-  legend_label_order <- selected_bar_segments             # desired legend order (unchanged)
-  legend_label_match  <- rev(selected_bar_segments)         # stacking order (reversed)
+  legend_label_order <- selected_bar_labels             # desired legend order (unchanged)
+  legend_label_match  <- rev(selected_bar_labels)         # stacking order (reversed)
   
   # --- Add stacked bar traces ---
   for (label in legend_label_match) {
@@ -219,11 +219,11 @@ create_GP1_plotly <- function(plot_data) {
   
   bar_df                <- plot_data$bar_df
   scatter_df            <- plot_data$scatter_df
-  selected_bar_segments <- plot_data$selected_bar_segments
+  selected_bar_labels   <- names(plot_data$selected_bar_segments)
   xlevels               <- plot_data$xlevels
   
   # keep only colors/labels for selected stacks
-  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
+  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_labels]
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
@@ -237,7 +237,7 @@ create_GP1_plotly <- function(plot_data) {
                                    c(bar_y_min, bar_y_max),
                                    "Average total satisfaction", " - ")
   
-  GP1_plot <- add_bar_data(GP1_plot, bar_df, selected_bar_segments, "Round costs") 
+  GP1_plot <- add_bar_data(GP1_plot, bar_df, selected_bar_labels, "Round costs") 
   
   
   GP1_plot <- add_scatter_data(GP1_plot, scatter_df, "Satisfaction") 

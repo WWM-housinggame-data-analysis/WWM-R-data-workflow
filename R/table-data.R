@@ -9,6 +9,11 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 
 retrieve_summary_table <- function(df, selected_table) {
   
+  selected_table <- update_table_groups(df, selected_table)
+  
+  # Guard against empty states
+  shiny::req(nrow(df) > 0, length(selected_table) > 0)
+  
   group_col <- update_bar_groupcol(df, selected_table)
   
   df <- create_GP1_xlabels(df, group_col)

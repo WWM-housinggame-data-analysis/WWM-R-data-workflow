@@ -67,6 +67,26 @@ filter_selected_categs <- function(input_categs, required_categs) {
     }
 }
 
+update_bar_segments <- function(checked_features) {
+  
+  checked_features <- filter_selected_categs(checked_features, names(COST_BAR_SEGMENTS))
+  
+  bar_segs <- COST_BAR_SEGMENTS[names(COST_BAR_SEGMENTS) %in% checked_features]
+  
+  names(bar_segs) <- names(COST_BAR_SEGMENTS)[names(COST_BAR_SEGMENTS) %in% checked_features]
+  
+  return(bar_segs)
+}
+
+update_table_groups <- function(df, selected_table) {
+  
+  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
+  
+  selected_table <- filter_selected_categs(selected_table, table_choices)
+  
+  return(selected_table)
+}
+
 
 # -----------------------------------------------
 # Determine grouping column for plot logic
@@ -77,13 +97,11 @@ update_bar_groupcol <- function(df, selected_table) {
   
   table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  selected_table <- filter_selected_categs(selected_table, table_choices)
-  
-  if (all( table_choices %in% selected_table)) {
+  if (all(table_choices %in% selected_table)) {
     
     groupcol <- INCOME_GRP_COL
     
-  } else if (any( table_choices %in% selected_table) && length(selected_table) == 1) {
+  } else if (any(table_choices %in% selected_table) && length(selected_table) == 1) {
     
     groupcol <- PLAYER_CODE_COL
     

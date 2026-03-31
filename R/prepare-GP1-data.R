@@ -13,21 +13,13 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 # Reactive plot based on user input
 prepare_GP1_data <- function(df, selected_cost_types, selected_table, game_round, fill_values_all) {
   
-  
-  # Normalize ROUND NUMBER — avoids mixed numeric/character axis
-  df[, ROUND_NUMBER_COL] <- as.character(df[, ROUND_NUMBER_COL])
-  
-  
   # selected_cost_types() already normalized. Still filter to known keys.
-  selected_bar_segments <-
-    COST_BAR_SEGMENTS[names(COST_BAR_SEGMENTS) %in% filter_selected_categs(selected_cost_types,
-                                                                           c(SELECT_ALL, names(COST_BAR_SEGMENTS)))]
-  names(selected_bar_segments) <-
-    names(COST_BAR_SEGMENTS)[names(COST_BAR_SEGMENTS) %in% filter_selected_categs(selected_cost_types,
-                                                                           c(SELECT_ALL, names(COST_BAR_SEGMENTS)))]
+  selected_bar_segments <- update_bar_segments(selected_cost_types)
+  
+  selected_table <- update_table_groups(df, selected_table)
   
   # Guard against empty states
-  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0)
+  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
   
   selected_bar_groupcol <- update_bar_groupcol(df, selected_table)
   
@@ -35,10 +27,6 @@ prepare_GP1_data <- function(df, selected_cost_types, selected_table, game_round
   df <- filter_tables(df, selected_bar_groupcol, selected_table)
   
   df <- create_GP1_xlabels(df, selected_bar_groupcol)
-  
-  
-  # Normalize xlabels BEFORE filtering rounds
-  df[, GP1_XLABEL_COL] <- as.character(df[, GP1_XLABEL_COL])
   
   df <- filter_game_rounds(df, game_round)
 

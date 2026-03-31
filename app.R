@@ -142,7 +142,7 @@ ui <- bslib::page_navbar(
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
                        bslib::accordion(
                          open = DEFAULT_OPEN_ACCORDIONS,
-                         make_round_panel(SELECT_ALL, "All Rounds"),
+                         make_round_panel("all", "All Rounds"),
                          make_round_panel("r1",  "Round 1"),
                          make_round_panel("r2",  "Round 2"),
                          make_round_panel("r3",  "Round 3")
