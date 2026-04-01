@@ -23,6 +23,7 @@ library(ggtext)
 library(shiny)
 library(bslib)
 library(plotly)
+library(webshot2)
 
 
 # Set defaults ----
@@ -100,8 +101,20 @@ GP1_plotall_data <- prepare_GP1_data(income_dist_df, selected_cost_types, select
 GP1_plot1_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
 GP1_plot2_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
 GP1_plot3_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
-  
+
+
 
 GP1_plotall <- create_GP1_plotly(GP1_plotall_data)
+
+htmlwidgets::saveWidget(GP1_plotall, "GP1_plot.html", selfcontained = TRUE)
+
+webshot2::webshot("GP1_plot.html", "GP1_plot.png", vwidth = 1600, vheight = 900)
+
+
+
+tmp <- tempfile(fileext = ".png")
+webshot2::webshot(GP1_plotall, file = tmp, vwidth = 1600, vheight = 900)
+rstudioapi::viewer(tmp)
+
 
 GP1_plotall

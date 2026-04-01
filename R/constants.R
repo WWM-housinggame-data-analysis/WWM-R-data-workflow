@@ -199,6 +199,7 @@ names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
                                "Average Pluvial Damage Costs",
                                "Average Spendable Income")
 
+# COST_BAR_COLORS
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
 
 names(fill_values_all) <- names(COST_BAR_SEGMENTS)
