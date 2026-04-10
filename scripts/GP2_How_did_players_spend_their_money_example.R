@@ -1,3 +1,28 @@
+
+# ------------------------------------------------------------
+# Script: scripts/GP2_How did players spend their money_example.R
+# Purpose: Example script to run data analysis and visualization for GP2 in RStudio
+#
+# Working directory:
+#   Project root (see here::here())
+#
+# Inputs:
+#   - data/raw/*.csv
+#
+# Outputs:
+#   - data/raw/*.xlsx
+#   - data/preprocessed/*.xlsx
+#   - data/results/*.png
+#
+# How to run:
+#   Rscript "scripts/GP2_How did players spend their money_example.R"
+#
+# Author: João Guimarães
+# Created: 2026-04-10
+# Maintainer: Juliette Cortes Arevalo and Alex Verbraeck
+# ------------------------------------------------------------
+
+
 # Load necessary libraries ----
 
 ## Load for handling file location
