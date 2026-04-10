@@ -47,17 +47,14 @@ source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
 source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
 
-### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
-source(here::here(file.path(FUNCTION_PATH, "table-data.R")))
-
-### Load function containing the transformation of data tables to fit the format required for GP1 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
-source(here::here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
+### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
 ### Load functions required to handle dashboard filter actions
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 ### Load functions required to setup plotly visualizations
-source(here::here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
+source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
 
 # Data Workflow ----
@@ -190,16 +187,16 @@ server <- function(input, output, session) {
   summary_df <- shiny::reactive({retrieve_summary_table(income_dist_df(), selected_table())})
   
   
-  GP1_plotall_data <- shiny::reactive({ retrieve_GP1_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
-  GP1_plot1_data <- shiny::reactive({ retrieve_GP1_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
-  GP1_plot2_data <- shiny::reactive({ retrieve_GP1_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
-  GP1_plot3_data <- shiny::reactive({ retrieve_GP1_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
+  GP2_plotall_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
+  GP2_plot1_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
+  GP2_plot2_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
+  GP2_plot3_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
   
   # Connect plots
-  output$plot_all <- plotly::renderPlotly({ create_GP1_plotly(GP1_plotall_data()) })
-  output$plot_r1  <- plotly::renderPlotly({ create_GP1_plotly(GP1_plot1_data()) })
-  output$plot_r2  <- plotly::renderPlotly({ create_GP1_plotly(GP1_plot2_data()) })
-  output$plot_r3  <- plotly::renderPlotly({ create_GP1_plotly(GP1_plot3_data()) })
+  output$plot_all <- plotly::renderPlotly({ create_GP2_plotly(GP2_plotall_data()) })
+  output$plot_r1  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot1_data()) })
+  output$plot_r2  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot2_data()) })
+  output$plot_r3  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot3_data()) })
   
   # Summaries (update based on color_by choice)
   output$summary_all <- shiny::renderPrint({ summary(summary_df()) })

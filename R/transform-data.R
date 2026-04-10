@@ -23,13 +23,13 @@ filter_tables <- function(df, groupcol, selected_table) {
 
 
 # Build xlabels on the row-level data
-create_GP1_xlabels <- function(df, group_col) {
+create_GP2_xlabels <- function(df, group_col) {
   
   if (identical(group_col, INCOME_GRP_COL)) {
     
     df <- df |>
       dplyr::mutate(
-        !!GP1_XLABEL_COL := factor(
+        !!GP2_XLABEL_COL := factor(
           paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))], .data[[group_col]], sep = LINEBREAK),
           levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = LINEBREAK)
         )
@@ -39,7 +39,7 @@ create_GP1_xlabels <- function(df, group_col) {
     
     df <- df |>
       dplyr::mutate(
-        !!GP1_XLABEL_COL := factor(
+        !!GP2_XLABEL_COL := factor(
           paste(.data[[group_col]], .data[[INCOME_GRP_COL]], sep = LINEBREAK),
           levels = paste(.data[[PLAYER_CODE_COL]][match(names(WELFARE_LABELS), .data[[INCOME_GRP_COL]])], names(WELFARE_LABELS), sep = LINEBREAK)
         )

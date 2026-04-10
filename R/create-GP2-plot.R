@@ -1,4 +1,4 @@
-#R/create-GP1-plot.R
+#R/create-GP2-plot.R
 
 # Set all default variables or global options and all the path variables at the top of the code.
 
@@ -6,6 +6,58 @@
 
 # Load required functions
 # source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+
+view_image_in_rstudio <- function(image_path) {
+  html_file <- tempfile(fileext = ".html")
+  
+  html <- sprintf(
+    '<html>
+       <head>
+         <style>
+           body { margin: 0; background: #ffffff; }
+           img  { width: 100%%; height: auto; }
+         </style>
+       </head>
+       <body>
+         <img src="%s" />
+       </body>
+     </html>',
+    basename(image_path)
+  )
+  
+  writeLines(html, html_file)
+  
+  # Copy image next to HTML so relative paths work
+  file.copy(image_path,
+            file.path(dirname(html_file), basename(image_path)),
+            overwrite = TRUE)
+  
+  rstudioapi::viewer(html_file)
+}
+
+save_and_view_plotly <- function(plotly_plot, file = "plotly_plot.png", vwidth = 1600, vheight = 800) {
+  
+  # 1. Check input is interactive Plotly widget
+  stopifnot(inherits(plotly_plot, "htmlwidget"))
+  
+  # 2. Save to a temporary HTML file
+  html_file <- tempfile(fileext = ".html")
+  htmlwidgets::saveWidget(plotly_plot, html_file, selfcontained = TRUE)
+  
+  # 3. Convert the HTML to a PNG using webshot2 (NO Python required)
+  webshot2::webshot(
+    url = html_file,
+    file = file,
+    vwidth = vwidth,
+    vheight = vheight
+  )
+  
+  # 4. Display PNG INSIDE RStudio Viewer
+  view_image_in_rstudio(normalizePath(file))
+  
+  # 5. Return the PNG file path
+  return(invisible(file))
+}
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
@@ -215,7 +267,7 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
 }
 
 
-create_GP1_plotly <- function(plot_data) {
+create_GP2_plotly <- function(plot_data) {
   
   bar_df                <- plot_data$bar_df
   scatter_df            <- plot_data$scatter_df
@@ -231,74 +283,31 @@ create_GP1_plotly <- function(plot_data) {
   
   # Start plotly
   
-  GP1_plot <- create_plotly_layout("Round income (k) - Players per class",
+  GP2_plot <- create_plotly_layout("Round income (k) - Players per class",
                                    xlevels,
                                    "Game Currency (k)",
                                    c(bar_y_min, bar_y_max),
                                    "Average total satisfaction", " - ")
   
-  GP1_plot <- add_bar_data(GP1_plot, bar_df, selected_bar_labels, "Round costs") 
+  GP2_plot <- add_bar_data(GP2_plot, bar_df, selected_bar_labels, "Round costs") 
   
   
-  GP1_plot <- add_scatter_data(GP1_plot, scatter_df, "Satisfaction") 
+  GP2_plot <- add_scatter_data(GP2_plot, scatter_df, "Satisfaction") 
   
-  GP1_plot
+  GP2_plot
 }
 
 
-view_image_in_rstudio <- function(image_path) {
-  html_file <- tempfile(fileext = ".html")
-  
-  html <- sprintf(
-    '<html>
-       <head>
-         <style>
-           body { margin: 0; background: #ffffff; }
-           img  { width: 100%%; height: auto; }
-         </style>
-       </head>
-       <body>
-         <img src="%s" />
-       </body>
-     </html>',
-    basename(image_path)
-  )
-  
-  writeLines(html, html_file)
-  
-  # Copy image next to HTML so relative paths work
-  file.copy(image_path,
-            file.path(dirname(html_file), basename(image_path)),
-            overwrite = TRUE)
-  
-  rstudioapi::viewer(html_file)
-}
-
-
-save_and_view_GP1_plot <- function(plot_data,
-                                   file = "GP1_plot.png",
+save_and_view_GP2_plot <- function(plot_data,
+                                   file = "GP2_plot.png",
                                    vwidth = 1600,
                                    vheight = 800) {
 
-  # 1. Create the interactive Plotly widget
-  GP1_plot <- create_GP1_plotly(plot_data)
-  stopifnot(inherits(GP1_plot, "htmlwidget"))
+  ## Create the interactive Plotly widget
+  GP2_plot <- create_GP2_plotly(plot_data)
   
-  # 2. Save to a temporary HTML file
-  html_file <- tempfile(fileext = ".html")
-  htmlwidgets::saveWidget(GP1_plot, html_file, selfcontained = TRUE)
+  save_and_view_plotly(GP2_plot, file, vwidth, vheight)
   
-  # 3. Convert the HTML to a PNG using webshot2 (NO Python required)
-  webshot2::webshot(
-    url = html_file,
-    file = file,
-    vwidth = vwidth,
-    vheight = vheight
-  )
-  
-  # 4. Display PNG INSIDE RStudio Viewer
-  view_image_in_rstudio(normalizePath(file))
-  
-  # 5. Return the PNG file path
+  ## Return the PNG file path
   return(invisible(file))
 }

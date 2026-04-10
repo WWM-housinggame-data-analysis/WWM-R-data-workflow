@@ -172,7 +172,7 @@ names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
                             "Paid debt")
 
 TABLE_GROUPCOL <- "group_name"
-GP1_XLABEL_COL <- "xlabels"
+GP2_XLABEL_COL <- "xlabels"
 
 COST_SCATTER_LINE <- "satisfaction_total"
 names(COST_SCATTER_LINE) <-  "Average total satisfaction"

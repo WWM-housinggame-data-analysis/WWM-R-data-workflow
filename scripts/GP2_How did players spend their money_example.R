@@ -51,17 +51,14 @@ source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
 source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
 
-### Load function containing the transformation of data tables to summary tables (i.e. dropping columns and aggregate tables)
-source(here::here(file.path(FUNCTION_PATH, "table-data.R")))
-
-### Load function containing the transformation of data tables to fit the format required for GP1 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
-source(here::here(file.path(FUNCTION_PATH, "prepare-GP1-data.R")))
+### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
 ### Load functions required to handle dashboard filter actions
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 ### Load functions required to setup plotly visualizations
-source(here::here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
+source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
 
 # Data Workflow ----
@@ -104,12 +101,16 @@ selected_cost_types <- SELECT_ALL
 ## Retrieve income distribution data frame to be used for data visualization
 income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
-## Retrieve summary table 
-GP1_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
-  
-GP1_plotall_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
-GP1_plot1_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
-GP1_plot2_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
-GP1_plot3_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
+## Retrieve summary table for data plotted in analysis for GP2
+GP2_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
 
-save_and_view_GP1_plot(GP1_plotall_data, vheight = 1100)
+## Retrieve data to be plotted in analysis for GP2.
+## Data is retrieved for cost type and table group selection defined above.
+## Data representative of the whole game session and of each game round is retrieved, respectively.
+GP2_plotall_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
+GP2_plot1_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
+GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
+GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
+
+## Save GP2 plot in main directory and display it in RStudio viewer
+save_and_view_GP2_plot(GP2_plotall_data, vheight = 1100)
