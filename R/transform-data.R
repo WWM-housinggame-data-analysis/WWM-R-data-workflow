@@ -100,18 +100,18 @@ retrieve_pivot_table <- function(df, selected_columns, column_name, column_value
   return(pivoted_df)
 }
 
-retrieve_mean_table <- function(df, group_col, df_cols) {
+retrieve_mean_table <- function(df, group_col, pivoted_cols) {
   
-  if (is.null(df_cols)) {
-    names(df_cols) <- df_cols
+  if (is.null(pivoted_cols)) {
+    names(pivoted_cols) <- pivoted_cols
     
   } else {
-    names(df_cols)[is.na(names(df_cols))] <- df_cols[is.na(names(df_cols))]
+    names(pivoted_cols)[is.na(names(pivoted_cols))] <- pivoted_cols[is.na(names(pivoted_cols))]
   }
   
-  lookup <- tibble::enframe(df_cols, name = "mean_label", value = "column_name")
+  lookup <- tibble::enframe(pivoted_cols, name = "mean_label", value = "column_name")
   
-  pivoted_df <- retrieve_pivot_table(df, df_cols, "column_name", "column_value")
+  pivoted_df <- retrieve_pivot_table(df, pivoted_cols, "column_name", "column_value")
   
   mean_df <- pivoted_df |>
     dplyr::group_by(dplyr::across(tidyselect::all_of(c(group_col, "column_name")))) |>

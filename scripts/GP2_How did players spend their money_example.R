@@ -85,24 +85,31 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP1-plot.R")))
 
 gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
 
-## Preprocess tables available for each session, being returned in a single list with same  overarching structure as the input gamesession_data_list
+## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
+## Select game session for analysis
 selected_gamesession <- names(preprocess_data_list)[length(names(preprocess_data_list))]
+
+## Select table group for analysis. To select all define with SELECT_ALL
 selected_table <- SELECT_ALL
+
+## Select cost types to be included in analysis. To select all define with SELECT_ALL
 selected_cost_types <- SELECT_ALL
 
+## Retrieve income distribution data frame to be used for data visualization
 income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
-summary_df <- retrieve_summary_table(income_dist_df, selected_table)
+## Retrieve summary table 
+GP1_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
   
-GP1_plotall_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
-GP1_plot1_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
-GP1_plot2_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
-GP1_plot3_data <- prepare_GP1_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
+GP1_plotall_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
+GP1_plot1_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
+GP1_plot2_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
+GP1_plot3_data <- retrieve_GP1_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
 
 save_and_view_GP1_plot(GP1_plotall_data, vheight = 1100)
