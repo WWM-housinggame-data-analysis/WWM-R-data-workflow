@@ -244,3 +244,61 @@ create_GP1_plotly <- function(plot_data) {
   
   GP1_plot
 }
+
+
+view_image_in_rstudio <- function(image_path) {
+  html_file <- tempfile(fileext = ".html")
+  
+  html <- sprintf(
+    '<html>
+       <head>
+         <style>
+           body { margin: 0; background: #ffffff; }
+           img  { width: 100%%; height: auto; }
+         </style>
+       </head>
+       <body>
+         <img src="%s" />
+       </body>
+     </html>',
+    basename(image_path)
+  )
+  
+  writeLines(html, html_file)
+  
+  # Copy image next to HTML so relative paths work
+  file.copy(image_path,
+            file.path(dirname(html_file), basename(image_path)),
+            overwrite = TRUE)
+  
+  rstudioapi::viewer(html_file)
+}
+
+
+save_and_view_GP1_plot <- function(plot_data,
+                                   file = "GP1_plot.png",
+                                   vwidth = 1600,
+                                   vheight = 800) {
+
+  # 1. Create the interactive Plotly widget
+  GP1_plot <- create_GP1_plotly(plot_data)
+  stopifnot(inherits(GP1_plot, "htmlwidget"))
+  
+  # 2. Save to a temporary HTML file
+  html_file <- tempfile(fileext = ".html")
+  htmlwidgets::saveWidget(GP1_plot, html_file, selfcontained = TRUE)
+  
+  # 3. Convert the HTML to a PNG using webshot2 (NO Python required)
+  webshot2::webshot(
+    url = html_file,
+    file = file,
+    vwidth = vwidth,
+    vheight = vheight
+  )
+  
+  # 4. Display PNG INSIDE RStudio Viewer
+  view_image_in_rstudio(normalizePath(file))
+  
+  # 5. Return the PNG file path
+  return(invisible(file))
+}
