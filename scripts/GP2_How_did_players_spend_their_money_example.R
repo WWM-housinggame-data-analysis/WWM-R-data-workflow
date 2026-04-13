@@ -1,0 +1,141 @@
+
+# ------------------------------------------------------------
+# Script: scripts/GP2_How did players spend their money_example.R
+# Purpose: Example script to run data analysis and visualization for GP2 in RStudio
+#
+# Working directory:
+#   Project root (see here::here())
+#
+# Inputs:
+#   - data/raw/*.csv
+#
+# Outputs:
+#   - data/raw/*.xlsx
+#   - data/preprocessed/*.xlsx
+#   - data/results/*.png
+#
+# How to run:
+#   Rscript "scripts/GP2_How did players spend their money_example.R"
+#
+# Author: João Guimarães
+# Created: 2026-04-10
+# Maintainer: Juliette Cortes Arevalo and Alex Verbraeck
+# ------------------------------------------------------------
+
+
+# Load necessary libraries ----
+
+## Load for handling file location
+library(here)
+
+## Load importing/exporting data
+library(readxl)
+library(readr)
+library(openxlsx)
+library(writexl)
+library(yaml)
+
+## Load for data manipulation
+library(sqldf)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(tibble)
+
+## Load for data visualisation
+library(ggplot2)
+library(ggtext)
+library(shiny)
+library(bslib)
+library(plotly)
+library(webshot2)
+library(htmlwidgets)
+library(rstudioapi)
+
+
+
+# Set defaults ----
+## Set all default variables or global options and all the path variables.
+
+## Set path to source files with functions
+FUNCTION_PATH <- file.path("R")
+
+## Load all default variables or global options. Please check this file for visual check loaded variables 
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+
+
+# Source files ----
+
+## Load required functions
+
+### Load functions required for listing, uploading and exporting data
+source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
+
+### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
+source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
+
+source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
+
+### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
+
+### Load functions required to handle dashboard filter actions
+source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
+
+### Load functions required to setup plotly visualizations
+source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
+
+
+# Data Workflow ----
+
+## Read all tables in the database folders into a single list variable:
+##
+## list(gamesession_data_list)
+##  |
+##  |-- list(gamessession_data_session1)
+##  |     |
+##  |     |-- df(table1)
+##  |     |-- df(table2)
+##  |     |-- df(table3)
+##  |     ...
+##  |
+##  |-- list(gamessession_data_session2)
+##  |     |
+##       ...
+##  ...
+##
+
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+
+## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
+preprocess_data_list <- list()
+
+for (session_name in names(gamesession_data_list)) {
+  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+}
+
+## Select game session for analysis
+selected_gamesession <- names(preprocess_data_list)[length(names(preprocess_data_list))]
+
+## Select table group for analysis. To select all define with SELECT_ALL
+selected_table <- SELECT_ALL
+
+## Select cost types to be included in analysis. To select all define with SELECT_ALL
+selected_cost_types <- SELECT_ALL
+
+## Retrieve income distribution data frame to be used for data visualization
+income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
+
+## Retrieve summary table for data plotted in analysis for GP2
+GP2_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
+
+## Retrieve data to be plotted in analysis for GP2.
+## Data is retrieved for cost type and table group selection defined above.
+## Data representative of the whole game session and of each game round is retrieved, respectively.
+GP2_plotall_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
+GP2_plot1_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
+GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
+GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
+
+## Save GP2 plot in main directory and display it in RStudio viewer
+save_and_view_GP2_plot(GP2_plotall_data, vheight = 1100)
