@@ -36,6 +36,7 @@ SELECTED_USERNAME <- SELECTED_USERTABLE
 FUNCTION_PATH <- file.path("R")
 RAWDATA_PATH <- file.path("data", "raw-dbtables")
 PREPRDATA_PATH <- file.path("data", "preprocessed-dbtables")
+RESULTS_PATH <- file.path("data", "results")
 
 SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
                        "playerround", "player","measuretype",

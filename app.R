@@ -1,7 +1,8 @@
 
 # ------------------------------------------------------------
 # Script: ./app.R
-# Purpose: 
+# Purpose: Run WhereWeMove Shiny Dashboard.
+# Details: Current dashboard version support visuals for GP2 (only)
 #
 # Working directory:
 #   Project root (see here::here())
@@ -13,7 +14,7 @@
 #   - data/raw/*.xlsx
 #   - data/preprocessed/*.xlsx
 #
-# How to run:
+# How to run: Click on "Run App" or run  ```Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"``` in the terminal.
 #
 # Author: João Guimarães
 # Created: 2026-04-10
@@ -206,7 +207,7 @@ server <- function(input, output, session) {
   add_global_reset_observer(input, session)
   
 
-  summary_df <- shiny::reactive({retrieve_summary_table(income_dist_df(), selected_table())})
+  summary_df <- shiny::reactive({retrieve_GP2_summary_table(income_dist_df(), selected_table())})
   
   
   GP2_plotall_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })

@@ -127,7 +127,10 @@ selected_cost_types <- SELECT_ALL
 income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
+GP2_summary_df <- retrieve_GP2_summary_table(income_dist_df, selected_table)
+
+# Export Summary table
+write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
 
 ## Retrieve data to be plotted in analysis for GP2.
 ## Data is retrieved for cost type and table group selection defined above.
@@ -138,4 +141,4 @@ GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, se
 GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
-save_and_view_GP2_plot(GP2_plotall_data, vheight = 1100)
+save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, "GP2_plot.png"),  vheight = 1100)
