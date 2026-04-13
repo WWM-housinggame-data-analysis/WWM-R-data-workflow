@@ -46,7 +46,8 @@ list_matching_dbtables <- function(folder_path, subfolder_pattern) {
   subfolder_paths <- list_matching_subfolders(folder_path, subfolder_pattern)
   
   # Check IMPORTED_TABLE_TYPE exists
-  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))
+  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))),
+            "No subfolder paths found" = length(subfolder_paths) > 0)
   
   ## Create list to store dbtables found within each subfolder
   dbtable_filenames <- list()
