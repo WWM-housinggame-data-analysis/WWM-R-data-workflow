@@ -10,10 +10,6 @@
 # Inputs:
 #   - data/raw/*.csv
 #
-# Outputs:
-#   - data/raw/*.xlsx
-#   - data/preprocessed/*.xlsx
-#
 # How to run: Click on "Run App" or run  ```Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"``` in the terminal.
 #
 # Author: João Guimarães
@@ -65,18 +61,19 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 ### Load functions required for listing, uploading and exporting data
 source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
-### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
+### Load functions containing the preprocessing of data tables coming from the database (i.e. formatting existing adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
+### Load functions for designing shiny ui and server to be deployed
 source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
 
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
-### Load functions required to handle dashboard filter actions
+### Load functions required to handle dashboard user interactivity
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
-### Load functions required to setup plotly visualizations
+### Load functions required to create GP2 plotly visualizations
 source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
 
@@ -99,59 +96,71 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##  ...
 ##
 
+##R/list-upload-export-dbtables.R
 gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
+  
+  ##R/preprocess-dbtables.R
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-## Define default game session
-
-default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
 
 
 # Shiny App ----
 
+## Define default game session
+
+##R/interact-data.R
+default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
+
+
+## Design Dashboard User Interface
+### All local functions stored in R/design-shiny-ui-server.R
+### Explanations for arguments with CONSTANTS assigned to them is provided in constants.R
+
 ui <- bslib::page_navbar(
+  
+  ## Header settings
   title = HEADER_TITLE,
   navbar_options = APP_NAVBAR_OPTIONS,
-  
   bslib::nav_panel(
     title = HEADER_TAB1,
     bslib::page_sidebar(
+      
+      ## Sidebar Settings
       sidebar = bslib::sidebar(
         title = SIDEBAR1_TITLE,
         bg = SIDEBAR1_BACKCOLOR,
         bslib::accordion(
           multiple = EXPAND_MULTIPLE_ACCORDIONS,
           
-          bslib::accordion_panel("1: Select Game Session",
-                          mod_input_reset_ui("gamesession", "Session")
+          bslib::accordion_panel(SESSION_ACCORDION_TITLE,
+                          mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
+                          ),
+          
+          bslib::accordion_panel(GROUP_ACCORDION_TITLE,
+                                 mod_input_reset_ui(GROUP_ACCORDION_VALUE, GROUP_ACCORDION_LABEL)
+                                 ),
+          
+          bslib::accordion_panel(ADDRESS_ACCORDION_TITLE
+                                 ),
+          
+          bslib::accordion_panel(SEGMENT_ACCORDION_TITLE,
+                          mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, (SEGMENT_ACCORDION_LABEL)
                           
           ),
           
-          bslib::accordion_panel("2: Select Table",
-                          mod_input_reset_ui("table", "Table")
-          ),
-          
-          bslib::accordion_panel("3: Where players live"),
-          
-          # checkboxGroupInput and its reset
-          bslib::accordion_panel("4: Player spending",
-                          mod_multicheck_reset_ui("cost_types", "Cost Types:")
-                          
-          ),
-          
-          bslib::accordion_panel("5: Selected measures"),
-          bslib::accordion_panel("6: Flood in gameplay"),
-          bslib::accordion_panel("7: Damage & satisfaction")
+          bslib::accordion_panel(MEASURES_ACCORDION_TITLE),
+          bslib::accordion_panel(FLOOD_ACCORDION_TITLE),
+          bslib::accordion_panel(SATISFACTION_ACCORDION_TITLE)
         ),
         
         
-        # Optional: a global reset all button for the whole sidebar
+        ## Button to reset all sidebar filters to default
         RESET_ALL_BUTTON
         
       ),

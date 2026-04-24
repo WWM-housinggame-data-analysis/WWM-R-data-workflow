@@ -227,6 +227,24 @@ SIDEBAR1_BACKCOLOR <- "white"
 
 EXPAND_MULTIPLE_ACCORDIONS <- TRUE
 
+SESSION_ACCORDION_TITLE <- "1: Select Game Session"
+SESSION_ACCORDION_LABEL <- "Session"
+SESSION_ACCORDION_VALUE <- "gamesession"
+
+GROUP_ACCORDION_TITLE <- "2: Select Table"
+GROUP_ACCORDION_LABEL <- "Table"
+GROUP_ACCORDION_VALUE <- "table"
+
+ADDRESS_ACCORDION_TITLE <- "3: Where players live"
+
+SEGMENT_ACCORDION_TITLE <- "4: Player spending"
+SEGMENT_ACCORDION_LABEL <- "Cost Types"
+SEGMENT_ACCORDION_VALUE <- "cost_types"
+
+MEASURES_ACCORDION_TITLE <- "5: Selected measures"
+FLOOD_ACCORDION_TITLE <- "6: Flood in gameplay"
+SATISFACTION_ACCORDION_TITLE <- "7: Damage & satisfaction"
+
 # Apply a top margin of 1rem (typically 16px) to the div.
 DIV_16PX_MARGIN <- "mt-3"
 
