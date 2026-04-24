@@ -209,7 +209,7 @@ K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
-INTERM_ROUNDS <- as.character(1:3)
+#INTERM_ROUNDS <- as.character(1:3)
 
 HEADER_TITLE <- "WhereWeMove Dashboard"
 HEADER_BACKCOLOR <- "#2D89C8"
@@ -264,10 +264,11 @@ HEADER_TAB2 <- "Game Settings"
 
 MAIN_PANEL_WIDTH <- 10
 
-ROUND_ACCORDION_ID <- c("all", "r1", "r2", "r3")
-names(ROUND_ACCORDION_ID) <- c("All Rounds", "Round 1", "Round 2", "Round 3")
+ROUND_ACCORDION_IDPREF <- "r"
+names(ROUND_ACCORDION_IDPREF) <- "Round"
+ROUND_ACCORDION_LABELALL <- "All Rounds"
 
-DEFAULT_OPEN_ACCORDIONS <- names(ROUND_ACCORDION_ID)[1]
+DEFAULT_OPEN_ACCORDIONS <- ROUND_ACCORDION_LABELALL
 
 REFS_HEADER_TITLE <- "Links"
 REFS_HEADER_ALIGN <- "right"

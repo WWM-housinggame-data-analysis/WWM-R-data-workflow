@@ -323,6 +323,127 @@ make_cost_types_reactive <- function(id = "cost_types") {
 }
 
 # ------------------------------------------------------------------------------
+# Module 1: derive round_ids + round_labels from income_dist_df()
+# ------------------------------------------------------------------------------
+
+make_rounds_reactive <- function(df) {
+  
+  shiny::reactive({
+    
+    shiny::req(nrow(df) > 0)
+    
+    rounds <- df |>
+      dplyr::pull(ROUND_NUMBER_COL) |>
+      unique() |>
+      sort()
+    
+    stopifnot(length(rounds) > 2)
+    
+    rounds <- as.character(rounds[2:(length(rounds)-1)])
+    
+    # Optional check against expected intermediate rounds
+    if (exists("INTERM_ROUNDS", inherits = TRUE) &&
+        !identical(rounds, INTERM_ROUNDS)) {
+      warning(
+        "Detected rounds differ from INTERM_ROUNDS. ",
+        "Proceeding with detected rounds."
+      )
+    }
+    
+    # IDs used internally (All + r1, r2, ...)
+    round_ids <- c(SELECT_ALL,
+                   paste0(ROUND_ACCORDION_IDPREF, rounds)
+    )
+    
+    names(round_ids) <- c(ROUND_ACCORDION_LABELALL)
+    
+    round_ids
+  })
+}
+
+# Reusable accordion panel for a game round (or SELECT_ALL)
+make_round_panel <- function(round_ids) {
+  
+  # ---- build panels ----
+  panels <- lapply(unname(round_ids), function(rid) {
+    
+    label <- names(round_ids)[round_ids == rid]
+    
+    # Build output IDs dynamically
+    plot_id    <- paste0("plot_",  rid)
+    summary_id <- paste0("summary_", rid)
+    table_id   <- paste0("table_",   rid)
+    
+    bslib::accordion_panel(
+      title = label,
+      shiny::tabsetPanel(
+        type = "tabs",
+        shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+        shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
+        shiny::tabPanel("Table",   shiny::tableOutput(table_id))
+      )
+    )
+  })
+  
+  # ---- return accordion ----
+  return(bslib::accordion,
+         c(list(open = DEFAULT_OPEN_ACCORDIONS), panels)
+  )
+  
+}
+
+
+
+observe({
+  
+  df <- income_dist_df()
+  shiny::req(nrow(df) > 0)
+  
+  rounds <- df |>
+    dplyr::pull(GAME_ROUND_COL) |>
+    unique() |>
+    sort() |>
+    as.character()
+  
+  all_rounds <- c(SELECT_ALL, rounds)
+  
+  lapply(all_rounds, function(r) {
+    
+    local({
+      
+      rid <- r
+      
+      plot_id    <- paste0("plot_", rid)
+      summary_id <- paste0("summary_", rid)
+      table_id   <- paste0("table_", rid)
+      
+      plot_data <- reactive({
+        retrieve_GP2_plot_data(
+          income_dist_df(),
+          selected_cost_types(),
+          selected_table(),
+          game_round = if (rid == SELECT_ALL) SELECT_ALL else rid,
+          fill_values_all
+        )
+      })
+      
+      output[[plot_id]] <- plotly::renderPlotly({
+        create_GP2_plotly(plot_data())
+      })
+      
+      output[[summary_id]] <- shiny::renderPrint({
+        summary(summary_df())
+      })
+      
+      output[[table_id]] <- shiny::renderTable({
+        summary_df()
+      })
+    })
+  })
+})
+
+
+# ------------------------------------------------------------------------------
 # Helper: global reset-all-filters observer
 # 
 # Call this inside your server() AFTER modules have registered their
