@@ -222,30 +222,6 @@ server <- function(input, output, session) {
 
   summary_df <- shiny::reactive({retrieve_GP2_summary_table(income_dist_df(), selected_table())})
   
-  
-  # GP2_plotall_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
-  # GP2_plot1_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
-  # GP2_plot2_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
-  # GP2_plot3_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
-  # 
-  # # Connect plots
-  # output$plot_all <- plotly::renderPlotly({ create_GP2_plotly(GP2_plotall_data()) })
-  # output$plot_r1  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot1_data()) })
-  # output$plot_r2  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot2_data()) })
-  # output$plot_r3  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot3_data()) })
-  # 
-  # # Summaries (update based on color_by choice)
-  # output$summary_all <- shiny::renderPrint({ summary(summary_df()) })
-  # output$summary_r1  <- shiny::renderPrint({ summary(summary_df()) })
-  # output$summary_r2  <- shiny::renderPrint({ summary(summary_df()) })
-  # output$summary_r3  <- shiny::renderPrint({ summary(summary_df()) })
-  # 
-  # # Tables (update based on color_by choice)
-  # output$table_all <- shiny::renderTable({ summary_df() })
-  # output$table_r1  <- shiny::renderTable({ summary_df() })
-  # output$table_r2  <- shiny::renderTable({ summary_df() })
-  # output$table_r3  <- shiny::renderTable({ summary_df() })
-  
   observe({
     
     shiny::req(length(round_ids()) > 0)

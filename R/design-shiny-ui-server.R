@@ -340,26 +340,37 @@ make_rounds_reactive <- function(df) {
       sort()
     
     # work on returning no round panels
-    stopifnot(length(rounds) > 2)
-    
-    rounds <- as.character(rounds[2:(length(rounds)-1)])
-    
-    # Optional check against expected intermediate rounds
-    if (exists("INTERM_ROUNDS", inherits = TRUE) &&
-        !identical(rounds, INTERM_ROUNDS)) {
+    if (length(rounds) <= 2) {
+      
       warning(
-        "Detected rounds differ from INTERM_ROUNDS. ",
+        "No intermediate rounds found",
         "Proceeding with detected rounds."
       )
+      
+      round_ids <- SELECT_ALL
+      names(round_ids) <- ROUND_ACCORDION_LABELALL
+      
+    } else {
+      
+      interm_rounds <- as.character(rounds[2:(length(rounds)-1)])
+      
+      # Optional check against expected intermediate rounds
+      if (exists("INTERM_ROUNDS", inherits = TRUE) &&
+          !identical(interm_rounds, INTERM_ROUNDS)) {
+        warning(
+          "Detected intermediate rounds differ from INTERM_ROUNDS. ",
+          "Proceeding with detected rounds."
+        )
+      }
+      
+      # IDs used internally (All + r1, r2, ...)
+      round_ids <- c(SELECT_ALL,
+                     paste0(ROUND_ACCORDION_IDPREF, interm_rounds)
+      )
+      
+      names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
+                            paste(names(ROUND_ACCORDION_IDPREF), interm_rounds))
     }
-    
-    # IDs used internally (All + r1, r2, ...)
-    round_ids <- c(SELECT_ALL,
-                   paste0(ROUND_ACCORDION_IDPREF, rounds)
-    )
-    
-    names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
-                          paste(names(ROUND_ACCORDION_IDPREF), rounds))
     
     round_ids
   })
@@ -368,8 +379,7 @@ make_rounds_reactive <- function(df) {
 # Reusable accordion panel for a game round (or SELECT_ALL)
 make_round_panels <- function(round_ids) {
   
-  # work on returning no round panels
-  shiny::req(length(round_ids) > 2)
+  shiny::req(length(round_ids) > 0)
   
   # ---- build panels ----
   panels <- lapply(unname(round_ids), function(rid) {
