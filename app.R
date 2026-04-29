@@ -220,9 +220,7 @@ server <- function(input, output, session) {
   add_global_reset_observer(input, session)
   
 
-  summary_df <- shiny::reactive({retrieve_GP2_summary_table(income_dist_df(), selected_table())})
-  
-  observe({
+  shiny::observe({
     
     shiny::req(length(round_ids()) > 0)
     
@@ -238,7 +236,7 @@ server <- function(input, output, session) {
         rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
         
         
-        plot_data <- reactive({
+        plot_data <- shiny::reactive({
           retrieve_GP2_plot_data(
             income_dist_df(),
             selected_cost_types(),
@@ -248,16 +246,27 @@ server <- function(input, output, session) {
           )
         })
         
+        summary_tables <- shiny::reactive({
+          retrieve_GP2_summary_tables(
+            income_dist_df(),
+            selected_cost_types(),
+            selected_table(),
+            game_round = rid_value)
+          })
+        
+        num_summary_df <- shiny::reactive({summary_tables()$num_df})
+        kval_summary_df <- shiny::reactive({summary_tables()$kval_df})
+        
         output[[plot_id]] <- plotly::renderPlotly({
           create_GP2_plotly(plot_data())
         })
         
         output[[summary_id]] <- shiny::renderPrint({
-          summary(summary_df())
+          summary(num_summary_df())
         })
         
         output[[table_id]] <- shiny::renderTable({
-          summary_df()
+          kval_summary_df()
         })
       })
     })

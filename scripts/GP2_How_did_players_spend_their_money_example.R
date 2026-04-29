@@ -127,7 +127,7 @@ selected_cost_types <- SELECT_ALL
 income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_GP2_summary_table(income_dist_df, selected_table)
+GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
 
 # Export Summary table
 write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
