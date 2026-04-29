@@ -16,24 +16,24 @@ mod_input_reset_ui <- function(id, label) {
 }
 
 
-# Reusable accordion panel for a game round (or SELECT_ALL)
-make_round_panel <- function(round_id, label) {
-  
-  # Build output IDs dynamically
-  plot_id    <- paste0("plot_",  round_id)
-  summary_id <- paste0("summary_", round_id)
-  table_id   <- paste0("table_",   round_id)
-  
-  bslib::accordion_panel(
-    title = label,
-    shiny::tabsetPanel(
-      type = "tabs",
-      shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
-      shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
-      shiny::tabPanel("Table",   shiny::tableOutput(table_id))
-    )
-  )
-}
+# # Reusable accordion panel for a game round (or SELECT_ALL)
+# make_round_panel <- function(round_id, label) {
+#   
+#   # Build output IDs dynamically
+#   plot_id    <- paste0("plot_",  round_id)
+#   summary_id <- paste0("summary_", round_id)
+#   table_id   <- paste0("table_",   round_id)
+#   
+#   bslib::accordion_panel(
+#     title = label,
+#     shiny::tabsetPanel(
+#       type = "tabs",
+#       shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+#       shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
+#       shiny::tabPanel("Table",   shiny::tableOutput(table_id))
+#     )
+#   )
+# }
 
 
 # Update your mod_input_reset_server() so it skips UI updates until there are actual choices, and ensures the selected value is in those choices
@@ -330,6 +330,8 @@ make_rounds_reactive <- function(df) {
   
   shiny::reactive({
     
+    df <- df()
+    
     shiny::req(nrow(df) > 0)
     
     rounds <- df |>
@@ -337,6 +339,7 @@ make_rounds_reactive <- function(df) {
       unique() |>
       sort()
     
+    # work on returning no round panels
     stopifnot(length(rounds) > 2)
     
     rounds <- as.character(rounds[2:(length(rounds)-1)])
@@ -355,14 +358,18 @@ make_rounds_reactive <- function(df) {
                    paste0(ROUND_ACCORDION_IDPREF, rounds)
     )
     
-    names(round_ids) <- c(ROUND_ACCORDION_LABELALL)
+    names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
+                          paste(names(ROUND_ACCORDION_IDPREF), rounds))
     
     round_ids
   })
 }
 
 # Reusable accordion panel for a game round (or SELECT_ALL)
-make_round_panel <- function(round_ids) {
+make_round_panels <- function(round_ids) {
+  
+  # work on returning no round panels
+  shiny::req(length(round_ids) > 2)
   
   # ---- build panels ----
   panels <- lapply(unname(round_ids), function(rid) {
@@ -386,61 +393,14 @@ make_round_panel <- function(round_ids) {
   })
   
   # ---- return accordion ----
-  return(bslib::accordion,
-         c(list(open = DEFAULT_OPEN_ACCORDIONS), panels)
+  do.call(bslib::accordion,
+         c(
+           list(open = DEFAULT_OPEN_ACCORDIONS),
+           panels
+           )
   )
   
 }
-
-
-
-observe({
-  
-  df <- income_dist_df()
-  shiny::req(nrow(df) > 0)
-  
-  rounds <- df |>
-    dplyr::pull(GAME_ROUND_COL) |>
-    unique() |>
-    sort() |>
-    as.character()
-  
-  all_rounds <- c(SELECT_ALL, rounds)
-  
-  lapply(all_rounds, function(r) {
-    
-    local({
-      
-      rid <- r
-      
-      plot_id    <- paste0("plot_", rid)
-      summary_id <- paste0("summary_", rid)
-      table_id   <- paste0("table_", rid)
-      
-      plot_data <- reactive({
-        retrieve_GP2_plot_data(
-          income_dist_df(),
-          selected_cost_types(),
-          selected_table(),
-          game_round = if (rid == SELECT_ALL) SELECT_ALL else rid,
-          fill_values_all
-        )
-      })
-      
-      output[[plot_id]] <- plotly::renderPlotly({
-        create_GP2_plotly(plot_data())
-      })
-      
-      output[[summary_id]] <- shiny::renderPrint({
-        summary(summary_df())
-      })
-      
-      output[[table_id]] <- shiny::renderTable({
-        summary_df()
-      })
-    })
-  })
-})
 
 
 # ------------------------------------------------------------------------------
