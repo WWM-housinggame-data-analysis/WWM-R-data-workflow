@@ -150,7 +150,7 @@ ui <- bslib::page_navbar(
                                  ),
           
           bslib::accordion_panel(SEGMENT_ACCORDION_TITLE,
-                          mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, (SEGMENT_ACCORDION_LABEL)
+                          mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, SEGMENT_ACCORDION_LABEL)
                           
           ),
           
@@ -166,13 +166,7 @@ ui <- bslib::page_navbar(
       ),
       
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
-                       bslib::accordion(
-                         open = DEFAULT_OPEN_ACCORDIONS,
-                         make_round_panel(ROUND_ACCORDION_ID[1], names(ROUND_ACCORDION_ID)[1]),
-                         make_round_panel(ROUND_ACCORDION_ID[2], names(ROUND_ACCORDION_ID)[2]),
-                         make_round_panel(ROUND_ACCORDION_ID[3], names(ROUND_ACCORDION_ID)[3]),
-                         make_round_panel(ROUND_ACCORDION_ID[4], names(ROUND_ACCORDION_ID)[4])
-                       )
+                       uiOutput("rounds_ui")
       )
     )
   ),
@@ -210,6 +204,16 @@ server <- function(input, output, session) {
   selected_table <- role_table$selected_table
   
   
+  # ---- Dynamic rounds (IDs + labels) ----
+  round_ids <- make_rounds_reactive(income_dist_df)
+  
+  
+  # ---- Dynamic UI ----
+  output$rounds_ui <- shiny::renderUI({
+    make_round_panels(round_ids())
+  })
+  
+  
   selected_cost_types <- make_cost_types_reactive(id = "cost_types")
     
   # global "Reset all filters"
@@ -218,29 +222,46 @@ server <- function(input, output, session) {
 
   summary_df <- shiny::reactive({retrieve_GP2_summary_table(income_dist_df(), selected_table())})
   
-  
-  GP2_plotall_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
-  GP2_plot1_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
-  GP2_plot2_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
-  GP2_plot3_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
-  
-  # Connect plots
-  output$plot_all <- plotly::renderPlotly({ create_GP2_plotly(GP2_plotall_data()) })
-  output$plot_r1  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot1_data()) })
-  output$plot_r2  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot2_data()) })
-  output$plot_r3  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot3_data()) })
-  
-  # Summaries (update based on color_by choice)
-  output$summary_all <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r1  <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r2  <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r3  <- shiny::renderPrint({ summary(summary_df()) })
-  
-  # Tables (update based on color_by choice)
-  output$table_all <- shiny::renderTable({ summary_df() })
-  output$table_r1  <- shiny::renderTable({ summary_df() })
-  output$table_r2  <- shiny::renderTable({ summary_df() })
-  output$table_r3  <- shiny::renderTable({ summary_df() })
+  observe({
+    
+    shiny::req(length(round_ids()) > 0)
+    
+    lapply(unname(round_ids()), function(rid) {
+      
+      local({
+
+        plot_id    <- paste0("plot_", rid)
+        summary_id <- paste0("summary_", rid)
+        table_id   <- paste0("table_", rid)
+        
+        
+        rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
+        
+        
+        plot_data <- reactive({
+          retrieve_GP2_plot_data(
+            income_dist_df(),
+            selected_cost_types(),
+            selected_table(),
+            game_round = rid_value,
+            fill_values_all
+          )
+        })
+        
+        output[[plot_id]] <- plotly::renderPlotly({
+          create_GP2_plotly(plot_data())
+        })
+        
+        output[[summary_id]] <- shiny::renderPrint({
+          summary(summary_df())
+        })
+        
+        output[[table_id]] <- shiny::renderTable({
+          summary_df()
+        })
+      })
+    })
+  })
 }
 
 shiny::shinyApp(ui, server)

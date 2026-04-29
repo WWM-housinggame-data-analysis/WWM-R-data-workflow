@@ -16,24 +16,24 @@ mod_input_reset_ui <- function(id, label) {
 }
 
 
-# Reusable accordion panel for a game round (or SELECT_ALL)
-make_round_panel <- function(round_id, label) {
-  
-  # Build output IDs dynamically
-  plot_id    <- paste0("plot_",  round_id)
-  summary_id <- paste0("summary_", round_id)
-  table_id   <- paste0("table_",   round_id)
-  
-  bslib::accordion_panel(
-    title = label,
-    shiny::tabsetPanel(
-      type = "tabs",
-      shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
-      shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
-      shiny::tabPanel("Table",   shiny::tableOutput(table_id))
-    )
-  )
-}
+# # Reusable accordion panel for a game round (or SELECT_ALL)
+# make_round_panel <- function(round_id, label) {
+#   
+#   # Build output IDs dynamically
+#   plot_id    <- paste0("plot_",  round_id)
+#   summary_id <- paste0("summary_", round_id)
+#   table_id   <- paste0("table_",   round_id)
+#   
+#   bslib::accordion_panel(
+#     title = label,
+#     shiny::tabsetPanel(
+#       type = "tabs",
+#       shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+#       shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
+#       shiny::tabPanel("Table",   shiny::tableOutput(table_id))
+#     )
+#   )
+# }
 
 
 # Update your mod_input_reset_server() so it skips UI updates until there are actual choices, and ensures the selected value is in those choices
@@ -321,6 +321,97 @@ make_cost_types_reactive <- function(id = "cost_types") {
   
   return(selected_cost_types)
 }
+
+# ------------------------------------------------------------------------------
+# Module 1: derive round_ids + round_labels from income_dist_df()
+# ------------------------------------------------------------------------------
+
+make_rounds_reactive <- function(df) {
+  
+  shiny::reactive({
+    
+    df <- df()
+    
+    shiny::req(nrow(df) > 0)
+    
+    rounds <- df |>
+      dplyr::pull(ROUND_NUMBER_COL) |>
+      unique() |>
+      sort()
+    
+    # work on returning no round panels
+    if (length(rounds) <= 2) {
+      
+      warning(
+        "No intermediate rounds found",
+        "Proceeding with detected rounds."
+      )
+      
+      round_ids <- SELECT_ALL
+      names(round_ids) <- ROUND_ACCORDION_LABELALL
+      
+    } else {
+      
+      interm_rounds <- as.character(rounds[2:(length(rounds)-1)])
+      
+      # Optional check against expected intermediate rounds
+      if (exists("INTERM_ROUNDS", inherits = TRUE) &&
+          !identical(interm_rounds, INTERM_ROUNDS)) {
+        warning(
+          "Detected intermediate rounds differ from INTERM_ROUNDS. ",
+          "Proceeding with detected rounds."
+        )
+      }
+      
+      # IDs used internally (All + r1, r2, ...)
+      round_ids <- c(SELECT_ALL,
+                     paste0(ROUND_ACCORDION_IDPREF, interm_rounds)
+      )
+      
+      names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
+                            paste(names(ROUND_ACCORDION_IDPREF), interm_rounds))
+    }
+    
+    round_ids
+  })
+}
+
+# Reusable accordion panel for a game round (or SELECT_ALL)
+make_round_panels <- function(round_ids) {
+  
+  shiny::req(length(round_ids) > 0)
+  
+  # ---- build panels ----
+  panels <- lapply(unname(round_ids), function(rid) {
+    
+    label <- names(round_ids)[round_ids == rid]
+    
+    # Build output IDs dynamically
+    plot_id    <- paste0("plot_",  rid)
+    summary_id <- paste0("summary_", rid)
+    table_id   <- paste0("table_",   rid)
+    
+    bslib::accordion_panel(
+      title = label,
+      shiny::tabsetPanel(
+        type = "tabs",
+        shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+        shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
+        shiny::tabPanel("Table",   shiny::tableOutput(table_id))
+      )
+    )
+  })
+  
+  # ---- return accordion ----
+  do.call(bslib::accordion,
+         c(
+           list(open = DEFAULT_OPEN_ACCORDIONS),
+           panels
+           )
+  )
+  
+}
+
 
 # ------------------------------------------------------------------------------
 # Helper: global reset-all-filters observer
