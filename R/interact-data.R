@@ -1,4 +1,12 @@
+#R/interact-data.R
 
+## Set all default variables or global options and all the path variables.
+
+## Set path to source files with functions
+FUNCTION_PATH <- file.path("R")
+
+## Load all default variables or global options. Please check this file for visual check loaded variables 
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 # -----------------------------------------------
 # Robust selection of configuration defaults

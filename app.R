@@ -64,8 +64,11 @@ source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load functions containing the preprocessing of data tables coming from the database (i.e. formatting existing adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-### Load functions for designing shiny ui and server to be deployed
-source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
+### Load functions for designing shiny ui to be deployed
+source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui.R")))
+
+### Load functions for making shiny data dynamic
+source(here::here(file.path(FUNCTION_PATH, "make-data-reactive.R")))
 
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
@@ -166,7 +169,7 @@ ui <- bslib::page_navbar(
       ),
       
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
-                       uiOutput("rounds_ui")
+                       shiny::uiOutput("rounds_ui")
       )
     )
   ),

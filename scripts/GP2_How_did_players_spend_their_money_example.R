@@ -74,8 +74,6 @@ source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
-
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
