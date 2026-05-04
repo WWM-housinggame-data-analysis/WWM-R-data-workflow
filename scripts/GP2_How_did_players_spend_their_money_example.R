@@ -103,7 +103,7 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
 preprocess_data_list <- list()

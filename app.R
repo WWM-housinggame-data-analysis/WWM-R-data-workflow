@@ -100,7 +100,7 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##
 
 ##R/list-upload-export-dbtables.R
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
@@ -122,7 +122,7 @@ default_gamesession <- process_config_selection(names(preprocess_data_list), SEL
 
 
 ## Design Dashboard User Interface
-### All local functions stored in R/design-shiny-ui-server.R
+### All local functions stored in R/design-shiny-ui.R
 ### Explanations for arguments with CONSTANTS assigned to them is provided in constants.R
 
 ui <- bslib::page_navbar(
@@ -130,6 +130,8 @@ ui <- bslib::page_navbar(
   ## Header settings
   title = HEADER_TITLE,
   navbar_options = APP_NAVBAR_OPTIONS,
+  
+  ## GP2 Panel Settings
   bslib::nav_panel(
     title = HEADER_TAB1,
     bslib::page_sidebar(
@@ -141,24 +143,33 @@ ui <- bslib::page_navbar(
         bslib::accordion(
           multiple = EXPAND_MULTIPLE_ACCORDIONS,
           
+          ## Game Session Filter Details
           bslib::accordion_panel(SESSION_ACCORDION_TITLE,
                           mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
                           ),
           
+          ## Table Group Filter Details
           bslib::accordion_panel(GROUP_ACCORDION_TITLE,
                                  mod_input_reset_ui(GROUP_ACCORDION_VALUE, GROUP_ACCORDION_LABEL)
                                  ),
           
+          ## Players' Game Address Filter Details
           bslib::accordion_panel(ADDRESS_ACCORDION_TITLE
                                  ),
           
+          ## Players' Costs Filter Details (Used to segment bars)
           bslib::accordion_panel(SEGMENT_ACCORDION_TITLE,
                           mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, SEGMENT_ACCORDION_LABEL)
                           
           ),
           
+          ## Measures Filter Details
           bslib::accordion_panel(MEASURES_ACCORDION_TITLE),
+          
+          ## Flood Status Filter Details
           bslib::accordion_panel(FLOOD_ACCORDION_TITLE),
+          
+          ## Players'Satisfaction Filter Details
           bslib::accordion_panel(SATISFACTION_ACCORDION_TITLE)
         ),
         
@@ -168,15 +179,21 @@ ui <- bslib::page_navbar(
         
       ),
       
+      ## Main Panel Settings where visuals are displayed for the data collected across the whole game session and split per rounds.
+      ## This part of the UI design is dependent on the input data and retrieved by the server output (argument UI_ROUNDS_RENDERING).
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
-                       shiny::uiOutput("rounds_ui")
+                       shiny::uiOutput(UI_ROUNDS_RENDERING)
       )
     )
   ),
   
+  ## Game Settings Panel Settings
+  bslib::nav_panel(title = HEADER_TAB2, shiny::p("First page content.")),
   
-  bslib::nav_panel(title = "Game Settings", shiny::p("First page content.")),
+  ## Move References Menu to the right corner
   bslib::nav_spacer(),
+  
+  ## References Menu Settings
   REFS_HEADER_TAB
 )
 
@@ -212,7 +229,7 @@ server <- function(input, output, session) {
   
   
   # ---- Dynamic UI ----
-  output$rounds_ui <- shiny::renderUI({
+  output[[UI_ROUNDS_RENDERING]] <- shiny::renderUI({
     make_round_panels(round_ids())
   })
   
