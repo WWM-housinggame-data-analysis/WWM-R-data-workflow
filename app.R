@@ -1,7 +1,8 @@
 
 # ------------------------------------------------------------
 # Script: ./app.R
-# Purpose: 
+# Purpose: Run WhereWeMove Shiny Dashboard.
+# Details: Current dashboard version support visuals for GP2 (only)
 #
 # Working directory:
 #   Project root (see here::here())
@@ -9,11 +10,7 @@
 # Inputs:
 #   - data/raw/*.csv
 #
-# Outputs:
-#   - data/raw/*.xlsx
-#   - data/preprocessed/*.xlsx
-#
-# How to run:
+# How to run: Click on "Run App" or run  ```Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"``` in the terminal.
 #
 # Author: João Guimarães
 # Created: 2026-04-10
@@ -64,18 +61,22 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 ### Load functions required for listing, uploading and exporting data
 source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
-### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
+### Load functions containing the preprocessing of data tables coming from the database (i.e. formatting existing adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
+### Load functions for designing shiny ui to be deployed
+source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui.R")))
+
+### Load functions for making shiny data dynamic
+source(here::here(file.path(FUNCTION_PATH, "make-data-reactive.R")))
 
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
-### Load functions required to handle dashboard filter actions
+### Load functions required to handle dashboard user interactivity
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
-### Load functions required to setup plotly visualizations
+### Load functions required to create GP2 plotly visualizations
 source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
 
@@ -98,78 +99,101 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+##R/list-upload-export-dbtables.R
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
+  
+  ##R/preprocess-dbtables.R
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
-## Define default game session
-
-default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
 
 
 # Shiny App ----
 
+## Define default game session
+
+##R/interact-data.R
+default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
+
+
+## Design Dashboard User Interface
+### All local functions stored in R/design-shiny-ui.R
+### Explanations for arguments with CONSTANTS assigned to them is provided in constants.R
+
 ui <- bslib::page_navbar(
+  
+  ## Header settings
   title = HEADER_TITLE,
   navbar_options = APP_NAVBAR_OPTIONS,
   
+  ## GP2 Panel Settings
   bslib::nav_panel(
     title = HEADER_TAB1,
     bslib::page_sidebar(
+      
+      ## Sidebar Settings
       sidebar = bslib::sidebar(
         title = SIDEBAR1_TITLE,
         bg = SIDEBAR1_BACKCOLOR,
         bslib::accordion(
           multiple = EXPAND_MULTIPLE_ACCORDIONS,
           
-          bslib::accordion_panel("1: Select Game Session",
-                          mod_input_reset_ui("gamesession", "Session")
+          ## Game Session Filter Details
+          bslib::accordion_panel(SESSION_ACCORDION_TITLE,
+                          mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
+                          ),
+          
+          ## Table Group Filter Details
+          bslib::accordion_panel(GROUP_ACCORDION_TITLE,
+                                 mod_input_reset_ui(GROUP_ACCORDION_VALUE, GROUP_ACCORDION_LABEL)
+                                 ),
+          
+          ## Players' Game Address Filter Details
+          bslib::accordion_panel(ADDRESS_ACCORDION_TITLE
+                                 ),
+          
+          ## Players' Costs Filter Details (Used to segment bars)
+          bslib::accordion_panel(SEGMENT_ACCORDION_TITLE,
+                          mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, SEGMENT_ACCORDION_LABEL)
                           
           ),
           
-          bslib::accordion_panel("2: Select Table",
-                          mod_input_reset_ui("table", "Table")
-          ),
+          ## Measures Filter Details
+          bslib::accordion_panel(MEASURES_ACCORDION_TITLE),
           
-          bslib::accordion_panel("3: Where players live"),
+          ## Flood Status Filter Details
+          bslib::accordion_panel(FLOOD_ACCORDION_TITLE),
           
-          # checkboxGroupInput and its reset
-          bslib::accordion_panel("4: Player spending",
-                          mod_multicheck_reset_ui("cost_types", "Cost Types:")
-                          
-          ),
-          
-          bslib::accordion_panel("5: Selected measures"),
-          bslib::accordion_panel("6: Flood in gameplay"),
-          bslib::accordion_panel("7: Damage & satisfaction")
+          ## Players'Satisfaction Filter Details
+          bslib::accordion_panel(SATISFACTION_ACCORDION_TITLE)
         ),
         
         
-        # Optional: a global reset all button for the whole sidebar
+        ## Button to reset all sidebar filters to default
         RESET_ALL_BUTTON
         
       ),
       
+      ## Main Panel Settings where visuals are displayed for the data collected across the whole game session and split per rounds.
+      ## This part of the UI design is dependent on the input data and retrieved by the server output (argument UI_ROUNDS_RENDERING).
       shiny::mainPanel(width = MAIN_PANEL_WIDTH,
-                       bslib::accordion(
-                         open = DEFAULT_OPEN_ACCORDIONS,
-                         make_round_panel(ROUND_ACCORDION_ID[1], names(ROUND_ACCORDION_ID)[1]),
-                         make_round_panel(ROUND_ACCORDION_ID[2], names(ROUND_ACCORDION_ID)[2]),
-                         make_round_panel(ROUND_ACCORDION_ID[3], names(ROUND_ACCORDION_ID)[3]),
-                         make_round_panel(ROUND_ACCORDION_ID[4], names(ROUND_ACCORDION_ID)[4])
-                       )
+                       shiny::uiOutput(UI_ROUNDS_RENDERING)
       )
     )
   ),
   
+  ## Game Settings Panel Settings
+  bslib::nav_panel(title = HEADER_TAB2, shiny::p("First page content.")),
   
-  bslib::nav_panel(title = "Game Settings", shiny::p("First page content.")),
+  ## Move References Menu to the right corner
   bslib::nav_spacer(),
+  
+  ## References Menu Settings
   REFS_HEADER_TAB
 )
 
@@ -200,37 +224,76 @@ server <- function(input, output, session) {
   selected_table <- role_table$selected_table
   
   
+  # ---- Dynamic rounds (IDs + labels) ----
+  round_ids <- make_rounds_reactive(income_dist_df)
+  
+  
+  # ---- Dynamic UI ----
+  output[[UI_ROUNDS_RENDERING]] <- shiny::renderUI({
+    make_round_panels(round_ids())
+  })
+  
+  
   selected_cost_types <- make_cost_types_reactive(id = "cost_types")
     
   # global "Reset all filters"
   add_global_reset_observer(input, session)
   
 
-  summary_df <- shiny::reactive({retrieve_summary_table(income_dist_df(), selected_table())})
-  
-  
-  GP2_plotall_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = SELECT_ALL, fill_values_all) })
-  GP2_plot1_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "1", fill_values_all) })
-  GP2_plot2_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "2", fill_values_all) })
-  GP2_plot3_data <- shiny::reactive({ retrieve_GP2_plot_data(income_dist_df(), selected_cost_types(), selected_table(), game_round = "3", fill_values_all) })
-  
-  # Connect plots
-  output$plot_all <- plotly::renderPlotly({ create_GP2_plotly(GP2_plotall_data()) })
-  output$plot_r1  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot1_data()) })
-  output$plot_r2  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot2_data()) })
-  output$plot_r3  <- plotly::renderPlotly({ create_GP2_plotly(GP2_plot3_data()) })
-  
-  # Summaries (update based on color_by choice)
-  output$summary_all <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r1  <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r2  <- shiny::renderPrint({ summary(summary_df()) })
-  output$summary_r3  <- shiny::renderPrint({ summary(summary_df()) })
-  
-  # Tables (update based on color_by choice)
-  output$table_all <- shiny::renderTable({ summary_df() })
-  output$table_r1  <- shiny::renderTable({ summary_df() })
-  output$table_r2  <- shiny::renderTable({ summary_df() })
-  output$table_r3  <- shiny::renderTable({ summary_df() })
+  shiny::observe({
+    
+    shiny::req(length(round_ids()) > 0)
+    
+    interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids()[ round_ids() != SELECT_ALL])
+    
+    lapply(unname(round_ids()), function(rid) {
+      
+      local({
+
+        plot_id    <- paste0("plot_", rid)
+        summary_id <- paste0("summary_", rid)
+        table_id   <- paste0("table_", rid)
+        
+        
+        rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
+        
+        
+        plot_data <- shiny::reactive({
+          retrieve_GP2_plot_data(
+            income_dist_df(),
+            selected_cost_types(),
+            selected_table(),
+            game_round = rid_value,
+            interm_rounds = interm_rids,
+            fill_values_all
+          )
+        })
+        
+        summary_tables <- shiny::reactive({
+          retrieve_GP2_summary_tables(
+            income_dist_df(),
+            selected_cost_types(),
+            selected_table(),
+            game_round = rid_value)
+          })
+        
+        num_summary_df <- shiny::reactive({summary_tables()$num_df})
+        kval_summary_df <- shiny::reactive({summary_tables()$kval_df})
+        
+        output[[plot_id]] <- plotly::renderPlotly({
+          create_GP2_plotly(plot_data())
+        })
+        
+        output[[summary_id]] <- shiny::renderPrint({
+          summary(num_summary_df())
+        })
+        
+        output[[table_id]] <- shiny::renderTable({
+          kval_summary_df()
+        })
+      })
+    })
+  })
 }
 
 shiny::shinyApp(ui, server)

@@ -11,7 +11,7 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 
 
 # Reactive plot based on user input
-retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, fill_values_all) {
+retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
   
   # selected_cost_types() already normalized. Still filter to known keys.
   selected_bar_segments <- update_bar_segments(selected_cost_types)
@@ -28,7 +28,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
   
   df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  df <- filter_game_rounds(df, game_round)
+  df <- filter_game_rounds(df, game_round, interm_rounds)
 
   # satisfaction series
   scatter_df <- retrieve_mean_table(df, GP2_XLABEL_COL, COST_SCATTER_LINE)
@@ -59,24 +59,41 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
 }
 
 
-retrieve_GP2_summary_table <- function(df, selected_table, group_col = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+  
+  # selected_cost_types() already normalized. Still filter to known keys.
+  selected_bar_segments <- update_bar_segments(selected_cost_types)
   
   selected_table <- update_table_groups(df, selected_table)
   
   # Guard against empty states
-  shiny::req(nrow(df) > 0, length(selected_table) > 0)
+  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
   
-  group_col <- update_bar_groupcol(df, selected_table)
+  selected_bar_groupcol <- update_bar_groupcol(df, selected_table)
   
-  df <- create_GP2_xlabels(df, group_col)
+  # Build xlabels on the row-level data
+  df <- filter_tables(df, selected_bar_groupcol, selected_table)
   
-  pivoted_mean_df <- retrieve_mean_table(df, group_col, pivoted_cols)
+  df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  summary_df <- pivoted_mean_df |>
+  df <- filter_game_rounds(df, game_round)
+  
+  pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
+  
+  num_summary_df <- pivoted_mean_df |>
     dplyr::select(-tidyselect::all_of("column_name")) |>
     tidyr::pivot_wider(names_from = "mean_label", values_from = "mean_value") |>
     as.data.frame()
   
-  return(summary_df)
+  kval_summary_df <- pivoted_mean_df |>
+    dplyr::select(-tidyselect::all_of("column_name")) |>
+    dplyr::mutate(
+      mean_value = paste0(mean_value / K_FACTOR, names(K_FACTOR))
+    ) |>
+    tidyr::pivot_wider(names_from = "mean_label", values_from = "mean_value") |>
+    as.data.frame()
+  
+  list(num_df = num_summary_df,
+       kval_df = kval_summary_df)
   
 }

@@ -36,6 +36,7 @@ SELECTED_USERNAME <- SELECTED_USERTABLE
 FUNCTION_PATH <- file.path("R")
 RAWDATA_PATH <- file.path("data", "raw-dbtables")
 PREPRDATA_PATH <- file.path("data", "preprocessed-dbtables")
+RESULTS_PATH <- file.path("data", "results")
 
 SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
                        "playerround", "player","measuretype",
@@ -208,7 +209,7 @@ K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
-INTERM_ROUNDS <- as.character(1:3)
+#INTERM_ROUNDS <- as.character(1:3)
 
 HEADER_TITLE <- "WhereWeMove Dashboard"
 HEADER_BACKCOLOR <- "#2D89C8"
@@ -225,6 +226,26 @@ SIDEBAR1_TITLE <- "Choices and effects"
 SIDEBAR1_BACKCOLOR <- "white"
 
 EXPAND_MULTIPLE_ACCORDIONS <- TRUE
+
+SESSION_ACCORDION_TITLE <- "1: Select Game Session"
+SESSION_ACCORDION_LABEL <- "Session"
+SESSION_ACCORDION_VALUE <- "gamesession"
+
+GROUP_ACCORDION_TITLE <- "2: Select Table"
+GROUP_ACCORDION_LABEL <- "Table"
+GROUP_ACCORDION_VALUE <- "table"
+
+ADDRESS_ACCORDION_TITLE <- "3: Where players live"
+
+SEGMENT_ACCORDION_TITLE <- "4: Player spending"
+SEGMENT_ACCORDION_LABEL <- "Cost Types"
+SEGMENT_ACCORDION_VALUE <- "cost_types"
+
+MEASURES_ACCORDION_TITLE <- "5: Selected measures"
+FLOOD_ACCORDION_TITLE <- "6: Flood in gameplay"
+SATISFACTION_ACCORDION_TITLE <- "7: Damage & satisfaction"
+
+UI_ROUNDS_RENDERING <- "ui_round_rendering"
 
 # Apply a top margin of 1rem (typically 16px) to the div.
 DIV_16PX_MARGIN <- "mt-3"
@@ -245,10 +266,11 @@ HEADER_TAB2 <- "Game Settings"
 
 MAIN_PANEL_WIDTH <- 10
 
-ROUND_ACCORDION_ID <- c("all", "r1", "r2", "r3")
-names(ROUND_ACCORDION_ID) <- c("All Rounds", "Round 1", "Round 2", "Round 3")
+ROUND_ACCORDION_IDPREF <- "r"
+names(ROUND_ACCORDION_IDPREF) <- "Round"
+ROUND_ACCORDION_LABELALL <- "All Rounds"
 
-DEFAULT_OPEN_ACCORDIONS <- names(ROUND_ACCORDION_ID)[1]
+DEFAULT_OPEN_ACCORDIONS <- ROUND_ACCORDION_LABELALL
 
 REFS_HEADER_TITLE <- "Links"
 REFS_HEADER_ALIGN <- "right"

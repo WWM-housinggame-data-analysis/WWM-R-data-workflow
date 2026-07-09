@@ -2,10 +2,10 @@
 
 # Set all default variables or global options and all the path variables at the top of the code.
 
-# FUNCTION_PATH <- file.path("R")
+FUNCTION_PATH <- file.path("R")
 
 # Load required functions
-# source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 view_image_in_rstudio <- function(image_path) {
   html_file <- tempfile(fileext = ".html")
@@ -299,7 +299,7 @@ create_GP2_plotly <- function(plot_data) {
 
 
 save_and_view_GP2_plot <- function(plot_data,
-                                   file = "GP2_plot.png",
+                                   file = file.path(RESULTS_PATH, "GP2_plot.png"),
                                    vwidth = 1600,
                                    vheight = 800) {
 

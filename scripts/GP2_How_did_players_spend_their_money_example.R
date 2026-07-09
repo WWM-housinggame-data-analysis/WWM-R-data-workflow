@@ -74,8 +74,6 @@ source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-source(here::here(file.path(FUNCTION_PATH, "design-shiny-ui-server.R")))
-
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
@@ -105,7 +103,7 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE, selection = TRUE)
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
@@ -127,7 +125,10 @@ selected_cost_types <- SELECT_ALL
 income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_summary_table(income_dist_df, selected_table)
+GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
+
+# Export Summary table
+write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
 
 ## Retrieve data to be plotted in analysis for GP2.
 ## Data is retrieved for cost type and table group selection defined above.
@@ -138,4 +139,4 @@ GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, se
 GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
-save_and_view_GP2_plot(GP2_plotall_data, vheight = 1100)
+save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, "GP2_plot.png"),  vheight = 1100)
