@@ -11,7 +11,7 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 
 
 # Reactive plot based on user input
-retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, fill_values_all) {
+retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
   
   # selected_cost_types() already normalized. Still filter to known keys.
   selected_bar_segments <- update_bar_segments(selected_cost_types)
@@ -28,7 +28,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
   
   df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  df <- filter_game_rounds(df, game_round)
+  df <- filter_game_rounds(df, game_round, interm_rounds)
 
   # satisfaction series
   scatter_df <- retrieve_mean_table(df, GP2_XLABEL_COL, COST_SCATTER_LINE)

@@ -49,11 +49,11 @@ create_GP2_xlabels <- function(df, group_col) {
   return(df)
 }
 
-filter_game_rounds <- function(df, game_round) {
+filter_game_rounds <- function(df, game_round, interm_rounds) {
   
   shiny::req(nrow(df) > 0)
   
-  if (game_round %in% INTERM_ROUNDS) {
+  if (game_round %in% interm_rounds) {
     
     df <- df |>
       dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% game_round) |>

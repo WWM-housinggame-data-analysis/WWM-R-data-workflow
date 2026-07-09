@@ -244,6 +244,8 @@ server <- function(input, output, session) {
     
     shiny::req(length(round_ids()) > 0)
     
+    interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids()[ round_ids() != SELECT_ALL])
+    
     lapply(unname(round_ids()), function(rid) {
       
       local({
@@ -262,6 +264,7 @@ server <- function(input, output, session) {
             selected_cost_types(),
             selected_table(),
             game_round = rid_value,
+            interm_rounds = interm_rids,
             fill_values_all
           )
         })
