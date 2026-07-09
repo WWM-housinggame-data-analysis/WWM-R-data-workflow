@@ -24,6 +24,7 @@ Below you can find the folder structure of this repository
     ├── data/                       <- Stores raw and processed datasets.
     |   ├── raw-dbtables/           <- Contains tables containing data from each game session downloaded from database. Also in excel format for visual inspection.
     |   ├── preprocessed-dbtables/      <- Contains preprocessed database tables fit for shiny dashboard. Also in Excel format for visual inspection.
+    |   ├── results/                <- Contains results from data analysis, e.g. summary statistics, model outputs, visualizations, etc.
     |   └── dependencies/           <- Contains external data dependencies required for the project.
     |
     ├── scripts/                    <- Contains R scripts for data analysis and visualization.

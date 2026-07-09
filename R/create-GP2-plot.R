@@ -1,4 +1,4 @@
-#R/create-GP1-plot.R
+#R/create-GP2-plot.R
 
 # Set all default variables or global options and all the path variables at the top of the code.
 
@@ -6,6 +6,58 @@ FUNCTION_PATH <- file.path("R")
 
 # Load required functions
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+
+view_image_in_rstudio <- function(image_path) {
+  html_file <- tempfile(fileext = ".html")
+  
+  html <- sprintf(
+    '<html>
+       <head>
+         <style>
+           body { margin: 0; background: #ffffff; }
+           img  { width: 100%%; height: auto; }
+         </style>
+       </head>
+       <body>
+         <img src="%s" />
+       </body>
+     </html>',
+    basename(image_path)
+  )
+  
+  writeLines(html, html_file)
+  
+  # Copy image next to HTML so relative paths work
+  file.copy(image_path,
+            file.path(dirname(html_file), basename(image_path)),
+            overwrite = TRUE)
+  
+  rstudioapi::viewer(html_file)
+}
+
+save_and_view_plotly <- function(plotly_plot, file = "plotly_plot.png", vwidth = 1600, vheight = 800) {
+  
+  # 1. Check input is interactive Plotly widget
+  stopifnot(inherits(plotly_plot, "htmlwidget"))
+  
+  # 2. Save to a temporary HTML file
+  html_file <- tempfile(fileext = ".html")
+  htmlwidgets::saveWidget(plotly_plot, html_file, selfcontained = TRUE)
+  
+  # 3. Convert the HTML to a PNG using webshot2 (NO Python required)
+  webshot2::webshot(
+    url = html_file,
+    file = file,
+    vwidth = vwidth,
+    vheight = vheight
+  )
+  
+  # 4. Display PNG INSIDE RStudio Viewer
+  view_image_in_rstudio(normalizePath(file))
+  
+  # 5. Return the PNG file path
+  return(invisible(file))
+}
 
 calculate_bar_maxs <- function(bar_df, group_col, y_col) {
   bar_maxs <- bar_df %>%
@@ -126,13 +178,13 @@ create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_titl
   return(out_plot)
 }
 
-add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
+add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title) {
   
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
   
-  legend_label_order <- selected_bar_segments             # desired legend order (unchanged)
-  legend_label_match  <- rev(selected_bar_segments)         # stacking order (reversed)
+  legend_label_order <- selected_bar_labels             # desired legend order (unchanged)
+  legend_label_match  <- rev(selected_bar_labels)         # stacking order (reversed)
   
   # --- Add stacked bar traces ---
   for (label in legend_label_match) {
@@ -145,8 +197,8 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_tit
     out_plot <- out_plot %>%
       plotly::add_bars(
         data = segment_df,
-        x = ~xlabels,
-        y = ~mean_k,
+        x = segment_df[, "xlabels"],
+        y = segment_df[, "mean_k"],
         name = label,
         marker = list(color = bar_color),
         
@@ -154,7 +206,7 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_tit
         legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
         legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
         
-        customdata = ~N,
+        customdata = segment_df[, "N"],
         hovertemplate = paste0(
           "<b>", label, "</b><br>",
           "Mean: %{y:.2f}k<br>",
@@ -184,8 +236,8 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
     out_plot <- out_plot %>%
       plotly::add_trace(
         data = line_df,
-        x = ~xlabels,
-        y = ~mean_value,
+        x = line_df[, "xlabels"],
+        y = line_df[, "mean_value"],
         type = "scatter",
         mode = "lines+markers",
         name = label,
@@ -202,7 +254,7 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
         line = list(color = line_color, width = line_width),
         marker = list(color = line_color, size = marker_size),
         
-        customdata = ~N,
+        customdata = line_df[, "N"],
         hovertemplate = paste0(
           "<b>", label, "</b><br>",
           "Mean: %{y:.2f}k<br>",
@@ -215,15 +267,15 @@ add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
 }
 
 
-create_GP1_plotly <- function(plot_data) {
+create_GP2_plotly <- function(plot_data) {
   
   bar_df                <- plot_data$bar_df
   scatter_df            <- plot_data$scatter_df
-  selected_bar_segments <- plot_data$selected_bar_segments
+  selected_bar_labels   <- names(plot_data$selected_bar_segments)
   xlevels               <- plot_data$xlevels
   
   # keep only colors/labels for selected stacks
-  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_segments]
+  bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_labels]
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
@@ -231,16 +283,31 @@ create_GP1_plotly <- function(plot_data) {
   
   # Start plotly
   
-  GP1_plot <- create_plotly_layout("Round income (k) - Players per class",
+  GP2_plot <- create_plotly_layout("Round income (k) - Players per class",
                                    xlevels,
                                    "Game Currency (k)",
                                    c(bar_y_min, bar_y_max),
                                    "Average total satisfaction", " - ")
   
-  GP1_plot <- add_bar_data(GP1_plot, bar_df, selected_bar_segments, "Round costs") 
+  GP2_plot <- add_bar_data(GP2_plot, bar_df, selected_bar_labels, "Round costs") 
   
   
-  GP1_plot <- add_scatter_data(GP1_plot, scatter_df, "Satisfaction") 
+  GP2_plot <- add_scatter_data(GP2_plot, scatter_df, "Satisfaction") 
   
-  GP1_plot
+  GP2_plot
+}
+
+
+save_and_view_GP2_plot <- function(plot_data,
+                                   file = file.path(RESULTS_PATH, "GP2_plot.png"),
+                                   vwidth = 1600,
+                                   vheight = 800) {
+
+  ## Create the interactive Plotly widget
+  GP2_plot <- create_GP2_plotly(plot_data)
+  
+  save_and_view_plotly(GP2_plot, file, vwidth, vheight)
+  
+  ## Return the PNG file path
+  return(invisible(file))
 }

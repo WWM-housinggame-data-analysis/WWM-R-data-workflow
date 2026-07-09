@@ -23,9 +23,11 @@ source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 # ---------------------------------------------------------------
 
 unpack_dbtable_list <- function(dblist, suffix = "_df") {
-  if (any(SELECTED_DBTABLES %in% names(dblist)) == FALSE) {
-    stop("Missing dbtables needed for preprocessing")
-  }
+  
+  stopifnot("dblist is not list" = is.list(dblist),
+            "dblist expected to have length higher than 0" = length(dblist) > 0,
+            "dblist expected to have data frames only" = all(vapply(dblist, inherits, logical(1), "data.frame")))
+  
   dblist <- stats::setNames(dblist, paste0(names(dblist), suffix))
   list2env(dblist, envir = parent.frame())
 }
@@ -36,8 +38,12 @@ unpack_dbtable_list <- function(dblist, suffix = "_df") {
 
 preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
+  ## Unpack into global environment
+  unpack_dbtable_list(dbtable_list, "_df")
+  
   ## Check constants used in preprocessing exist
-  stopifnot("Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
+  stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(SELECTED_DBTABLES))),
+            "Default variable WELFARE_LABEL_COL not found in R/constants.R" = exists(deparse(substitute(WELFARE_LABEL_COL))),
             "Default variable CALCULATED_COSTS_DIFF not found in R/constants.R" = exists(deparse(substitute(REPORTED_CALCULATED_COSTS_DIFFCOL))),
             "Default variable TOTAL_DAMAGE_COL not found in R/constants.R" = exists(deparse(substitute(TOTAL_DAMAGE_COL))),
             "Default variable INCOME_GRP_COL not found in R/constants.R" = exists(deparse(substitute(INCOME_GRP_COL))),
@@ -47,8 +53,8 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
             "Default variable INCOME_LIVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(INCOME_LIVING_DIFFCOL))),
             "Default variable HOUSEMOVING_DIFFCOL not found in R/constants.R" = exists(deparse(substitute(HOUSEMOVING_DIFFCOL))))
   
-  ## Unpack into global environment
-  unpack_dbtable_list(dbtable_list, "_df")
+  ## check SELECTED_DBTABLES needed for preprocessing are all found in dbtable_list
+  stopifnot("Missing dbtables needed for preprocessing" = all(SELECTED_DBTABLES %in% names(dbtable_list)))
   
   # -----------------------------------------------------------
   # SQL transformations

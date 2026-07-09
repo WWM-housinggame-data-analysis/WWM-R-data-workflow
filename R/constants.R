@@ -1,6 +1,8 @@
+#R/constants.R
 
+SELECT_ALL <- "All"
 
-CONFIG <- yaml::read_yaml(here::here("./config.yml"))
+# CONFIG <- yaml::read_yaml(here::here("./config.yml"))
 
 # SELECTED_GAMESESSION <- CONFIG$defaults$selected_gamesession
 # SELECTED_USERNAME    <- CONFIG$defaults$selected_username
@@ -24,8 +26,8 @@ CONFIG <- yaml::read_yaml(here::here("./config.yml"))
 #   
 # }
 
-SELECTED_USERTABLE <- "All"
-SELECTED_GAMESESSION <- "All"
+SELECTED_USERTABLE <- SELECT_ALL
+SELECTED_GAMESESSION <- SELECT_ALL
 SELECTED_USERNAME <- SELECTED_USERTABLE
 
 
@@ -34,6 +36,7 @@ SELECTED_USERNAME <- SELECTED_USERTABLE
 FUNCTION_PATH <- file.path("R")
 RAWDATA_PATH <- file.path("data", "raw-dbtables")
 PREPRDATA_PATH <- file.path("data", "preprocessed-dbtables")
+RESULTS_PATH <- file.path("data", "results")
 
 SELECTED_DBTABLES <- c("gamesession", "group", "groupround",
                        "playerround", "player","measuretype",
@@ -155,27 +158,142 @@ INCOME_DIST_ALLCOLS <- c("gamesession_name", "group_name", "playerround_id", "pl
                          "community_name", "fluvial_house_delta", "pluvial_house_delta")
 
 # Central colour/label dictionaries (names must match cost_type in data)
-EXPENSE_BARCOLS <- c("total_damage_costs",
+COST_BAR_SEGMENTS <- c("total_damage_costs",
                      "cost_personal_measures_bought",
                      "cost_house_measures_bought",
                      "profit_minus_spent_savings_house_moving",
                      "mortgage_payment",
                      "paid_debt")
 
-names(EXPENSE_BARCOLS) <- c("Damage (river + rain)",
+names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
                             "Personal measures",
                             "House measures",
                             "Spent savings (buying house)",
                             "Mortgage payment",
                             "Paid debt")
 
+TABLE_GROUPCOL <- "group_name"
+GP2_XLABEL_COL <- "xlabels"
 
+COST_SCATTER_LINE <- "satisfaction_total"
+names(COST_SCATTER_LINE) <-  "Average total satisfaction"
+
+COST_TABLE_ENTRIES <- c("income_minus_living",
+                        "profit_minus_spent_savings_house_moving",
+                        "mortgage_payment",
+                        "cost_taxes",
+                        "paid_debt",
+                        "cost_house_measures_bought",
+                        "cost_personal_measures_bought",
+                        "cost_fluvial_damage",
+                        "cost_pluvial_damage", 
+                        "spendable_income")
+
+names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
+                               "Average Net Profit House Moving",
+                               "Average Mortgage Costs",
+                               "Average Taxes Costs",
+                               "Average Paid Debt",
+                               "Average House Measures Bought",
+                               "Average Personal Measures Bought",
+                               "Average Fluvial Damage Costs",
+                               "Average Pluvial Damage Costs",
+                               "Average Spendable Income")
+
+# COST_BAR_COLORS
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
 
-names(fill_values_all) <- names(EXPENSE_BARCOLS)
+names(fill_values_all) <- names(COST_BAR_SEGMENTS)
 
 K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
-INTERM_ROUNDS <- as.character(1:3)
+#INTERM_ROUNDS <- as.character(1:3)
+
+HEADER_TITLE <- "WhereWeMove Dashboard"
+HEADER_BACKCOLOR <- "#2D89C8"
+HEADER_THEME <- "dark"
+
+APP_NAVBAR_OPTIONS <- bslib::navbar_options(
+  bg = HEADER_BACKCOLOR,
+  theme = HEADER_THEME
+)
+
+HEADER_TAB1 <- "Game Play"
+
+SIDEBAR1_TITLE <- "Choices and effects"
+SIDEBAR1_BACKCOLOR <- "white"
+
+EXPAND_MULTIPLE_ACCORDIONS <- TRUE
+
+SESSION_ACCORDION_TITLE <- "1: Select Game Session"
+SESSION_ACCORDION_LABEL <- "Session"
+SESSION_ACCORDION_VALUE <- "gamesession"
+
+GROUP_ACCORDION_TITLE <- "2: Select Table"
+GROUP_ACCORDION_LABEL <- "Table"
+GROUP_ACCORDION_VALUE <- "table"
+
+ADDRESS_ACCORDION_TITLE <- "3: Where players live"
+
+SEGMENT_ACCORDION_TITLE <- "4: Player spending"
+SEGMENT_ACCORDION_LABEL <- "Cost Types"
+SEGMENT_ACCORDION_VALUE <- "cost_types"
+
+MEASURES_ACCORDION_TITLE <- "5: Selected measures"
+FLOOD_ACCORDION_TITLE <- "6: Flood in gameplay"
+SATISFACTION_ACCORDION_TITLE <- "7: Damage & satisfaction"
+
+UI_ROUNDS_RENDERING <- "ui_round_rendering"
+
+# Apply a top margin of 1rem (typically 16px) to the div.
+DIV_16PX_MARGIN <- "mt-3"
+
+ACTION_BUTTON_ID <- "reset_all_filters"
+ACTION_BUTTON_LABEL <- "Reset all filters"
+
+#Style this button with Bootstrap’s “warning” theme,
+ACTION_BUTTON_WARNING <- "btn-warning"
+
+# Optional: a global reset ill button for the whole sidebar
+RESET_ALL_BUTTON <- shiny::div(
+  class = DIV_16PX_MARGIN,
+  shiny::actionButton(ACTION_BUTTON_ID, ACTION_BUTTON_LABEL, class = ACTION_BUTTON_WARNING)
+)
+
+HEADER_TAB2 <- "Game Settings"
+
+MAIN_PANEL_WIDTH <- 10
+
+ROUND_ACCORDION_IDPREF <- "r"
+names(ROUND_ACCORDION_IDPREF) <- "Round"
+ROUND_ACCORDION_LABELALL <- "All Rounds"
+
+DEFAULT_OPEN_ACCORDIONS <- ROUND_ACCORDION_LABELALL
+
+REFS_HEADER_TITLE <- "Links"
+REFS_HEADER_ALIGN <- "right"
+
+ABOUT_LINK <- "https://seriousgaming.tudelft.nl/games/"
+names(ABOUT_LINK) <- "About WhereWeMove"
+
+INFO_LINK <- "https://pure.tudelft.nl/ws/portalfiles/portal/180909041/WhereWeMove-Brochure_Final.pdf"
+names(INFO_LINK) <- "WhereWeMove info"
+
+FACILIT_LINK <- "https://housing-game.tbm.tudelft.nl/housinggame-facilitator/jsp/facilitator/login.jsp"
+names(FACILIT_LINK) <- "Facilitator website"
+
+PLAYER_LINK <- "https://housing-game.tbm.tudelft.nl/housinggame-player/jsp/player/login.jsp"
+names(PLAYER_LINK) <- "Player website"
+
+REFS_HEADER_TAB <- bslib::nav_menu(
+  title = REFS_HEADER_TITLE,
+  align = REFS_HEADER_ALIGN,
+  bslib::nav_item(shiny::tags$a(names(ABOUT_LINK), href = ABOUT_LINK)),
+  bslib::nav_item(shiny::tags$a(names(INFO_LINK), href = INFO_LINK)),
+  bslib::nav_item(shiny::tags$a(names(FACILIT_LINK), href = FACILIT_LINK)),
+  bslib::nav_item(shiny::tags$a(names(PLAYER_LINK), href = PLAYER_LINK))
+)
+
+LINEBREAK<- "<br>"

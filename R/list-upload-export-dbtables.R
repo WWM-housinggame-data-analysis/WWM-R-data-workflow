@@ -1,4 +1,30 @@
+# ------------------------------------------------------------
+# Script: R/list-upload-export-dbtables.R
+# Purpose: Store functions required for listing, uploading and exporting data
+#
+# Details:
+#   - Contains reusable functions for listing, uploading and exporting data tables
+#
+# Usage:
+#   source("R/list-upload-export-dbtables.R")
+#
+# Exposed functions:
+#   - list_matching_subfolders: Find paths to subfolders within given main folder path and matching a given pattern
+#   - list_matching_dbtables:   Find dbtable files found in subfolders found inside main folder whose names match given pattern
+#   - export_excel:             Export Excel file for data relative to a given session (expected to be stored in a subfolder), with sheet names matching table names
+#   - upload_dbtables:          Retrieve tables as dataframes stored inside a named list
+#
+# Dependencies:
+#   - here
+#   - readr
+#   - tools
+#
+# Notes:
+#   - Errors are surfaced to the caller
+# ------------------------------------------------------------
+
 # Set defaults ----
+
 ## Set all default variables or global options and all the path variables.
 
 ## Set path to source files with functions
@@ -7,9 +33,21 @@ FUNCTION_PATH <- file.path("R")
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
-# Functions ---
 
-## Find paths to subfolders within given main folder path and matching a given pattern
+# ------------------------------------------------------------
+# Function: list_matching_subfolders
+# Purpose: Find paths to subfolders within given main folder path and matching a given pattern
+#
+# Params:
+#   - folder_path (character): path to main folder expected to contain subfolders
+#   - subfolder_pattern (character): pattern to filter subfolders whose names include the given string
+#
+# Returns:
+#   - character vector listing found subfolder paths
+#
+# Called by:
+#   - list_matching_dbtables
+# ------------------------------------------------------------
 
 list_matching_subfolders <- function(folder_path, subfolder_pattern) {
   
@@ -38,15 +76,32 @@ list_matching_subfolders <- function(folder_path, subfolder_pattern) {
   return(subfolder_paths)
 }
 
-## Find dbtable files found in subfolders found inside main folder whose names match given pattern
+
+# ------------------------------------------------------------
+# Function: list_matching_dbtables
+# Purpose: Find dbtable files found in subfolders found inside main folder whose names match given pattern
+#
+# Params:
+#   - folder_path (character): path to main folder expected to contain subfolders
+#   - subfolder_pattern (character): pattern to filter subfolders whose names include the given string
+#
+# Returns:
+#   - character vector listing found paths to dbtable files
+#
+# Called by:
+#   - upload_dbtables
+# ------------------------------------------------------------
 
 list_matching_dbtables <- function(folder_path, subfolder_pattern) {
   
   ## List paths to subfolders within given main folder path and matching a given pattern
   subfolder_paths <- list_matching_subfolders(folder_path, subfolder_pattern)
   
-  # Check IMPORTED_TABLE_TYPE exists
-  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))
+  # Check IMPORTED_TABLE_TYPE is a single character and that subfolder_paths is character with length > 0
+  stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))),
+            "IMPORTED_TABLE_TYPE expected to be character" = is.character(IMPORTED_TABLE_TYPE),
+            "IMPORTED_TABLE_TYPE expected to have only element 1" = length(IMPORTED_TABLE_TYPE) == 1,
+            "No subfolder paths found" = length(subfolder_paths) > 0)
   
   ## Create list to store dbtables found within each subfolder
   dbtable_filenames <- list()
@@ -75,16 +130,59 @@ list_matching_dbtables <- function(folder_path, subfolder_pattern) {
   return(dbtable_filenames)
 }
 
- 
-## Export Excel file for data relative to a given session (expected to be stored in a subfolder), with sheet names matching table names
+
+# ------------------------------------------------------------
+# Function: export_excel
+# Purpose: Export Excel file for data relative to a given session (expected to be stored in a subfolder), with sheet names matching table names
+#
+# Params:
+#   - sessiontable_list (character): character vector listing paths to dbtable files
+#   - session_name (character): name of game session which should match folder name where dbtable files listed above are stored
+#   - preprocessed (logical): Excel exporting assumes dbtables should be stored in data/preprocessed, otherwise they are stored in data/raw
+#
+# Outputs:
+#   - data/raw/*.xlsx
+#   - data/preprocessed/*.xlsx
+#
+# Called by:
+#   - upload_dbtables
+#   - ./app.R
+#   - scripts/GP2_How_did_players_spend_their_money_example.R
+# ------------------------------------------------------------
 
 export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   
   ## Generate timestamp to append to excel file name
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   
-  ## Check PREPROCESSED_DBTABLES exists
-  stopifnot("Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))))
+  ## Check Default variables exists, are character with length > 0 or = 1.
+  stopifnot("Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))),
+            "PREPROCESSED_DBTABLES expected to be character" = is.character(PREPROCESSED_DBTABLES),
+            "PREPROCESSED_DBTABLES expected to have length > 0" = length(PREPROCESSED_DBTABLES) > 0,
+            
+            "Default variable PREPRDATA_PATH not found in R/constants.R" = exists(deparse(substitute(PREPRDATA_PATH))),
+            "PREPRDATA_PATH expected to be character" = is.character(PREPROCESSED_DBTABLES),
+            "PREPRDATA_PATH expected to have only element 1" = length(PREPRDATA_PATH) == 1,
+            
+            "Default variable RAWDATA_PATH not found in R/constants.R" = exists(deparse(substitute(RAWDATA_PATH))),
+            "PREPRDATA_PATH expected to be character" = is.character(RAWDATA_PATH),
+            "PREPRDATA_PATH expected to have only element 1" = length(RAWDATA_PATH) == 1)
+  
+  # check sessiontable_list is named list containing data.frames only
+  stopifnot(
+    "sessiontable_list expected to be list" = is.list(sessiontable_list),
+    "sessiontable_list expected to have length > 0" = length(sessiontable_list) > 0,
+    "sessiontable_list expected to contain data.frames only" = all(vapply(sessiontable_list, is.data.frame, logical(1))),
+    "sessiontable_list should have names" = !is.null(names(sessiontable_list)),
+    "sessiontable_list should have names" = all(names(sessiontable_list) != ""),
+    "sessiontable_list should have names" = !any(is.na(names(sessiontable_list)))
+  )
+  
+  # check session_name is a single character
+  stopifnot(
+    "PREPRDATA_PATH expected to be character" = is.character(session_name),
+    "PREPRDATA_PATH expected to have only element 1" = length(session_name) == 1,
+  )
   
   ## Define excel_outpath based on consistency between input logical argument `preprocessed` and presence/absence of PREPROCESSED_DBTABLES in sessiontable_list
   ## (In)consistencies are tested.
@@ -127,14 +225,32 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
 }
 
 
-## Retrieve tables as dataframes stored inside a named list
-upload_dbtables <- function(folder_path, subfolder_pattern, excel = FALSE, selection = TRUE) {
+# ------------------------------------------------------------
+# Function: upload_dbtables
+# Purpose: Retrieve tables as dataframes stored inside a named list
+#
+# Params:
+#   - folder_path (character): path to main folder expected to contain subfolders
+#   - subfolder_pattern (character): pattern to filter subfolders whose names include the given string
+#   - dbtable_selection (character): record of dbtable names that should be kept for preprocessing. Assumed to be saved in SELECTED_DBTABLES
+#   - excel (logical): assumes excel versions of the tables are not exported, otherwise exported_excel is executed
+#
+# Returns:
+#   - 2-layer list containing dbtable content in dataframe format
+#
+# Called by:
+#   - ./app.R
+#   - scripts/GP2_How_did_players_spend_their_money_example.R
+# ------------------------------------------------------------
+
+upload_dbtables <- function(folder_path, subfolder_pattern, dbtable_selection = SELECTED_DBTABLES, excel = FALSE) {
   
   ## Retrieve table files inside subfolders of folder_path whose names match subfolder_pattern
   dbtable_filenames <- list_matching_dbtables(folder_path, subfolder_pattern)
   
-  ## Check SELECTED_DBTABLES exists
-  stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(SELECTED_DBTABLES))))
+  ## Check SELECTED_DBTABLES is non-empty character
+  stopifnot("SELECTED_DBTABLES expected to be character" = is.character(SELECTED_DBTABLES),
+            "SELECTED_DBTABLES expected to have length > 0" = length(SELECTED_DBTABLES) > 0)
   
   # Check IMPORTED_TABLE_TYPE exists
   stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))
@@ -157,10 +273,8 @@ upload_dbtables <- function(folder_path, subfolder_pattern, excel = FALSE, selec
     names(dbtables_list[[subfolder]]) <- tools::file_path_sans_ext(basename(dbtable_filenames[[subfolder]]))
     
     ## If logical argument asking for table selection based on SELECTED_DBTABLES is true
-    if (selection) { 
-      dbtables_list[[subfolder]] <- dbtables_list[[subfolder]][names(dbtables_list[[subfolder]]) %in% SELECTED_DBTABLES == TRUE]
-    }
-    
+    dbtables_list[[subfolder]] <- dbtables_list[[subfolder]][names(dbtables_list[[subfolder]]) %in% dbtable_selection == TRUE]
+
     ## If logical argument asking for excel export of named list is true
     if(excel) {
       export_excel(dbtables_list[[subfolder]], subfolder, preprocessed = FALSE)
