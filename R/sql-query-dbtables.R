@@ -256,3 +256,20 @@ combine_cols_sqlquery <- function(dbtable, cast_col1, col_type1, cast_col2, col_
   
   return(sqlquery)
 }
+
+## Create sql query to convert a column in dbtable to 0 if NA/NULL values are found.
+null_dbcol_sqlquery <- function(dbtable, coal_col) {
+  
+  ## Check sort_col is not blank, has length one and is a table column name
+  stopifnot("coal_col not expected to be blank character" = contains_blank_char(coal_col) == FALSE,
+            "Only one sorting column is allowed" = length(coal_col) == 1)
+  
+  ## Check dbtable is data frame and coal_col exist
+  check_df_cols(dbtable, coal_col)
+  
+  ## COALESCE avoids NA/NULL values if there is no match by replacing them with 0
+  
+  COALESCE(coal_col, 0)
+  
+  return(sqlquery)
+}

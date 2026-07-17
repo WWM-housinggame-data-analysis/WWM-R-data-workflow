@@ -59,6 +59,9 @@ stopifnot("Missing dbtables needed for preprocessing" = all(c("housemeasure", "p
 #Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
 exclude_initial_measure <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
 initial_clause <- if (exclude_initial_measure) "initialhousemeasure = 0 AND" else ""
+
+housemeasure_filtered <- select_sqlquery(dbtable, selected_cols) 
+
 housemeasure_filtered <- sqldf(sprintf("
   SELECT
     hm.gamesession_name,
@@ -86,6 +89,16 @@ housemeasure_filtered <- sqldf(sprintf("
   WHERE %s
         hm.player_code IS NOT NULL
   AND hm.groupround_round_number > 0", initial_clause))
+
+"bought_in_round"           
+"housegroup_id"
+"used_in_round"             
+"owner_id"
+"group_name"
+"player_id"   
+[13] "round_income"               "cost_house_measures_bought" "short_alias"               
+[16] "cost_absolute"              "satisfaction_delta_once"    "pluvial_protection_delta"  
+[19] "fluvial_protection_delta"   "is_initialhousemeasure"
 
 personalmeasure_filtered <- sqldf("
   SELECT
