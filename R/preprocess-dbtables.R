@@ -493,25 +493,6 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   questionitem_df <- sqldf::sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
   
   
-  
-  
-  # Add to question score the question, question item and player_round tables relevant variables
-  # questionscore_df <- sqldf("
-  # SELECT 
-  #   qs.id AS answer_id, qs.answer, qs.late_answer,qi.name AS answer_option, CAST(qs.answer AS INTEGER) || ' - ' || qi.name AS answer_plus_option, 
-  #   qs.question_id, q.name AS question_name, q.description AS question_description,
-  #   qs.playerround_id, pr.groupround_round_number, pr.player_code, pr.group_name, pr.gamesession_name
-  # FROM questionscore_df AS qs
-  # LEFT JOIN question_df AS q
-  #   ON qs.question_id = q.id
-  # LEFT JOIN questionitem_df AS qi
-  #   ON qs.answer = qi.code
-  #  AND qs.question_id = qi.question_id
-  # LEFT JOIN  playerround_df AS pr
-  #  ON qs.playerround_id = pr.playerround_id
-  # ")
-
-  
   ## Rename columns in the dataframe
   ## "SELECT id AS answer_id, answer, late_answer, playerround_id, question_id FROM questionscore_df"  
   
