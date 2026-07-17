@@ -15,10 +15,10 @@ library(tidyr)
 library(ggplot2)
 library(ggtext)
 library(plotly)
-library(ggimage)
+#library(ggimage)
 library(htmlwidgets)
-library(webshot)
-webshot::install_phantomjs()
+#library(webshot2)
+webshot2::install_phantomjs()
 
 
 # Step 1: Data Settings ---------------------------------------------------
@@ -44,9 +44,9 @@ library(tidyr)
 library(ggplot2)
 library(ggtext)
 library(plotly)
-library(ggimage)
+#library(ggimage)
 library(htmlwidgets)
-library(webshot)
+#library(webshot2)
 library(base64enc)
 
 # Step 1: Data Settings ---------------------------------------------------
@@ -392,29 +392,29 @@ for (file in files) {
   cat("[DEBUG] html exists:", file.exists(html_file), "\n")
   cat("[DEBUG] out dir exists:", dir.exists(plot_out_dir), "\n")
   
-  # Try to ensure phantomjs exists (webshot v1)
-  if ("install_phantomjs" %in% getNamespaceExports("webshot")) {
-    cat("[DEBUG] webshot::install_phantomjs() is available. Trying install (safe if already installed)...\n")
-    try(webshot::install_phantomjs(), silent = TRUE)
+  # Try to ensure phantomjs exists (webshot2 v1)
+  if ("install_phantomjs" %in% getNamespaceExports("webshot2")) {
+    cat("[DEBUG] webshot2::install_phantomjs() is available. Trying install (safe if already installed)...\n")
+    try(webshot2::install_phantomjs(), silent = TRUE)
   } else {
-    cat("[DEBUG] webshot::install_phantomjs() NOT available in your webshot package.\n")
+    cat("[DEBUG] webshot2::install_phantomjs() NOT available in your webshot2 package.\n")
   }
   
-  # Run webshot and catch any error
+  # Run webshot2 and catch any error
   tryCatch({
-    webshot::webshot(
+    webshot2::webshot2(
       url = html_file,
       file = png_file,
       vwidth = 1600,
       vheight = 1000,
       zoom = 2
     )
-    cat("[DEBUG] webshot finished OK\n")
+    cat("[DEBUG] webshot2 finished OK\n")
   }, error = function(e) {
-    cat("[DEBUG] webshot ERROR:", e$message, "\n")
+    cat("[DEBUG] webshot2 ERROR:", e$message, "\n")
   })
   
-  cat("[DEBUG] png exists after webshot:", file.exists(png_file), "\n")
+  cat("[DEBUG] png exists after webshot2:", file.exists(png_file), "\n")
   
   # List newest files in output folder
   cat("[DEBUG] latest files in output folder:\n")
@@ -439,11 +439,11 @@ library(stringr)
 library(tidyr)
 library(plotly)
 library(htmlwidgets)
-library(webshot)
+library(webshot2)
 library(base64enc)
 
 # Install PhantomJS if needed (safe to run if already installed)
-try(webshot::install_phantomjs(), silent = TRUE)
+try(webshot2::install_phantomjs(), silent = TRUE)
 
 # -----------------------------
 # Paths / Settings
@@ -928,13 +928,13 @@ for (file in files) {
     
     p <- layout(p, images = images_list)
     
-    # Save the plot as PNG via webshot
+    # Save the plot as PNG via webshot2
     html_file <- tempfile(fileext = ".html")
     saveWidget(p, html_file, selfcontained = TRUE)
     
     if (file.exists(png_path)) unlink(png_path)
     
-    webshot(
+    webshot2(
       url = html_file,
       file = png_path,
       vwidth = 1600,

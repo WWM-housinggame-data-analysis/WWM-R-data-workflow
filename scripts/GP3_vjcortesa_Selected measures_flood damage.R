@@ -15,9 +15,9 @@ library(tidyr)
 library(ggplot2)
 library(ggtext)
 library(plotly)
-library(ggimage)
+#library(ggimage)
 library(htmlwidgets)
-library(webshot)
+library(webshot2)
 
 # Step 1: Data Settings ---------------------------------------------------
 
@@ -388,7 +388,7 @@ p
 html_file <- tempfile(fileext = ".html")
 saveWidget(p, file = html_file, selfcontained = TRUE)
 
-webshot(html_file, file.path(fig_output_path,paste0(github,"G3_Measure_dist",date_dataset,".png")), vwidth = 1600, vheight = 1000, zoom = 2)
+webshot2(html_file, file.path(fig_output_path,paste0(github,"G3_Measure_dist",date_dataset,".png")), vwidth = 1600, vheight = 1000, zoom = 2)
 
 print(file.path(fig_output_path,"plot.png"))
 # Create the function for the plot
