@@ -57,10 +57,48 @@ stopifnot("Missing dbtables needed for preprocessing" = all(c("housemeasure", "p
 # Step 2: Data Preparations ---------------------------------------------------
 #Add if the player implemented house or personal measures after flood experience (either river or rain damage)in the previous round
 #Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
-exclude_initial_measure <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
-initial_clause <- if (exclude_initial_measure) "initialhousemeasure = 0 AND" else ""
+exclude_initialhousemeasure <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
+initialhousemeasure_cond <- if (exclude_initialhousemeasure) paste0("is_initialhousemeasure", " = 0 AND ") else NULL
+player_code_cond <- paste0("player_code", " IS NOT NULL")
+round_number_cond <- paste0("groupround_round_number", " > 0")
 
-housemeasure_filtered <- select_sqlquery(dbtable, selected_cols) 
+playerround_temp_df <- playerround_df
+playerround_temp_df[,"groupround_round_number"] <- playerround_temp_df[,"groupround_round_number"] + 1
+
+housemeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, c("player_code", "groupround_round_number"),
+                                                            playerround_temp_df, c("player_code", "groupround_round_number"),
+                                                            kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
+                                                                                   "group_name", "player_code", "house_code",
+                                                                                   "groupround_round_number", "round_income",
+                                                                                   "short_alias", "cost_absolute",
+                                                                                   "satisfaction_delta_once",
+                                                                                   "pluvial_protection_delta",
+                                                                                   "fluvial_protection_delta",
+                                                                                   "is_initialhousemeasure"),
+                                                            kept_dbtable2_cols = c("cost_fluvial_damage",
+                                                                                   "cost_pluvial_damage",
+                                                                                   "total_damage_costs"),
+                                                            is_where = TRUE,
+                                                            where_cond = paste(
+                                                              paste0("dbtable1.", c(initialhousemeasure_cond,
+                                                                                    player_code_cond,
+                                                                                    round_number_cond)
+                                                              ),
+                                                              collapse = " AND ")
+)
+)
+
+
+housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_filtered_df,
+                                                         names(housemeasure_filtered_df)[names(housemeasure_filtered_df) %in% "is_initialhousemeasure" == F])
+                                         )
+
+housemeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_filtered_df, "cost_absolute", "measure_cost"))
+
+housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "cost_fluvial_damage", coal_val = 0))
+housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "cost_pluvial_damage", coal_val = 0))
+housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "total_damage_costs", coal_val = 0))
+
 
 housemeasure_filtered <- sqldf(sprintf("
   SELECT

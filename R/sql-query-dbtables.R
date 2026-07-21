@@ -10,27 +10,6 @@ source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # Functions ---
 
-## test whether character vector contains blank element
-contains_blank_char <- function(x) {
-  
-    # NULL or length-0 vectors are considered blank
-    if (is.null(x) || length(x) == 0L) return(TRUE)
-    
-    # Treat factors as their character labels
-    if (is.factor(x)) x <- as.character(x)
-    
-    res <- is.na(x)
-    
-    # For character inputs, blank means "" or whitespace-only
-    if (is.character(x)) {
-      res <- res | trimws(x) == ""
-    }
-    
-    # Return logical stating whether any element in character vector is blank 
-    return(any(res))
-  }
-
-
 ## Create sql query for sqldf to select and sort columns from dbtable
 select_sqlquery <- function(dbtable, selected_cols) {
   
@@ -60,7 +39,7 @@ select_sqlquery <- function(dbtable, selected_cols) {
 
 
 ## Create sql query for sqldf to left join two dbtables
-left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, kept_dbtable1_cols, kept_dbtable2_cols) {
+left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, kept_dbtable1_cols, kept_dbtable2_cols, is_where = FALSE, where_cond = "") {
   
   ## Check match_dbtable1_cols and match_dbtable2_cols have no blank characters have the same exact length
   stopifnot("match_dbtable1_cols not expected to have blank character elements" = contains_blank_char(match_dbtable1_cols) == FALSE,
@@ -114,12 +93,35 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   ## write default on statement
   on_statement <- paste0("ON ", paste(paste(paste0("dbtable1.", match_dbtable1_cols), paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "))
   
+  ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
+  ## By default where condition is ignored and where_ statement remains blank character.
+  
+  where_statement <- ""
+  
+  if (is_where) {
+    if(is.character(where_cond) & length(where_cond) == 1 & contains_blank_char(where_cond) == FALSE) {
+      
+      where_statement <- paste(" WHERE", where_cond)
+      
+    } else {
+      
+      stop("where_cond expected to be an non-empty character of length == 1.")
+    }
+      
+  }
+  
+  
+  
   ## paste statements to make complete left join sql query
-  sqlquery <- paste(select_statement,
-                    from_statement,
-                    left_join_statement,
-                    on_statement
+  sqlquery <- paste0(
+    paste(select_statement,
+          from_statement,
+          left_join_statement,
+          on_statement
+    ),
+    where_statement
   )
+  
   
   return(sqlquery)
 }
@@ -257,19 +259,51 @@ combine_cols_sqlquery <- function(dbtable, cast_col1, col_type1, cast_col2, col_
   return(sqlquery)
 }
 
-## Create sql query to convert a column in dbtable to 0 if NA/NULL values are found.
-null_dbcol_sqlquery <- function(dbtable, coal_col) {
+## Create sql query to convert a column in dbtable to value in coal_val if NA/NULL values are found.
+unnull_dbcol_sqlquery <- function(dbtable, coal_col, coal_val = 0) {
   
-  ## Check sort_col is not blank, has length one and is a table column name
+  ## Check coal_col is not blank, has length one and is a table column name. Coal_val should also have length 1.
   stopifnot("coal_col not expected to be blank character" = contains_blank_char(coal_col) == FALSE,
-            "Only one sorting column is allowed" = length(coal_col) == 1)
+            "Only one column name is allowed to be coalesced" = length(coal_col) == 1,
+            "Only a value with length one is allowed for coalesce" = length(coal_val) == 1)
   
-  ## Check dbtable is data frame and coal_col exist
+  ## Check dbtable is data frame and coal_col exists as collumn
   check_df_cols(dbtable, coal_col)
   
-  ## COALESCE avoids NA/NULL values if there is no match by replacing them with 0
+  ## warning if coal_val not 0
+  if (coal_val != 0) {
+    warning("coal_val expected to be 0. Please double check the value introduced to replace NULL/NA values is valid for SQL query.")
+  }
   
-  COALESCE(coal_col, 0)
+  ## create sql statement coalesce
+  coal_statement <- paste0("COALESCE(", coal_col, ", ", coal_val, ") AS ", coal_col)
+  
+  ## find collumn index to be checked for NA/NULL values
+  coal_ind <- match(coal_col, names(dbtable))
+  
+  select_statement <- "SELECT "
+  
+  ## create sql select statement where coalesce action is excuted while keeping original column sorting
+  
+  if (coal_ind > 1) {
+    select_statement <- paste0(select_statement,
+                               paste(c(names(dbtable)[seq_len(coal_ind - 1)], coal_statement), collapse = ", ")
+    )
+  } else {
+    select_statement <- paste0(select_statement,
+                               coal_statement
+    )
+  }
+  
+  if (coal_ind < length(names(dbtable))) {
+    select_statement <- paste(select_statement,
+                              paste(names(dbtable)[(coal_ind + 1) : length(names(dbtable))], collapse = ", "),
+                              sep = ", ")
+  }
+  
+  
+  sqlquery <- paste0(select_statement,
+                     " FROM ", deparse(substitute(dbtable)))
   
   return(sqlquery)
 }
