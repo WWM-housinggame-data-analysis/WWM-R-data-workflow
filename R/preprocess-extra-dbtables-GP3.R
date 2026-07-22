@@ -114,16 +114,9 @@ personalmeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_d
                                                                                    "is_initialhousemeasure"),
                                                             kept_dbtable2_cols = c("cost_fluvial_damage",
                                                                                    "cost_pluvial_damage",
-                                                                                   "total_damage_costs"),
-                                                            is_where = TRUE,
-                                                            where_cond = paste(
-                                                              paste0("dbtable1.", c(initialhousemeasure_cond,
-                                                                                    player_code_cond,
-                                                                                    round_number_cond)
-                                                              ),
-                                                              collapse = " AND ")
-)
-)
+                                                                                   "total_damage_costs")
+                                                            )
+                                            )
 
 
 personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_filtered_df,
@@ -135,11 +128,11 @@ personalmeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure
 
 
 # Add a source column to each measures table and combine them
-measures_combined_df <- sqldf("
-  SELECT *, 'personalmeasure_filtered' AS source FROM personalmeasure_filtered
-  UNION ALL
-  SELECT *, 'housemeasure_filtered' AS source FROM housemeasure_filtered
-")
+measures_combined_df <- sqldf::sqldf(union_all_sqlquery(personalmeasure_filtered_df, housemeasure_filtered_df,
+                                                        source_col = "source", source_label_dbtable1 ="personalmeasure_filtered", source_label_dbtable2 = "housemeasure_filtered")
+                                     )
+  
+
 # Step 3: Variables to plot calculation ---------------------------------------------------
 
 #  Define the order to plot the measures

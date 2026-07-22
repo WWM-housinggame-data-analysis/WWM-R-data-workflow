@@ -309,22 +309,22 @@ unnull_dbcol_sqlquery <- function(dbtable, coal_col, coal_val = 0) {
 }
 
 
-## Create sql query for sqldf to left join two dbtables
-union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbt1, source_label_dbt2, kept_dbtable1_cols, kept_dbtable2_cols, is_where = FALSE, where_cond = "") {
+## Create to union all two dbtables
+union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbtable1, source_label_dbtable2, kept_dbtable1_cols, kept_dbtable2_cols, is_where = FALSE, where_cond = "") {
   
-  ## Check source_col, source_label_dbt1 and source_label_dbt2 are not blank, and have length = 1.
+  ## Check source_col, source_label_dbtable1 and source_label_dbtable2 are not blank, and have length = 1.
   stopifnot("source_col not expected to be blank character" = contains_blank_char(source_col) == FALSE,
             "Only one column name is allowed to be used in source_col" = length(source_col) == 1,
-            "source_label_dbt1 not expected to be blank character" = contains_blank_char(source_label_dbt1) == FALSE,
-            "Only one column name is allowed to be coalesced" = length(source_label_dbt1) == 1,
-            "source_label_dbt2 not expected to be blank character" = contains_blank_char(ssource_label_dbt2) == FALSE,
-            "Only one column name is allowed to be coalesced" = length(source_label_dbt2) == 1)
+            "source_label_dbtable1 not expected to be blank character" = contains_blank_char(source_label_dbtable1) == FALSE,
+            "Only one column name is allowed to be coalesced" = length(source_label_dbtable1) == 1,
+            "source_label_dbtable2 not expected to be blank character" = contains_blank_char(source_label_dbtable2) == FALSE,
+            "Only one column name is allowed to be coalesced" = length(source_label_dbtable2) == 1)
   
 
   ## If kept_dbtable1_cols is a non-blank character_vector and differs from names(dbtable1) in size or sorting, Select statement is written considering kept_dbtable1_cols. Otherwise all the collumns are selected as they are.
   if (missing(kept_dbtable1_cols) == FALSE && contains_blank_char(kept_dbtable1_cols) == FALSE && identical(kept_dbtable1_cols, names(dbtable1)) == FALSE) {
     
-    select_statement <- paste0("SELECT ", paste(paste0("dbtable1.", kept_dbtable1_cols[kept_dbtable1_cols %in% names(dbtable1)]), collapse = ", "))
+    select_statement_dbtable1 <- paste0("SELECT ", paste(paste0("dbtable1.", kept_dbtable1_cols[kept_dbtable1_cols %in% names(dbtable1)]), collapse = ", "))
     
   } else {
     
@@ -338,9 +338,9 @@ union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbt1
 
   
   ## If kept_dbtable2_cols is a non-blank character_vector and differs from names(dbtable2) in size or sorting, Select statement is written considering kept_dbtable2_cols. Otherwise all the collumns are selected as they are.
-  if (missing(kept_dbtable2_cols) == FALSE && contains_blank_char(kept_dbtable2_cols) == FALSE  && identical(kept_dbtable2_cols, names(dbtable2)) == FALSE) {
+  if (missing(kept_dbtable2_cols) == FALSE && contains_blank_char(kept_dbtable2_cols) == FALSE && identical(kept_dbtable2_cols, names(dbtable2)) == FALSE) {
     
-    select_statement <- paste(select_statement, paste(paste0("dbtable2.", kept_dbtable2_cols[kept_dbtable2_cols %in% names(dbtable2)]), collapse = ", "), sep = ", ")
+    select_statement_dbtable2 <- paste0("SELECT ", paste(paste0("dbtable2.", kept_dbtable2_cols[kept_dbtable2_cols %in% names(dbtable2)]), collapse = ", "))
     
   } else {
     
@@ -348,22 +348,25 @@ union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbt1
     
     kept_dbtable2_cols <- names(dbtable2)
     
-    select_statement <- paste0(select_statement, ", dbtable2.*")
+    select_statement_dbtable2 <- "SELECT dbtable2.*"
   }
   
   stopifnot("dbtable1 and dbtable2 expected to have the same collumn names and sorting" = identical(kept_dbtable1_cols, kept_dbtable2_cols),
-            
             "dbtable1 and dbtable2 collums expected to have the same type" = identical(vapply(dbtable1[,kept_dbtable1_cols], typeof, character(1)),
                                                                                        vapply(dbtable2[,kept_dbtable2_cols], typeof, character(1))))
   
-  ## write default from statement
-  from_statement <- paste0("FROM [", deparse(substitute(dbtable1)), "] AS dbtable1")
+  select_statement_dbtable1 <- paste(select_statement_dbtable1,
+                                     paste(paste0("'", source_label_dbtable1, "'"), source_col, sep = " AS "), sep = ", ")
   
-  ## write default left join statement
-  left_join_statement <- paste0("LEFT JOIN [", deparse(substitute(dbtable2)), "] AS dbtable2")
+  select_statement_dbtable2 <- paste(select_statement_dbtable2,
+                                     paste(paste0("'", source_label_dbtable2, "'"), source_col, sep = " AS "), sep = ", ")
   
-  ## write default on statement
-  on_statement <- paste0("ON ", paste(paste(paste0("dbtable1.", match_dbtable1_cols), paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "))
+  ## write default from statement for dbtable1
+  from_statement_dbtable1 <- paste0("FROM [", deparse(substitute(dbtable1)), "] AS dbtable1")
+  
+  ## write default from statement for dbtable2
+  from_statement_dbtable2 <- paste0("FROM [", deparse(substitute(dbtable2)), "] AS dbtable2")
+  
   
   ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
   ## By default where condition is ignored and where_ statement remains blank character.
@@ -386,10 +389,11 @@ union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbt1
   
   ## paste statements to make complete left join sql query
   sqlquery <- paste0(
-    paste(select_statement,
-          from_statement,
-          left_join_statement,
-          on_statement
+    paste(select_statement_dbtable1,
+          from_statement_dbtable1,
+          "UNION ALL",
+          select_statement_dbtable2,
+          from_statement_dbtable2
     ),
     where_statement
   )
