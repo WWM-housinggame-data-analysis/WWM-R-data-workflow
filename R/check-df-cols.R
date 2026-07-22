@@ -135,6 +135,12 @@ contains_blank_char <- function(x) {
     res <- res | trimws(x) == ""
   }
   
+  # error if x is not character or factor
+  if (is.character(x) == FALSE & is.factor(x) == FALSE){
+    stop("Only character and factor values are accepted.")
+  }
+  
+  
   # Return logical stating whether any element in character vector is blank 
   return(any(res))
 }
