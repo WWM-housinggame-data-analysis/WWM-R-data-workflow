@@ -65,6 +65,11 @@ round_number_cond <- paste0("groupround_round_number", " > 0")
 playerround_temp_df <- playerround_df
 playerround_temp_df[,"groupround_round_number"] <- playerround_temp_df[,"groupround_round_number"] + 1
 
+playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_fluvial_damage", coal_val = 0))
+playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_pluvial_damage", coal_val = 0))
+playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "total_damage_costs", coal_val = 0))
+
+
 housemeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, c("player_code", "groupround_round_number"),
                                                             playerround_temp_df, c("player_code", "groupround_round_number"),
                                                             kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
@@ -95,77 +100,42 @@ housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_filtered_d
 
 housemeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_filtered_df, "cost_absolute", "measure_cost"))
 
-housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "cost_fluvial_damage", coal_val = 0))
-housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "cost_pluvial_damage", coal_val = 0))
-housemeasure_filtered_df <- sqldf::sqldf(unnull_dbcol_sqlquery(housemeasure_filtered_df, "total_damage_costs", coal_val = 0))
 
 
-housemeasure_filtered <- sqldf(sprintf("
-  SELECT
-    hm.gamesession_name,
-    hm.id,
-    hm.measuretype_id,
-    hm.group_name,
-    hm.player_code,
-    hm.house_code,
-    hm.groupround_round_number,
-    hm.round_income,
-    hm.short_alias,
-    hm.cost_absolute AS measure_cost,
-    hm.satisfaction_delta_once,
-    hm.pluvial_protection_delta,
-    hm.fluvial_protection_delta,
-    -- previous round damage values, COALESCE avoids NA/NULL values if there is no match 
-    COALESCE(pr_prev.cost_fluvial_damage, 0) AS prev_cost_fluvial_damage,
-    COALESCE(pr_prev.cost_pluvial_damage, 0) AS prev_cost_pluvial_damage,
-    -- convenient total of previous damage
-    COALESCE(pr_prev.total_damage_costs, 0) AS prev_total_damage 
-  FROM housemeasure hm
-  LEFT JOIN playerround pr_prev
-         ON pr_prev.player_code = hm.player_code
-        AND pr_prev.groupround_round_number = hm.groupround_round_number - 1
-  WHERE %s
-        hm.player_code IS NOT NULL
-  AND hm.groupround_round_number > 0", initial_clause))
+personalmeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, c("player_code", "groupround_round_number"),
+                                                            playerround_temp_df, c("player_code", "groupround_round_number"),
+                                                            kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
+                                                                                   "group_name", "player_code", "house_code",
+                                                                                   "groupround_round_number", "round_income",
+                                                                                   "short_alias", "calculated_costs",
+                                                                                   "satisfaction_delta_once",
+                                                                                   "pluvial_protection_delta",
+                                                                                   "fluvial_protection_delta",
+                                                                                   "is_initialhousemeasure"),
+                                                            kept_dbtable2_cols = c("cost_fluvial_damage",
+                                                                                   "cost_pluvial_damage",
+                                                                                   "total_damage_costs"),
+                                                            is_where = TRUE,
+                                                            where_cond = paste(
+                                                              paste0("dbtable1.", c(initialhousemeasure_cond,
+                                                                                    player_code_cond,
+                                                                                    round_number_cond)
+                                                              ),
+                                                              collapse = " AND ")
+)
+)
 
-"bought_in_round"           
-"housegroup_id"
-"used_in_round"             
-"owner_id"
-"group_name"
-"player_id"   
-[13] "round_income"               "cost_house_measures_bought" "short_alias"               
-[16] "cost_absolute"              "satisfaction_delta_once"    "pluvial_protection_delta"  
-[19] "fluvial_protection_delta"   "is_initialhousemeasure"
 
-personalmeasure_filtered <- sqldf("
-  SELECT
-    pm.gamesession_name,
-    pm.id,
-    pm.measuretype_id,
-    pm.group_name,
-    pm.player_code,
-    pm.house_code,
-    pm.groupround_round_number,
-    pm.round_income,
-    pm.short_alias,
-    pm.calculated_costs AS measure_cost,
-    pm.satisfaction_delta_once,
-    pm.pluvial_protection_delta,
-    pm.fluvial_protection_delta,
-    -- previous round damage values, COALESCE avoids NA/NULL values if there is no match 
-    COALESCE(pr_prev.cost_fluvial_damage, 0) AS prev_cost_fluvial_damage,
-    COALESCE(pr_prev.cost_pluvial_damage, 0) AS prev_cost_pluvial_damage,
-    -- convenient total of previous damage
-    COALESCE(pr_prev.total_damage_costs, 0) AS prev_total_damage 
-  FROM personalmeasure AS pm
-  LEFT JOIN playerround pr_prev
-         ON pr_prev.player_code = pm.player_code
-        AND pr_prev.groupround_round_number = pm.groupround_round_number - 1
-")
+personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_filtered_df,
+                                                         names(personalmeasure_filtered_df)[names(personalmeasure_filtered_df) %in% "is_initialhousemeasure" == F])
+                                         )
+
+personalmeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure_filtered_df, "calculated_costs", "measure_cost"))
+
+
 
 # Add a source column to each measures table and combine them
-measures_combined <- sqldf("
+measures_combined_df <- sqldf("
   SELECT *, 'personalmeasure_filtered' AS source FROM personalmeasure_filtered
   UNION ALL
   SELECT *, 'housemeasure_filtered' AS source FROM housemeasure_filtered
