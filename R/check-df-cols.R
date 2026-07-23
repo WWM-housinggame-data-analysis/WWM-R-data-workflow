@@ -118,3 +118,29 @@ report_missing_cols <- function(df, in_cols, out_cols) {
   
   return(missing_all)
 }
+
+## test whether character vector contains blank element
+contains_blank_char <- function(x) {
+  
+  # NULL or length-0 vectors are considered blank
+  if (is.null(x) || length(x) == 0L) return(TRUE)
+  
+  # Treat factors as their character labels
+  if (is.factor(x)) x <- as.character(x)
+  
+  res <- is.na(x)
+  
+  # For character inputs, blank means "" or whitespace-only
+  if (is.character(x)) {
+    res <- res | trimws(x) == ""
+  }
+  
+  # error if x is not character or factor
+  if (is.character(x) == FALSE & is.factor(x) == FALSE){
+    stop("Only character and factor values are accepted.")
+  }
+  
+  
+  # Return logical stating whether any element in character vector is blank 
+  return(any(res))
+}

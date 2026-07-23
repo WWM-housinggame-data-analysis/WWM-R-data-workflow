@@ -8,6 +8,7 @@ FUNCTION_PATH <- file.path("R")
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
+source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
 
 
 # Reactive plot based on user input
@@ -59,7 +60,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
 }
 
 
-retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
   # selected_cost_types() already normalized. Still filter to known keys.
   selected_bar_segments <- update_bar_segments(selected_cost_types)
@@ -76,7 +77,7 @@ retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table,
   
   df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  df <- filter_game_rounds(df, game_round)
+  df <- filter_game_rounds(df, game_round, interm_rounds)
   
   pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
   

@@ -32,6 +32,7 @@ FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 
 # ------------------------------------------------------------
@@ -251,6 +252,8 @@ upload_dbtables <- function(folder_path, subfolder_pattern, dbtable_selection = 
   ## Check SELECTED_DBTABLES is non-empty character
   stopifnot("SELECTED_DBTABLES expected to be character" = is.character(SELECTED_DBTABLES),
             "SELECTED_DBTABLES expected to have length > 0" = length(SELECTED_DBTABLES) > 0)
+  
+  stopifnot("SELECTED_DBTABLES should not contain blank character entries" = contains_blank_char(SELECTED_DBTABLES) == FALSE)
   
   # Check IMPORTED_TABLE_TYPE exists
   stopifnot("Default variable IMPORTED_TABLE_TYPE not found in R/constants.R" = exists(deparse(substitute(IMPORTED_TABLE_TYPE))))

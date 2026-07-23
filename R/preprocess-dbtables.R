@@ -493,25 +493,6 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   questionitem_df <- sqldf::sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
   
   
-  
-  
-  # Add to question score the question, question item and player_round tables relevant variables
-  # questionscore_df <- sqldf("
-  # SELECT 
-  #   qs.id AS answer_id, qs.answer, qs.late_answer,qi.name AS answer_option, CAST(qs.answer AS INTEGER) || ' - ' || qi.name AS answer_plus_option, 
-  #   qs.question_id, q.name AS question_name, q.description AS question_description,
-  #   qs.playerround_id, pr.groupround_round_number, pr.player_code, pr.group_name, pr.gamesession_name
-  # FROM questionscore_df AS qs
-  # LEFT JOIN question_df AS q
-  #   ON qs.question_id = q.id
-  # LEFT JOIN questionitem_df AS qi
-  #   ON qs.answer = qi.code
-  #  AND qs.question_id = qi.question_id
-  # LEFT JOIN  playerround_df AS pr
-  #  ON qs.playerround_id = pr.playerround_id
-  # ")
-
-  
   ## Rename columns in the dataframe
   ## "SELECT id AS answer_id, answer, late_answer, playerround_id, question_id FROM questionscore_df"  
   
@@ -570,42 +551,42 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ##  calculated_costs_personal_measures, calculated_costs_house_measures, calculated_costs_measures_difference,
   ##  satisfaction_total, welfaretype_id, total_damage_costs, community_name, fluvial_house_delta, pluvial_house_delta
   ##  FROM playerround_df"
-  
+
   income_dist_df <- sqldf::sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
-  
+
   # -----------------------------------------------------------
   # tidyverse operations
   # -----------------------------------------------------------
-  
+
   ## Convert INCOME_DIST_CATEGCOLS to factor
   income_dist_df <- income_dist_df |>
     dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
-  
-  
+
+
   ## Append income_grp labels based on round_income to dataframe
   income_dist_df <- append_income_grp(income_dist_df, INCOME_GRP_COL)
-  
-  
+
+
   ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
   income_dist_df <- income_dist_df |>
     dplyr::mutate_at(
       names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
       as.numeric
     )
-  
-  
+
+
   ## Calculate the round costs to check the spendable income
   income_dist_df <- append_total_costs(income_dist_df, TOTAL_COSTS_COL)
-  
-  
+
+
   ## Calculate the spendable income
   income_dist_df <- append_spendable_income_cols(income_dist_df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
-  
-  
+
+
   ## Calculate income - living costs
   income_dist_df <- append_income_living_diff(income_dist_df, INCOME_LIVING_DIFFCOL)
-  
-  
+
+
   ## Calculate  "profit - spent savings house moving"
   income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
   
