@@ -325,44 +325,7 @@ make_rounds_reactive <- function(df) {
     
     shiny::req(nrow(df) > 0)
     
-    rounds <- df |>
-      dplyr::pull(ROUND_NUMBER_COL) |>
-      unique() |>
-      sort()
+    get_intermediate_rounds(df)
     
-    # work on returning no round panels
-    if (length(rounds) <= 2) {
-      
-      warning(
-        "No intermediate rounds found",
-        "Proceeding with detected rounds."
-      )
-      
-      round_ids <- SELECT_ALL
-      names(round_ids) <- ROUND_ACCORDION_LABELALL
-      
-    } else {
-      
-      interm_rounds <- as.character(rounds[2:(length(rounds)-1)])
-      
-      # Optional check against expected intermediate rounds
-      if (exists("INTERM_ROUNDS", inherits = TRUE) &&
-          !identical(interm_rounds, INTERM_ROUNDS)) {
-        warning(
-          "Detected intermediate rounds differ from INTERM_ROUNDS. ",
-          "Proceeding with detected rounds."
-        )
-      }
-      
-      # IDs used internally (All + r1, r2, ...)
-      round_ids <- c(SELECT_ALL,
-                     paste0(ROUND_ACCORDION_IDPREF, interm_rounds)
-      )
-      
-      names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
-                            paste(names(ROUND_ACCORDION_IDPREF), interm_rounds))
-    }
-    
-    round_ids
   })
 }

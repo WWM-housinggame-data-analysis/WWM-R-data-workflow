@@ -3,6 +3,36 @@
 # Load constants and helper components
 # ---------------------------------------------------------------
 
+## Load for handling file location
+library(here)
+
+## Load importing/exporting data
+library(readxl)
+library(readr)
+library(openxlsx)
+library(writexl)
+library(yaml)
+
+## Load for data manipulation
+library(sqldf)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(tibble)
+
+## Load for data visualisation
+library(ggplot2)
+library(ggtext)
+library(shiny)
+library(bslib)
+library(plotly)
+library(webshot2)
+library(htmlwidgets)
+library(rstudioapi)
+
+
+
+# Set defaults ----
 ## Set all default variables or global options and all the path variables.
 
 ## Set path to source files with functions
@@ -10,26 +40,54 @@ FUNCTION_PATH <- file.path("R")
 
 ## Load all default variables or global options. Please check this file for visual check loaded variables 
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
-source(here::here(file.path(FUNCTION_PATH, "sql-query-dbtables.R")))
-source(here::here(file.path(FUNCTION_PATH, "create-dbtables.R")))
-source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
+
+
+# Source files ----
+
+## Load required functions
+
+### Load functions required for listing, uploading and exporting data
 source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
+### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
+source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-# Functions ----
+### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
-# ---------------------------------------------------------------
-# Helper: unpack list of data frames into environment
-# ---------------------------------------------------------------
+### Load functions required to handle dashboard filter actions
+source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
-unpack_dbtable_list <- function(dblist, suffix = "_df") {
-  
-  stopifnot("dblist is not list" = is.list(dblist),
-            "dblist expected to have length higher than 0" = length(dblist) > 0,
-            "dblist expected to have data frames only" = all(vapply(dblist, inherits, logical(1), "data.frame")))
-  
-  dblist <- stats::setNames(dblist, paste0(names(dblist), suffix))
-  list2env(dblist, envir = parent.frame())
+### Load functions required to setup plotly visualizations
+source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
+
+
+# Data Workflow ----
+
+## Read all tables in the database folders into a single list variable:
+##
+## list(gamesession_data_list)
+##  |
+##  |-- list(gamessession_data_session1)
+##  |     |
+##  |     |-- df(table1)
+##  |     |-- df(table2)
+##  |     |-- df(table3)
+##  |     ...
+##  |
+##  |-- list(gamessession_data_session2)
+##  |     |
+##       ...
+##  ...
+##
+
+gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
+
+## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
+preprocess_data_list <- list()
+
+for (session_name in names(gamesession_data_list)) {
+  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
 dbtable_list <- preprocess_data_list[[3]]
@@ -62,69 +120,92 @@ initialhousemeasure_cond <- if (exclude_initialhousemeasure) paste0("is_initialh
 player_code_cond <- paste0("player_code", " IS NOT NULL")
 round_number_cond <- paste0("groupround_round_number", " > 0")
 
-playerround_temp_df <- playerround_df
-playerround_temp_df[,"groupround_round_number"] <- playerround_temp_df[,"groupround_round_number"] + 1
+# Keep this action on hold until the code review is concluded
+# playerround_temp_df <- playerround_df
+# playerround_temp_df[,"groupround_round_number"] <- playerround_temp_df[,"groupround_round_number"] + 1
+# 
+# playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_fluvial_damage", coal_val = 0))
+# playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_pluvial_damage", coal_val = 0))
+# playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "total_damage_costs", coal_val = 0))
+# 
+# 
+# housemeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, c("player_code", "groupround_round_number"),
+#                                                             playerround_temp_df, c("player_code", "groupround_round_number"),
+#                                                             kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
+#                                                                                    "group_name", "player_code", "house_code",
+#                                                                                    "groupround_round_number", "round_income",
+#                                                                                    "short_alias", "cost_absolute",
+#                                                                                    "satisfaction_delta_once",
+#                                                                                    "pluvial_protection_delta",
+#                                                                                    "fluvial_protection_delta",
+#                                                                                    "is_initialhousemeasure"),
+#                                                             kept_dbtable2_cols = c("cost_fluvial_damage",
+#                                                                                    "cost_pluvial_damage",
+#                                                                                    "total_damage_costs"),
+#                                                             is_where = TRUE,
+#                                                             where_cond = paste(
+#                                                               paste0("dbtable1.", c(initialhousemeasure_cond,
+#                                                                                     player_code_cond,
+#                                                                                     round_number_cond)
+#                                                               ),
+#                                                               collapse = " AND ")
+# )
+# )
+# 
+# 
+# housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_filtered_df,
+#                                                          names(housemeasure_filtered_df)[names(housemeasure_filtered_df) %in% "is_initialhousemeasure" == F])
+#                                          )
+ 
 
-playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_fluvial_damage", coal_val = 0))
-playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "cost_pluvial_damage", coal_val = 0))
-playerround_temp_df <- sqldf::sqldf(unnull_dbcol_sqlquery(playerround_temp_df, "total_damage_costs", coal_val = 0))
-
-
-housemeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(housemeasure_df, c("player_code", "groupround_round_number"),
-                                                            playerround_temp_df, c("player_code", "groupround_round_number"),
-                                                            kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
-                                                                                   "group_name", "player_code", "house_code",
-                                                                                   "groupround_round_number", "round_income",
-                                                                                   "short_alias", "cost_absolute",
-                                                                                   "satisfaction_delta_once",
-                                                                                   "pluvial_protection_delta",
-                                                                                   "fluvial_protection_delta",
-                                                                                   "is_initialhousemeasure"),
-                                                            kept_dbtable2_cols = c("cost_fluvial_damage",
-                                                                                   "cost_pluvial_damage",
-                                                                                   "total_damage_costs"),
-                                                            is_where = TRUE,
-                                                            where_cond = paste(
-                                                              paste0("dbtable1.", c(initialhousemeasure_cond,
-                                                                                    player_code_cond,
-                                                                                    round_number_cond)
-                                                              ),
-                                                              collapse = " AND ")
+housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_df, c("id", "measuretype_id", "group_name",
+                                                                            "player_code", "house_code",
+                                                                            "groupround_round_number", "round_income",
+                                                                            "short_alias", "cost_absolute",
+                                                                            "satisfaction_delta_once",
+                                                                            "pluvial_protection_delta",
+                                                                            "fluvial_protection_delta"),
+                                                         is_where = TRUE,
+                                                         where_cond = paste(c(initialhousemeasure_cond,
+                                                                              player_code_cond),
+                                                                            collapse = " AND ")
 )
 )
-
-
-housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_filtered_df,
-                                                         names(housemeasure_filtered_df)[names(housemeasure_filtered_df) %in% "is_initialhousemeasure" == F])
-                                         )
 
 housemeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_filtered_df, "cost_absolute", "measure_cost"))
 
+ 
+# personalmeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, c("player_code", "groupround_round_number"),
+#                                                             playerround_temp_df, c("player_code", "groupround_round_number"),
+#                                                             kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
+#                                                                                    "group_name", "player_code", "house_code",
+#                                                                                    "groupround_round_number", "round_income",
+#                                                                                    "short_alias", "calculated_costs",
+#                                                                                    "satisfaction_delta_once",
+#                                                                                    "pluvial_protection_delta",
+#                                                                                    "fluvial_protection_delta",
+#                                                                                    "is_initialhousemeasure"),
+#                                                             kept_dbtable2_cols = c("cost_fluvial_damage",
+#                                                                                    "cost_pluvial_damage",
+#                                                                                    "total_damage_costs")
+#                                                             )
+#                                             )
+# 
+# 
+# personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_filtered_df,
+#                                                          names(personalmeasure_filtered_df)[names(personalmeasure_filtered_df) %in% "is_initialhousemeasure" == F])
+#                                          )
 
 
-personalmeasure_filtered_df <- sqldf::sqldf(left_join_sqlquery(personalmeasure_df, c("player_code", "groupround_round_number"),
-                                                            playerround_temp_df, c("player_code", "groupround_round_number"),
-                                                            kept_dbtable1_cols = c("gamesession_name", "id", "measuretype_id",
-                                                                                   "group_name", "player_code", "house_code",
-                                                                                   "groupround_round_number", "round_income",
-                                                                                   "short_alias", "calculated_costs",
-                                                                                   "satisfaction_delta_once",
-                                                                                   "pluvial_protection_delta",
-                                                                                   "fluvial_protection_delta",
-                                                                                   "is_initialhousemeasure"),
-                                                            kept_dbtable2_cols = c("cost_fluvial_damage",
-                                                                                   "cost_pluvial_damage",
-                                                                                   "total_damage_costs")
-                                                            )
-                                            )
-
-
-personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_filtered_df,
-                                                         names(personalmeasure_filtered_df)[names(personalmeasure_filtered_df) %in% "is_initialhousemeasure" == F])
-                                         )
+personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_df, c("id", "measuretype_id", "group_name",
+                                                                                  "player_code", "house_code",
+                                                                                  "groupround_round_number", "round_income",
+                                                                                  "short_alias", "calculated_costs",
+                                                                                  "satisfaction_delta_once",
+                                                                                  "pluvial_protection_delta",
+                                                                                  "fluvial_protection_delta")))
 
 personalmeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure_filtered_df, "calculated_costs", "measure_cost"))
-
 
 
 # Add a source column to each measures table and combine them
@@ -154,6 +235,10 @@ measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absol
 #     )
 #   )
 
+# Step 1: Aggregate counts per round and measure type
+measures_combined_counts <- measures_combined %>%
+  group_by(groupround_round_number, short_alias) %>%
+  summarise(count = n(), .groups = "drop")
 
 #create a new column in R that concatenates the absolute cost (if non‑zero) and the percentage cost (if non‑zero) together with the cost reference. 
 measuretype <- measuretype %>%
@@ -166,51 +251,51 @@ measuretype <- measuretype %>%
     )
   )
 
-# Assuming measures_combined and measuretype data frames are in your R session
-# Start from your measures_combined data frame
-measures_combined_counts <- measures_combined %>%
-  mutate(
-    # Your three requested cases:
-    case_both_prot_prev_total = (pluvial_protection_delta > 0 &
-                                   fluvial_protection_delta > 0 &
-                                   prev_total_damage > 0),
-    
-    case_pluvial_prev_pluvial = (pluvial_protection_delta > 0 &
-                                   prev_cost_pluvial_damage > 0),
-    
-    case_fluvial_prev_fluvial = (fluvial_protection_delta > 0 &
-                                   prev_cost_fluvial_damage > 0),
-    
-    # Remaining = NOT in any of the three conditions
-    case_remaining = !(
-      case_both_prot_prev_total |
-        case_pluvial_prev_pluvial |
-        case_fluvial_prev_fluvial
-    )
-  ) %>%
-  # Group per round and measure type
-  group_by(groupround_round_number, short_alias) %>%
-  summarise(
-    # Total implementations per round × measure type
-    count_total_implementations             = n(),
-    
-    # Three bucket counts per round × measure type
-    count_both_protection_prev_total_damage = sum(case_both_prot_prev_total,   na.rm = TRUE),
-    count_pluvial_prev_pluvial_damage       = sum(case_pluvial_prev_pluvial,   na.rm = TRUE),
-    count_fluvial_prev_fluvial_damage       = sum(case_fluvial_prev_fluvial,   na.rm = TRUE),
-    
-    # Remaining bucket
-    count_remaining                         = sum(case_remaining,              na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # ---- Optional sanity check columns (per round × measure type) ----
-mutate(
-  check_sum = count_both_protection_prev_total_damage +
-    count_pluvial_prev_pluvial_damage +
-    count_fluvial_prev_fluvial_damage +
-    count_remaining,
-  all_good  = (check_sum == count_total_implementations))
-
+# # Assuming measures_combined and measuretype data frames are in your R session
+# # Start from your measures_combined data frame
+# measures_combined_counts <- measures_combined %>%
+#   mutate(
+#     # Your three requested cases:
+#     case_both_prot_prev_total = (pluvial_protection_delta > 0 &
+#                                    fluvial_protection_delta > 0 &
+#                                    prev_total_damage > 0),
+#     
+#     case_pluvial_prev_pluvial = (pluvial_protection_delta > 0 &
+#                                    prev_cost_pluvial_damage > 0),
+#     
+#     case_fluvial_prev_fluvial = (fluvial_protection_delta > 0 &
+#                                    prev_cost_fluvial_damage > 0),
+#     
+#     # Remaining = NOT in any of the three conditions
+#     case_remaining = !(
+#       case_both_prot_prev_total |
+#         case_pluvial_prev_pluvial |
+#         case_fluvial_prev_fluvial
+#     )
+#   ) %>%
+#   # Group per round and measure type
+#   group_by(groupround_round_number, short_alias) %>%
+#   summarise(
+#     # Total implementations per round × measure type
+#     count_total_implementations             = n(),
+#     
+#     # Three bucket counts per round × measure type
+#     count_both_protection_prev_total_damage = sum(case_both_prot_prev_total,   na.rm = TRUE),
+#     count_pluvial_prev_pluvial_damage       = sum(case_pluvial_prev_pluvial,   na.rm = TRUE),
+#     count_fluvial_prev_fluvial_damage       = sum(case_fluvial_prev_fluvial,   na.rm = TRUE),
+#     
+#     # Remaining bucket
+#     count_remaining                         = sum(case_remaining,              na.rm = TRUE),
+#     .groups = "drop"
+#   ) %>%
+#   # ---- Optional sanity check columns (per round × measure type) ----
+# mutate(
+#   check_sum = count_both_protection_prev_total_damage +
+#     count_pluvial_prev_pluvial_damage +
+#     count_fluvial_prev_fluvial_damage +
+#     count_remaining,
+#   all_good  = (check_sum == count_total_implementations))
+# 
 # Keep your preferred plotting order (reverse of measuretype$short# Keep your preferred plotting order (reverse of measuretype$short_alias)
 measures_combined_counts$short_alias <- factor(
   measures_combined_counts$short_alias,

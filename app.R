@@ -274,7 +274,8 @@ server <- function(input, output, session) {
             income_dist_df(),
             selected_cost_types(),
             selected_table(),
-            game_round = rid_value)
+            game_round = rid_value,
+            interm_rounds = interm_rids)
           })
         
         num_summary_df <- shiny::reactive({summary_tables()$num_df})

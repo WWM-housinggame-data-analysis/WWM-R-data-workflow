@@ -8,7 +8,49 @@ FUNCTION_PATH <- file.path("R")
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
+source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
 
+
+retrieve_GP2_dataframe <- function(df) {
+  
+  # -----------------------------------------------------------
+  # tidyverse operations
+  # -----------------------------------------------------------
+  
+  ## Convert INCOME_DIST_CATEGCOLS to factor
+  df <- df |>
+    dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
+  
+  
+  ## Append income_grp labels based on round_income to dataframe
+  df <- append_income_grp(df, INCOME_GRP_COL)
+  
+  
+  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
+  df <- df |>
+    dplyr::mutate_at(
+      names(df)[!(names(df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
+      as.numeric
+    )
+  
+  
+  ## Calculate the round costs to check the spendable income
+  df <- append_total_costs(df, TOTAL_COSTS_COL)
+  
+  
+  ## Calculate the spendable income
+  df <- append_spendable_income_cols(df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
+  
+  
+  ## Calculate income - living costs
+  df <- append_income_living_diff(df, INCOME_LIVING_DIFFCOL)
+  
+  
+  ## Calculate  "profit - spent savings house moving"
+  df <- append_housemoving_diff(df, HOUSEMOVING_DIFFCOL)
+  
+  return(df)
+}
 
 # Reactive plot based on user input
 retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
@@ -59,7 +101,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
 }
 
 
-retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
   # selected_cost_types() already normalized. Still filter to known keys.
   selected_bar_segments <- update_bar_segments(selected_cost_types)
@@ -76,7 +118,7 @@ retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table,
   
   df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  df <- filter_game_rounds(df, game_round)
+  df <- filter_game_rounds(df, game_round, interm_rounds)
   
   pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
   
