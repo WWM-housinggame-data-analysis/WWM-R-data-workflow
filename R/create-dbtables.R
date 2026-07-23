@@ -54,9 +54,6 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
     ) |>
     
     #ensure cumulative totals are calculated separately for each player
-    # mutate(
-    #   !!PERSONAL_HOUSE_DIFFCOL := .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[COST_HOUSE_COL]]
-    
     dplyr::mutate(
       !!PERSONAL_HOUSE_DIFFCOL := .data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[TOTAL_BOUGHT_COL]]
     ) |>
@@ -72,7 +69,7 @@ create_personalmeasure_cumulative_df <- function(pm_df) {
     
     dplyr::mutate(
       !!CUMULATIVE_COSTS_PERSONAL_COL     := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]]),
-      !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_PERSONAL_COL]] - .data[[TOTAL_BOUGHT_COL]])
+      !!CUMULATIVE_PERSONAL_HOUSE_DIFFCOL := cumsum(.data[[PERSONAL_HOUSE_DIFFCOL]])
     )
   
   return(pmc_df)
@@ -138,7 +135,7 @@ create_housemeasure_cumulative_df <- function(hm_df) {
     # compute the running total across rounds
     dplyr::mutate(
       !!CUMULATIVE_COSTS_HOUSE_COL     := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]]),
-      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]] - .data[[TOTAL_BOUGHT_COL]])
+      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[HOUSE_TOTAL_DIFFCOL]])
     )
   
   return(hmc_df)

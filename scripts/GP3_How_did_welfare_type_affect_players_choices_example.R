@@ -1,7 +1,7 @@
 
 # ------------------------------------------------------------
-# Script: scripts/GP2_How did players spend their money_example.R
-# Purpose: Example script to run data analysis and visualization for GP2 in RStudio
+# Script: scripts/GP3_How_did_welfare_type_affect_players_choices_example.R
+# Purpose: Example script to run data analysis and visualization for GP3 in RStudio
 #
 # Working directory:
 #   Project root (see here::here())
@@ -15,10 +15,10 @@
 #   - data/results/*.png
 #
 # How to run:
-#   Rscript "scripts/GP2_How did players spend their money_example.R"
+#   Rscript "scripts/GP3_How_did_welfare_type_affect_players_choices_example.R"
 #
-# Author: João Guimarães
-# Created: 2026-04-10
+# Authors: Juliette Cortes Arevalo, Ines Dattatreya, João Guimarães
+# Created: 2026-07-13
 # Maintainer: Juliette Cortes Arevalo and Alex Verbraeck
 # ------------------------------------------------------------
 
@@ -122,14 +122,10 @@ selected_table <- SELECT_ALL
 selected_cost_types <- SELECT_ALL
 
 ## Retrieve income distribution data frame to be used for data visualization
-income_dist_df <- preprocess_data_list[[selected_gamesession]][["income_dist_df"]]
-
-round_ids <- get_intermediate_rounds(income_dist_df)
-
-interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
+income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)$num_df
+GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
 
 # Export Summary table
 write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
@@ -137,11 +133,10 @@ write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names
 ## Retrieve data to be plotted in analysis for GP2.
 ## Data is retrieved for cost type and table group selection defined above.
 ## Data representative of the whole game session and of each game round is retrieved, respectively.
-GP2_plotall_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids, fill_values_all)
-GP2_plot1_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", interm_rounds = interm_rids, fill_values_all)
-GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", interm_rounds = interm_rids, fill_values_all)
-GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", interm_rounds = interm_rids, fill_values_all)
+GP2_plotall_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
+GP2_plot1_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
+GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
+GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
 
-## Save GP2 plot in main directory and display it in RStudio viewer. Always add date and time to generate new figure
-save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP2_plot.png")),  vheight = 1100)
-
+## Save GP2 plot in main directory and display it in RStudio viewer
+save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, "GP2_plot.png"),  vheight = 1100)
