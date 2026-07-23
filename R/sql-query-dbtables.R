@@ -10,11 +10,27 @@ source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # Functions ---
 
+make_where_statement <- function(where_cond) {
+  
+  where_statement <- ""
+  
+      if(is.character(where_cond) & length(where_cond) == 1 & contains_blank_char(where_cond) == FALSE) {
+      
+      where_statement <- paste(" WHERE", where_cond)
+      
+    } else {
+      
+      stop("where_cond expected to be an non-empty character of length == 1.")
+    }
+    
+  return(where_statement)
+}
+
 ## Create sql query for sqldf to select and sort columns from dbtable
-select_sqlquery <- function(dbtable, selected_cols) {
+select_sqlquery <- function(dbtable, selected_cols, is_where = FALSE, where_cond = "") {
   
   ## write default sql query if no selected_cols are given as argument
-  sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)))
+  select_from_statement <- paste0("SELECT * FROM ", deparse(substitute(dbtable)))
   
   ## Check selected_cols is not missing. Otherwise all collums are selected with no change in order
   if (missing(selected_cols) == FALSE) {
@@ -30,9 +46,24 @@ select_sqlquery <- function(dbtable, selected_cols) {
     ## check selected_cols is not identical to the current names of dbtable. In that case columns are selected and sorted as in selected_cols, ignore non mentioned ones.
       
     if (identical(selected_cols, names(dbtable)) == FALSE) {
-      sqlquery <- paste0("SELECT ", paste(selected_cols[selected_cols %in% names(dbtable)], collapse = ", "), " FROM ", deparse(substitute(dbtable)))
+      select_from_statement <- paste0("SELECT ", paste(selected_cols[selected_cols %in% names(dbtable)], collapse = ", "), " FROM ", deparse(substitute(dbtable)))
     }
   }
+  
+  
+  ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
+  ## By default where condition is ignored and where_ statement remains blank character.
+  
+  if (is_where) {
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
+  }
+  
+  
+  ## paste statements to make complete left join sql query
+  sqlquery <- paste0(select_from_statement, where_statement)
+  
   
   return(sqlquery)
 }
@@ -96,18 +127,10 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
   ## By default where condition is ignored and where_ statement remains blank character.
   
-  where_statement <- ""
-  
   if (is_where) {
-    if(is.character(where_cond) & length(where_cond) == 1 & contains_blank_char(where_cond) == FALSE) {
-      
-      where_statement <- paste(" WHERE", where_cond)
-      
-    } else {
-      
-      stop("where_cond expected to be an non-empty character of length == 1.")
-    }
-      
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
   }
   
   
@@ -371,21 +394,11 @@ union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbta
   ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
   ## By default where condition is ignored and where_ statement remains blank character.
   
-  where_statement <- ""
-  
   if (is_where) {
-    if(is.character(where_cond) & length(where_cond) == 1 & contains_blank_char(where_cond) == FALSE) {
-      
-      where_statement <- paste(" WHERE", where_cond)
-      
-    } else {
-      
-      stop("where_cond expected to be an non-empty character of length == 1.")
-    }
-    
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
   }
-  
-  
   
   ## paste statements to make complete left join sql query
   sqlquery <- paste0(
