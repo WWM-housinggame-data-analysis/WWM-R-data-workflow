@@ -11,47 +11,6 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
 
 
-retrieve_GP2_dataframe <- function(df) {
-  
-  # -----------------------------------------------------------
-  # tidyverse operations
-  # -----------------------------------------------------------
-  
-  ## Convert INCOME_DIST_CATEGCOLS to factor
-  df <- df |>
-    dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
-  
-  
-  ## Append income_grp labels based on round_income to dataframe
-  df <- append_income_grp(df, INCOME_GRP_COL)
-  
-  
-  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
-  df <- df |>
-    dplyr::mutate_at(
-      names(df)[!(names(df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
-      as.numeric
-    )
-  
-  
-  ## Calculate the round costs to check the spendable income
-  df <- append_total_costs(df, TOTAL_COSTS_COL)
-  
-  
-  ## Calculate the spendable income
-  df <- append_spendable_income_cols(df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
-  
-  
-  ## Calculate income - living costs
-  df <- append_income_living_diff(df, INCOME_LIVING_DIFFCOL)
-  
-  
-  ## Calculate  "profit - spent savings house moving"
-  df <- append_housemoving_diff(df, HOUSEMOVING_DIFFCOL)
-  
-  return(df)
-}
-
 # Reactive plot based on user input
 retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
   
