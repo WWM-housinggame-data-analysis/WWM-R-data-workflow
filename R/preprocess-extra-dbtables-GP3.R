@@ -136,55 +136,24 @@ measures_combined_df <- sqldf::sqldf(union_all_sqlquery(personalmeasure_filtered
 # Step 3: Variables to plot calculation ---------------------------------------------------
 
 #  Define the order to plot the measures
-measures_text <- data.frame(
-  short_alias = c("Rainbarrel for recycling",
-                  "Waterproof walls, floors",
-                  "Green garden",
-                  "Self-activating wall",
-                  "Water pump installation",
-                  "Sandbags",
-                  "Modest house renovations",
-                  "Structural house changes",
-                  "Personal improvements",
-                  "Flood insurance"),
-  cost_reference = c(0,0,0,0,0,0,
-                     "% House cost",
-                     "% House cost",
-                     "% Round income",
-                     "% House cost"),
-  icons_path = c(file.path("icons","RainBarrel.png"),
-                 file.path("icons","WaterproofingWalls.png"),          
-                 file.path("icons","GreenGarden.png"),
-                 file.path("icons","Self-ActivatingFloodWall.png"),
-                 file.path("icons","Waterpump.png"),
-                 file.path("icons","Sandbags.png"),
-                 file.path("icons","ModestHouseRenovations.png"),
-                 file.path("icons","StructuralHouseChanges.png"),
-                 file.path("icons","PersonalImprovements.png"),
-                 file.path("icons","FloodInsurance.png")),
-  plot_order = c(0,0,0,0,0,0,2,1,3,4),
-  stringsAsFactors = FALSE
+
+measuretype_df <- sqldf::sqldf(left_join_sqlquery(measuretype_df, match_dbtable1_cols = "short_alias",
+                                                  MEASURETEXT_DF, match_dbtable2_cols = "short_alias",
+                                                  kept_dbtable1_cols = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house"),
+                                                  kept_dbtable2_cols = c(MEASURE_COSTREF_COL, MEASURE_COSTPLOT_COL, MEASURE_ICONS_COL))
 )
 
-measuretype <- sqldf("
-  SELECT 
-    m.short_alias,
-    m.cost_absolute,
-    m.cost_percentage_income,
-    m.cost_percentage_house,
-    mt.cost_reference,
-    mt.plot_order,
-    mt.icons_path
-  FROM measuretype AS m
-  LEFT JOIN measures_text AS mt
-    ON m.short_alias = mt.short_alias
-  ORDER BY 
-    CASE
-    WHEN m.cost_absolute <> 0 THEN 1 ELSE 2 
-    END,
-    m.cost_absolute DESC,
-    mt.plot_order
-")
+measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, MEASURE_COSTPLOT_COL))
+measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absolute", asc = FALSE))
+
+
+# Keep this action on hold until the code review is concluded
+# measuretype_df <- measuretype_df %>%
+#   mutate(
+#     cost_absolute = ifelse(cost_absolute == 0, 1, 2
+#     )
+#   )
+
 
 #create a new column in R that concatenates the absolute cost (if non‑zero) and the percentage cost (if non‑zero) together with the cost reference. 
 measuretype <- measuretype %>%

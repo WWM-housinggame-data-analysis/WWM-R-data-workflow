@@ -297,3 +297,54 @@ REFS_HEADER_TAB <- bslib::nav_menu(
 )
 
 LINEBREAK<- "<br>"
+
+MEASURE_ALIAS_COL <- "short_alias"
+
+MEASURE_ALIASES <- c("Rainbarrel for recycling", "Waterproof walls, floors", "Green garden",
+                   "Self-activating wall", "Water pump installation", "Sandbags",
+                   "Modest house renovations", "Structural house changes",
+                   "Personal improvements", "Flood insurance")
+
+
+ICONS_PATH <- "data/dependencies/icons"
+
+MEASURE_ICONS_COL <- "icons_path"
+
+MEASURE_ICONS_FILENAMES <- c("RainBarrel", "WaterproofingWalls", "GreenGarden",
+                             "Self-ActivatingFloodWall", "Waterpump","Sandbags",
+                             "ModestHouseRenovations", "StructuralHouseChanges",
+                             "PersonalImprovements", "FloodInsurance")
+
+MEASURE_ICONS_FILETYPE <- ".png"
+
+MEASURE_ICONS_FILEPATHS <- file.path(ICONS_PATH,
+                                     paste0(MEASURE_ICONS_FILENAMES, MEASURE_ICONS_FILETYPE))
+
+names(MEASURE_ICONS_FILEPATHS) <- MEASURE_ALIASES
+
+MEASURE_COSTREF_COL <- "cost_reference"
+ 
+MEASURE_COSTREF_VALUES <- c(0,0,0,0,0,0,
+                            "% House cost",
+                            "% House cost",
+                            "% Round income",
+                            "% House cost")
+
+names(MEASURE_COSTREF_VALUES) <- MEASURE_ALIASES
+
+MEASURE_COSTPLOT_COL <- "plot_order"
+
+MEASURE_COSTPLOT_ORDER <- c(0,0,0,0,0,0,2,1,3,4)
+
+names(MEASURE_COSTPLOT_ORDER) <- MEASURE_ALIASES
+  
+MEASURETEXT_DF_COLS <- c(MEASURE_ALIAS_COL, MEASURE_COSTREF_COL, MEASURE_ICONS_COL, MEASURE_COSTPLOT_COL)
+
+MEASURETEXT_DF <- data.frame(matrix(nrow = length(MEASURE_ALIASES), ncol = length(MEASURETEXT_DF_COLS)), stringsAsFactors = FALSE)
+
+names(MEASURETEXT_DF) <- MEASURETEXT_DF_COLS
+
+MEASURETEXT_DF[,MEASURE_ALIAS_COL] <- MEASURE_ALIASES
+MEASURETEXT_DF[,MEASURE_COSTREF_COL] <- MEASURE_COSTREF_VALUES
+MEASURETEXT_DF[,MEASURE_ICONS_COL] <- MEASURE_ICONS_FILEPATHS
+MEASURETEXT_DF[,MEASURE_COSTPLOT_COL] <- MEASURE_COSTPLOT_ORDER
