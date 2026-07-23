@@ -209,7 +209,7 @@ K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
-#INTERM_ROUNDS <- as.character(1:3)
+EXPECTED_INTERM_ROUNDS <- as.character(1:3)
 
 HEADER_TITLE <- "WhereWeMove Dashboard"
 HEADER_BACKCOLOR <- "#2D89C8"
