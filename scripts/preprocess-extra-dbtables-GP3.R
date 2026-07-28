@@ -112,6 +112,13 @@ stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exis
 stopifnot("Missing dbtables needed for preprocessing" = all(c("housemeasure", "playerround", "personalmeasure", "measuretype") %in% names(dbtable_list)))
 
 
+encode_b64 <- function(path) {
+  ext  <- tolower(tools::file_ext(path))
+  mime <- if (ext %in% c("jpg", "jpeg")) "image/jpeg" else if (ext == "svg") "image/svg+xml" else "image/png"
+  raw  <- readBin(path, "raw", n = file.info(path)$size)
+  paste0("data:", mime, ";base64,", base64enc::base64encode(raw))
+}
+
 # Step 2: Data Preparations ---------------------------------------------------
 #Add if the player implemented house or personal measures after flood experience (either river or rain damage)in the previous round
 #Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
@@ -235,13 +242,8 @@ measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absol
 #     )
 #   )
 
-# Step 1: Aggregate counts per round and measure type
-measures_combined_counts <- measures_combined %>%
-  group_by(groupround_round_number, short_alias) %>%
-  summarise(count = n(), .groups = "drop")
-
 #create a new column in R that concatenates the absolute cost (if non‑zero) and the percentage cost (if non‑zero) together with the cost reference. 
-measuretype <- measuretype %>%
+measuretype_df <- measuretype_df %>%
   mutate(
     cost_info = case_when(
       cost_absolute != 0 ~ paste0(cost_absolute/1000, "k"),
@@ -251,8 +253,15 @@ measuretype <- measuretype %>%
     )
   )
 
-# # Assuming measures_combined and measuretype data frames are in your R session
-# # Start from your measures_combined data frame
+# Step 1: Aggregate counts per round and measure type
+measures_combined_counts <- measures_combined_df %>%
+  group_by(groupround_round_number, short_alias) %>%
+  summarise(count = n(), .groups = "drop")
+
+
+
+# # Assuming measures_combined_df and measuretype data frames are in your R session
+# # Start from your measures_combined_df data frame
 # measures_combined_counts <- measures_combined %>%
 #   mutate(
 #     # Your three requested cases:
@@ -299,14 +308,14 @@ measuretype <- measuretype %>%
 # Keep your preferred plotting order (reverse of measuretype$short# Keep your preferred plotting order (reverse of measuretype$short_alias)
 measures_combined_counts$short_alias <- factor(
   measures_combined_counts$short_alias,
-  levels = rev(measuretype$short_alias)
+  levels = rev(measuretype_df$short_alias)
 )
 # Ensure every row in measures_combined_counts has the correct icon according to its short_alias
 measures_combined_counts <- measures_combined_counts %>%
-  left_join(measuretype %>% select(short_alias, icons_path,cost_info), by = "short_alias")
+  left_join(measuretype_df %>% select(short_alias, icons_path, cost_info), by = "short_alias")
 
 # On Windows, this should open the image in your default viewer
-shell.exec(normalizePath(measures_combined_counts$icons_path[1], winslash = "/", mustWork = TRUE))
+# shell.exec(normalizePath(measures_combined_counts$icons_path[1], winslash = "/", mustWork = TRUE))
 
 # Set the factor level order based on groupround_round_number
 measures_combined_counts$groupround_round_number <- factor(
@@ -314,20 +323,131 @@ measures_combined_counts$groupround_round_number <- factor(
   levels = rev(sort(unique(measures_combined_counts$groupround_round_number)))# 1 → 2 → 3 …
 )
 
+df <- measures_combined_counts %>%
+  mutate(
+    groupround_round_number = as.factor(groupround_round_number),
+    label = paste0(short_alias, "<br>(", cost_info, ")")
+  )
+
+df$short_alias <- factor(df$short_alias, levels = rev(measuretype_df$short_alias))
+
+label_levels <- df %>%
+  distinct(short_alias, label) %>%
+  arrange(match(short_alias, levels(df$short_alias))) %>%
+  pull(label)
+
+df$label <- factor(df$label, levels = label_levels)
+
 # Improvements distribution specification ---------------------------------------------------
 # Create a list with the tables used in the calculation
-list_improv_dist <- list(
-  measures_combined = measures_combined,
-  measures_combined_counts = measures_combined_counts,
-  measuretype = measuretype,
-  personalmeasure = personalmeasure,
-  housemeasure = housemeasure,
-  questionscore = questionscore,
-  questionitem = questionitem,
-  initialhousemeasure = initialhousemeasure,
-  house = house,
-  housegroup = housegroup,
-  group = group,
-  groupround = groupround,
-  player = player
+# list_improv_dist <- list(
+#   measures_combined = measures_combined,
+#   measures_combined_counts = measures_combined_counts,
+#   measuretype = measuretype,
+#   personalmeasure = personalmeasure,
+#   housemeasure = housemeasure,
+#   questionscore = questionscore,
+#   questionitem = questionitem,
+#   initialhousemeasure = initialhousemeasure,
+#   house = house,
+#   housegroup = housegroup,
+#   group = group,
+#   groupround = groupround,
+#   player = player
+# )
+
+
+# -----------------------------
+# Plotly build
+# -----------------------------
+p <- plot_ly()
+round_levels <- levels(df$groupround_round_number)
+
+for (r in round_levels) {
+  subdf <- df %>% filter(groupround_round_number == r)
+  
+  p <- add_trace(
+    p,
+    type = "bar",
+    orientation = "h",
+    x = subdf$count,
+    y = subdf$label,
+    name = r,
+    marker = list(color = ROUND_SPLIT_COLORS[[r]]),
+    hovertemplate = paste(
+      "Measure: %{y}<br>",
+      "Round: ", r, "<br>",
+      "Count: %{x}<extra></extra>"
+    )
+  )
+}
+
+# Icons mapping
+icon_map <- df %>%
+  select(short_alias, label, icons_path) %>%
+  distinct() %>%
+  mutate(
+    icon_file = ifelse(
+      grepl("\\.(png|jpg|jpeg|svg)$", icons_path, ignore.case = TRUE),
+      icons_path,
+      paste0(icons_path, ".png")
+    )
+  ) %>%
+  filter(file.exists(icon_file)) %>%
+  mutate(src = vapply(icon_file, encode_b64, FUN.VALUE = character(1)))
+
+totals <- df %>% group_by(label) %>% summarize(total = sum(count, na.rm = TRUE), .groups = "drop")
+x_max  <- max(totals$total, na.rm = TRUE)
+x_off  <- -0.12 * x_max
+
+tick_vals <- pretty(c(0, x_max), n = 6)
+
+title_plot <- paste("Session:", session_name)
+
+p <- layout(
+  p,
+  title = list(
+    text = paste0(
+      "Distribution of measures",
+      "<br><sub style='color:#666666;font-size:16px;'>",
+      title_plot,
+      "</sub>"
+    ),
+    x = 0.5,
+    xanchor = "center",
+    font = list(size = 22, color = "#333333")
+  ),
+  barmode = "stack",
+  xaxis = list(
+    title = "Count",
+    range = c(x_off * 1.5, x_max * 1.1),
+    tickmode = "array",
+    tickvals = tick_vals,
+    ticktext = tick_vals,
+    zeroline = TRUE,
+    zerolinecolor = "#aaaaaa",
+    zerolinewidth = 1
+  ),
+  yaxis = list(title = "Improvement type"),
+  legend = list(title = list(text = "Round Number")),
+  margin = list(l = 160)
 )
+
+images_list <- lapply(seq_len(nrow(icon_map)), function(i) {
+  list(
+    source   = icon_map$src[i],
+    xref     = "x", yref = "y",
+    x        = x_off,
+    y        = as.character(icon_map$label[i]),
+    sizex    = 0.08 * x_max,
+    sizey    = 0.8,
+    xanchor  = "left",
+    yanchor  = "middle",
+    layer    = "above"
+  )
+})
+
+GP3_plotall_data <- layout(p, images = images_list)
+
+## Save GP2 plot in main directory and display it in RStudio viewer. Always add date and time to generate new figure
+save_and_view_plotly(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")),  vheight = 1100)
