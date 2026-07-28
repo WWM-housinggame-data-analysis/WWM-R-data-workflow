@@ -104,11 +104,14 @@ gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FA
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
+income_dist_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
   
   ##R/preprocess-dbtables.R
   preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  
+  income_dist_list[[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
 }
 
 
@@ -203,14 +206,14 @@ server <- function(input, output, session) {
 
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
-    preprocess_data_list    = preprocess_data_list,
-    gamesession_selection   = default_gamesession,  # SELECT_ALL or vector from config
+    session_data_list     = income_dist_list,
+    gamesession_selection = default_gamesession,  # SELECT_ALL or vector from config
     id = "gamesession"                              # matches your UI module id
   )
 
   # Keep names for readability
   selected_gamesession <- gs$selected_gamesession
-  income_dist_df       <- gs$income_dist_df
+  income_dist_df       <- gs$selected_session_df
 
   
   role_table <- make_role_table_reactives(
