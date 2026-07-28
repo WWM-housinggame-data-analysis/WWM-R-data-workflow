@@ -55,7 +55,10 @@ IMPORTED_TABLE_TYPE <- ".csv"
 WORKFLOW_STAGES <- c("raw", "preprocessed")
 names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
 
-PREPROCESSED_DBTABLES <- c("income_dist_df")
+PREPROCESSED_DBTABLES <- c("playerround", "measuretype", "personalmeasure",
+                           "housemeasure", "questionscore", "questionitem",
+                           "initialhousemeasure", "house", "housegroup",
+                           "group", "groupround", "player", "gamesession")
 
 
 ## Default variables for preprocessing data

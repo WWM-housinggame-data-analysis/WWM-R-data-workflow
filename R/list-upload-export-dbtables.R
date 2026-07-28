@@ -157,17 +157,27 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   
   ## Check Default variables exists, are character with length > 0 or = 1.
-  stopifnot("Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))),
+  stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(SELECTED_DBTABLES))),
+            "SELECTED_DBTABLES expected to be character" = is.character(SELECTED_DBTABLES),
+            "SELECTED_DBTABLES expected to have length > 0" = length(SELECTED_DBTABLES) > 0,
+    
+            "Default variable PREPROCESSED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(PREPROCESSED_DBTABLES))),
             "PREPROCESSED_DBTABLES expected to be character" = is.character(PREPROCESSED_DBTABLES),
             "PREPROCESSED_DBTABLES expected to have length > 0" = length(PREPROCESSED_DBTABLES) > 0,
             
             "Default variable PREPRDATA_PATH not found in R/constants.R" = exists(deparse(substitute(PREPRDATA_PATH))),
-            "PREPRDATA_PATH expected to be character" = is.character(PREPROCESSED_DBTABLES),
+            "PREPRDATA_PATH expected to be character" = is.character(PREPRDATA_PATH),
             "PREPRDATA_PATH expected to have only element 1" = length(PREPRDATA_PATH) == 1,
             
             "Default variable RAWDATA_PATH not found in R/constants.R" = exists(deparse(substitute(RAWDATA_PATH))),
-            "PREPRDATA_PATH expected to be character" = is.character(RAWDATA_PATH),
-            "PREPRDATA_PATH expected to have only element 1" = length(RAWDATA_PATH) == 1)
+            "RAWDATA_PATH expected to be character" = is.character(RAWDATA_PATH),
+            "RAWDATA_PATH expected to have only element 1" = length(RAWDATA_PATH) == 1)
+  
+  stopifnot("SELECTED_DBTABLES should not contain blank character entries" = contains_blank_char(SELECTED_DBTABLES) == FALSE,
+            "PREPROCESSED_DBTABLES should not contain blank character entries" = contains_blank_char(PREPROCESSED_DBTABLES) == FALSE,
+            "PREPRDATA_PATH should not contain blank character entries" = contains_blank_char(PREPRDATA_PATH) == FALSE,
+            "RAWDATA_PATH should not contain blank character entries" = contains_blank_char(RAWDATA_PATH) == FALSE
+  )
   
   # check sessiontable_list is named list containing data.frames only
   stopifnot(
@@ -181,8 +191,8 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
   
   # check session_name is a single character
   stopifnot(
-    "PREPRDATA_PATH expected to be character" = is.character(session_name),
-    "PREPRDATA_PATH expected to have only element 1" = length(session_name) == 1,
+    "session_name expected to be character" = is.character(session_name),
+    "session_name expected to have only element 1" = length(session_name) == 1
   )
   
   ## Define excel_outpath based on consistency between input logical argument `preprocessed` and presence/absence of PREPROCESSED_DBTABLES in sessiontable_list
@@ -193,17 +203,17 @@ export_excel <- function(sessiontable_list, session_name, preprocessed = TRUE) {
     
   } else if (preprocessed && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE)) {
     
-    stop(paste0("Expected table(s) named ",
-                "'", paste(PREPROCESSED_DBTABLES[PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE], collapse = ", "), "'",
-                " not found in table list."))
+    stop(paste0("Expected table(s) named '",
+                paste(PREPROCESSED_DBTABLES[PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE], collapse = "', '"),
+                "' not found in table list."))
     
-  } else if (preprocessed == FALSE && any(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
+  } else if (preprocessed == FALSE && any(SELECTED_DBTABLES %in% names(sessiontable_list) == FALSE)) {
     
     stop(paste0("Non-expected table named '",
-                "'", paste(PREPROCESSED_DBTABLES[PREPROCESSED_DBTABLES %in% names(sessiontable_list) == TRUE], collapse = ", "), "'",
-                "income_dist_df", " found in table list."))
+                paste(SELECTED_DBTABLES[SELECTED_DBTABLES %in% names(sessiontable_list) == FALSE], collapse = "', '"),
+                " found in table list."))
     
-  } else if (preprocessed == FALSE && all(PREPROCESSED_DBTABLES %in% names(sessiontable_list) == FALSE)) {
+  } else if (preprocessed == FALSE && all(SELECTED_DBTABLES %in% names(sessiontable_list) == TRUE)) {
     
     excel_outpath = RAWDATA_PATH
   }
@@ -250,7 +260,8 @@ upload_dbtables <- function(folder_path, subfolder_pattern, dbtable_selection = 
   dbtable_filenames <- list_matching_dbtables(folder_path, subfolder_pattern)
   
   ## Check SELECTED_DBTABLES is non-empty character
-  stopifnot("SELECTED_DBTABLES expected to be character" = is.character(SELECTED_DBTABLES),
+  stopifnot("Default variable SELECTED_DBTABLES not found in R/constants.R" = exists(deparse(substitute(SELECTED_DBTABLES))),
+            "SELECTED_DBTABLES expected to be character" = is.character(SELECTED_DBTABLES),
             "SELECTED_DBTABLES expected to have length > 0" = length(SELECTED_DBTABLES) > 0)
   
   stopifnot("SELECTED_DBTABLES should not contain blank character entries" = contains_blank_char(SELECTED_DBTABLES) == FALSE)
