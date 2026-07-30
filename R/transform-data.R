@@ -49,6 +49,23 @@ create_GP2_xlabels <- function(df, group_col) {
   return(df)
 }
 
+
+# Build xlabels on the row-level data
+create_GP3_xlabels <- function(df, group_col) {
+  
+  df <- df |>
+    dplyr::mutate(
+      !!GP3_XLABEL_COL := factor(
+        paste(.data[[MEASURE_ALIAS_COL]], paste0("(", .data[[COST_INFO_COL]], ")"), sep = LINEBREAK),
+        levels = paste(MEASURE_ALIASES,
+                       paste0("(", .data[[COST_INFO_COL]][match(MEASURE_ALIASES, .data[[MEASURE_ALIAS_COL]])] , ")"),
+                       sep = LINEBREAK)
+      )
+    )
+  
+  return(df)
+}
+
 filter_game_rounds <- function(df, game_round, interm_rounds) {
   
   shiny::req(nrow(df) > 0)
@@ -65,7 +82,7 @@ filter_game_rounds <- function(df, game_round, interm_rounds) {
   return(df)
 }
 
-retrieve_n_table <- function(df, group_col, id_col = "player_code") {
+retrieve_n_table <- function(df, group_cols, id_col = "player_code") {
   
   if (identical(group_col, id_col)) {
     n_df <- df |>
@@ -74,9 +91,9 @@ retrieve_n_table <- function(df, group_col, id_col = "player_code") {
     
   } else {
     n_df <- df |>
-      dplyr::select(tidyselect::all_of(c(group_col, id_col))) |>
-      dplyr::group_by(.data[[group_col]]) |>
-      dplyr::summarise(N = dplyr::n())
+      dplyr::select(tidyselect::all_of(c(group_cols, id_col))) |>
+      dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+      dplyr::summarise(N = dplyr::n(), .groups = "drop")
   }
   return(n_df)
 }

@@ -109,7 +109,8 @@ gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FA
 preprocess_data_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
-  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  preprocess_data_list[[session_name]] <- preprocess_extra_dbtables_GP3(preprocess_data_list[[session_name]], session_name, excel = FALSE)
 }
 
 ## Select game session for analysis
@@ -122,7 +123,7 @@ selected_table <- SELECT_ALL
 selected_cost_types <- SELECT_ALL
 
 ## Retrieve income distribution data frame to be used for data visualization
-income_dist_df <- preprocess_data_list[[selected_gamesession]][[PREPROCESSED_DBTABLES]]
+measures_combined_df <- preprocess_data_list[[selected_gamesession]][["measures_combined"]]
 
 ## Retrieve summary table for data plotted in analysis for GP2
 GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df

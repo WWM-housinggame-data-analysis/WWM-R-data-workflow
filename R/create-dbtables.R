@@ -135,7 +135,8 @@ create_housemeasure_cumulative_df <- function(hm_df) {
     # compute the running total across rounds
     dplyr::mutate(
       !!CUMULATIVE_COSTS_HOUSE_COL     := cumsum(.data[[CALCULATED_COSTS_HOUSE_COL]]),
-      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[HOUSE_TOTAL_DIFFCOL]])
+      !!CUMULATIVE_HOUSE_TOTAL_DIFFCOL := cumsum(.data[[HOUSE_TOTAL_DIFFCOL]]),
+      .groups = "drop"
     )
   
   return(hmc_df)

@@ -307,7 +307,7 @@ append_cost_info <- function(df, info_col) {
   
   df <- df |>
     dplyr::mutate(
-      !!info_col = case_when(
+      !!info_col := dplyr::case_when(
         .data[[COST_ABSOLUTE_COL]] != 0 ~ paste0(.data[[COST_ABSOLUTE_COL]]/K_FACTOR, names(K_FACTOR)),
         .data[[PERCENTAGE_INCOME_COL]] != 0 ~ paste0(.data[[PERCENTAGE_INCOME_COL]], "% income"),
         .data[[PERCENTAGE_HOUSE_COL]] != 0 ~ paste0(.data[[PERCENTAGE_HOUSE_COL]], "% house cost"),

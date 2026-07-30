@@ -87,7 +87,7 @@ gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FA
 preprocess_data_list <- list()
 
 for (session_name in names(gamesession_data_list)) {
-  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
 dbtable_list <- preprocess_data_list[[3]]

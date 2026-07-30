@@ -620,7 +620,7 @@ preprocess_selected_dbtables <- function(dbtable_list, session_name, excel = FAL
 
 #Add if the player implemented house or personal measures after flood experience (either river or rain damage)in the previous round
 #Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
-extra_preprocess_dbtables4GP3 <- function(dbtable_list, session_name, excel = FALSE) {
+preprocess_extra_dbtables_GP3 <- function(dbtable_list, session_name, excel = FALSE) {
     
   ## Unpack into global environment
   unpack_dbtable_list(dbtable_list, "_df")
@@ -666,5 +666,40 @@ extra_preprocess_dbtables4GP3 <- function(dbtable_list, session_name, excel = FA
   )
   
   measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, MEASURE_COSTPLOT_COL))
-  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absolute", asc = FALSE))                                           
+  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absolute", asc = FALSE))
+  
+  measuretype_df <- append_cost_info(measuretype_df, COST_INFO_COL)
+  
+  
+  measures_combined_df <- sqldf::sqldf(left_join_sqlquery(measures_combined_df, match_dbtable1_cols = "short_alias",
+                                                          measuretype_df, match_dbtable2_cols = "short_alias",
+                                                          kept_dbtable2_cols = c(MEASURE_ICONS_COL, COST_INFO_COL))
+                                       )
+  
+  ## Update list to be returned with the tables used in the calculation 
+  dbtable_list <- list(
+    housemeasure_filtered = housemeasure_filtered_df,
+    personalmeasure_filtered = personalmeasure_filtered_df,
+    measures_combined = measures_combined_df,
+    measuretype = measuretype_df,
+    playerround = playerround_df,
+    personalmeasure = personalmeasure_df,
+    housemeasure = housemeasure_df,
+    questionscore = questionscore_df,
+    questionitem = questionitem_df,
+    initialhousemeasure = initialhousemeasure_df,
+    house = house_df,
+    housegroup = housegroup_df,
+    group = group_df,
+    groupround = groupround_df,
+    player = player_df,
+    gamesession = gamesession_df
+  )
+  
+  # if (excel) {
+  #   export_excel(dbtable_list, session_name, preprocessed = TRUE)
+  # }
+  
+  return(dbtable_list)
+  
 }

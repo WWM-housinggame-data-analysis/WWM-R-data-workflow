@@ -177,6 +177,7 @@ names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
 
 TABLE_GROUPCOL <- "group_name"
 GP2_XLABEL_COL <- "xlabels"
+GP3_XLABEL_COL <- "xlabels"
 
 COST_SCATTER_LINE <- "satisfaction_total"
 names(COST_SCATTER_LINE) <-  "Average total satisfaction"
@@ -301,16 +302,17 @@ REFS_HEADER_TAB <- bslib::nav_menu(
   bslib::nav_item(shiny::tags$a(names(PLAYER_LINK), href = PLAYER_LINK))
 )
 
-LINEBREAK<- "<br>"
+LINEBREAK <- "<br>"
 
-EXCLUDE_IHC <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
-IHC_CONDITION <- if (EXCLUDE_IHC) paste0(IS_IHM_COL, " = 0 AND ") else NULL
+EXCLUDE_IHM <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
+IHM_CONDITION <- if (EXCLUDE_IHM) paste0(IS_IHM_COL, " = 0 AND ") else NULL
 PLAYER_CODE_CONDITION <- paste0(PLAYER_CODE_COL, " IS NOT NULL")
 
+COST_INFO_COL <- "cost_info"
 
 MEASURE_ALIAS_COL <- "short_alias"
 
-MEASURE_ALIASES <- c("Rainbarrel for recycling", "Waterproof walls, floors", "Green garden",
+MEASURE_ALIASES <- c("Underground rainbarrel", "Waterproof walls, floors", "Green garden",
                    "Self-activating wall", "Water pump installation", "Sandbags",
                    "Modest house renovations", "Structural house changes",
                    "Personal improvements", "Flood insurance")
