@@ -290,3 +290,31 @@ append_housemoving_diff <- function(df, diff_col) {
   return(df)
 }
 
+
+append_cost_info <- function(df, info_col) {
+  
+  
+  ## Check constants used in calculation exist
+  stopifnot("Default variable COST_ABSOLUTE_COL not found in R/constants.R" = exists(deparse(substitute(COST_ABSOLUTE_COL))),
+            "Default variable PERCENTAGE_INCOME_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_INCOME_COL))),
+            "Default variable PERCENTAGE_HOUSE_COL not found in R/constants.R" = exists(deparse(substitute(PERCENTAGE_HOUSE_COL))))
+  
+  ## Check data frame is in the expected format
+  stopifnot("df expected to be a data frame" = is.data.frame(df))
+  
+  ## Check data frame is in the expected format, columns to which constants refer in calculation exist, and are numeric
+  check_num_cols(df, c(COST_ABSOLUTE_COL, PERCENTAGE_INCOME_COL, PERCENTAGE_HOUSE_COL))
+  
+  df <- df |>
+    dplyr::mutate(
+      !!info_col = case_when(
+        .data[[COST_ABSOLUTE_COL]] != 0 ~ paste0(.data[[COST_ABSOLUTE_COL]]/K_FACTOR, names(K_FACTOR)),
+        .data[[PERCENTAGE_INCOME_COL]] != 0 ~ paste0(.data[[PERCENTAGE_INCOME_COL]], "% income"),
+        .data[[PERCENTAGE_HOUSE_COL]] != 0 ~ paste0(.data[[PERCENTAGE_HOUSE_COL]], "% house cost"),
+        TRUE ~ "No cost"
+      )
+    )
+  
+  return(df)
+}
+

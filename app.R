@@ -109,7 +109,7 @@ income_dist_list <- list()
 for (session_name in names(gamesession_data_list)) {
   
   ##R/preprocess-dbtables.R
-  preprocess_data_list[[session_name]] <- preprocess_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
   
   income_dist_list[[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
 }

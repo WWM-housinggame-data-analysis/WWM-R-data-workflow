@@ -303,6 +303,11 @@ REFS_HEADER_TAB <- bslib::nav_menu(
 
 LINEBREAK<- "<br>"
 
+EXCLUDE_IHC <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
+IHC_CONDITION <- if (EXCLUDE_IHC) paste0(IS_IHM_COL, " = 0 AND ") else NULL
+PLAYER_CODE_CONDITION <- paste0(PLAYER_CODE_COL, " IS NOT NULL")
+
+
 MEASURE_ALIAS_COL <- "short_alias"
 
 MEASURE_ALIASES <- c("Rainbarrel for recycling", "Waterproof walls, floors", "Green garden",

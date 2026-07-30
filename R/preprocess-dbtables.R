@@ -36,7 +36,7 @@ unpack_dbtable_list <- function(dblist, suffix = "_df") {
 # Main preprocessing function
 # ---------------------------------------------------------------
 
-preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
+preprocess_selected_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
   ## Unpack into global environment
   unpack_dbtable_list(dbtable_list, "_df")
@@ -616,4 +616,55 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   }
   
   return(dbtable_list)
+}
+
+#Add if the player implemented house or personal measures after flood experience (either river or rain damage)in the previous round
+#Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
+extra_preprocess_dbtables4GP3 <- function(dbtable_list, session_name, excel = FALSE) {
+    
+  ## Unpack into global environment
+  unpack_dbtable_list(dbtable_list, "_df")
+  
+  housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_df, c("id", "measuretype_id", "group_name",
+                                                                              "player_code", "house_code",
+                                                                              "groupround_round_number", "round_income",
+                                                                              "short_alias", "cost_absolute",
+                                                                              "satisfaction_delta_once",
+                                                                              "pluvial_protection_delta",
+                                                                              "fluvial_protection_delta"),
+                                                           is_where = TRUE,
+                                                           where_cond = paste(c(IHM_CONDITION,
+                                                                                PLAYER_CODE_CONDITION),
+                                                                              collapse = " AND ")
+  )
+  )
+  
+  housemeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_filtered_df, "cost_absolute", "measure_cost"))
+  
+  
+  personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_df, c("id", "measuretype_id", "group_name",
+                                                                                    "player_code", "house_code",
+                                                                                    "groupround_round_number", "round_income",
+                                                                                    "short_alias", "calculated_costs",
+                                                                                    "satisfaction_delta_once",
+                                                                                    "pluvial_protection_delta",
+                                                                                    "fluvial_protection_delta")))
+  
+  personalmeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure_filtered_df, "calculated_costs", "measure_cost"))
+  
+  
+  # Add a source column to each measures table and combine them
+  measures_combined_df <- sqldf::sqldf(union_all_sqlquery(personalmeasure_filtered_df, housemeasure_filtered_df,
+                                                          source_col = "source", source_label_dbtable1 ="personalmeasure_filtered", source_label_dbtable2 = "housemeasure_filtered")
+  )
+  
+  
+  measuretype_df <- sqldf::sqldf(left_join_sqlquery(measuretype_df, match_dbtable1_cols = "short_alias",
+                                                    MEASURETEXT_DF, match_dbtable2_cols = "short_alias",
+                                                    kept_dbtable1_cols = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house"),
+                                                    kept_dbtable2_cols = c(MEASURE_COSTREF_COL, MEASURE_COSTPLOT_COL, MEASURE_ICONS_COL))
+  )
+  
+  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, MEASURE_COSTPLOT_COL))
+  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absolute", asc = FALSE))                                           
 }
