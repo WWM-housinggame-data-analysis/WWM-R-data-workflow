@@ -74,14 +74,14 @@ source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 ### Load function containing the preprocessing of data tables coming from the database (i.e. formatting existingm adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
-### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
-source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
+### Load function containing the transformation of data tables to fit the format required for GP3 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP3-data.R")))
 
 ### Load functions required to handle dashboard filter actions
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 ### Load functions required to setup plotly visualizations
-source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
+# source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
 
 # Data Workflow ----
@@ -120,10 +120,10 @@ selected_gamesession <- names(preprocess_data_list)[length(names(preprocess_data
 selected_table <- SELECT_ALL
 
 ## Select cost types to be included in analysis. To select all define with SELECT_ALL
-selected_cost_types <- SELECT_ALL
+selected_measure_types <- SELECT_ALL
 
 ## Retrieve income distribution data frame to be used for data visualization
-measures_combined_df <- preprocess_data_list[[selected_gamesession]][["measures_combined"]]
+measures_combined_df <- retrieve_GP3_dataframe(preprocess_data_list[[selected_gamesession]][["measures_combined"]])
 
 round_ids <- get_round_ids(measures_combined_df)
 
@@ -139,10 +139,10 @@ interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_AL
 ## Data is retrieved for cost type and table group selection defined above.
 ## Data representative of the whole game session and of each game round is retrieved, respectively.
 
-GP3_plotall_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = SELECT_ALL, interm_rounds = interm_rids, fill_values_all)
-GP3_plot1_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "1", interm_rounds = interm_rids, fill_values_all)
-GP3_plot2_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "2", interm_rounds = interm_rids, fill_values_all)
-GP3_plot3_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "3", interm_rounds = interm_rids, fill_values_all)
+GP3_plotall_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = SELECT_ALL, interm_rounds = interm_rids)
+GP3_plot1_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "1", interm_rounds = interm_rids)
+GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "2", interm_rounds = interm_rids)
+GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "3", interm_rounds = interm_rids)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
-save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, "GP2_plot.png"),  vheight = 1100)
+save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, "GP3_plot.png"),  vheight = 1100)
