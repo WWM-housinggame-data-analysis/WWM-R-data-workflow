@@ -56,7 +56,7 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
 # Handle SELECT_ALL and selected filtering
 # -----------------------------------------------
 
-filter_selected_categs <- function(input_categs, req_categs) {
+translate_selected_categs <- function(input_categs, req_categs) {
   
     shiny::req(input_categs, req_categs)
     
@@ -72,22 +72,22 @@ filter_selected_categs <- function(input_categs, req_categs) {
     }
 }
 
-update_bar_segments <- function(checked_features) {
+update_selected_features <- function(checked_features, available_features) {
   
-  checked_features <- filter_selected_categs(checked_features, names(COST_BAR_SEGMENTS))
+  checked_features <- translate_selected_categs(checked_features, names(available_features))
   
-  bar_segs <- COST_BAR_SEGMENTS[names(COST_BAR_SEGMENTS) %in% checked_features]
+  selected_features <- available_features[names(available_features) %in% checked_features]
   
-  names(bar_segs) <- names(COST_BAR_SEGMENTS)[names(COST_BAR_SEGMENTS) %in% checked_features]
+  names(selected_features) <- names(available_features)[names(available_features) %in% checked_features]
   
-  return(bar_segs)
+  return(selected_features)
 }
 
-update_table_groups <- function(df, selected_table) {
+translate_table_selection <- function(df, selected_table) {
   
   table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  selected_table <- filter_selected_categs(selected_table, table_choices)
+  selected_table <- translate_selected_categs(selected_table, table_choices)
   
   return(selected_table)
 }
@@ -98,7 +98,7 @@ update_table_groups <- function(df, selected_table) {
 # -----------------------------------------------
 
 
-update_bar_groupcol <- function(df, selected_table) {
+update_grouping_choice <- function(df, selected_table) {
   
   table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
   
@@ -120,7 +120,7 @@ update_bar_groupcol <- function(df, selected_table) {
 }
 
 
-get_intermediate_rounds <- function(df) {
+get_round_ids <- function(df) {
   
   rounds <- df |>
     dplyr::pull(ROUND_NUMBER_COL) |>
