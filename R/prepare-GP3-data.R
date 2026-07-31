@@ -11,6 +11,32 @@ source(here::here(file.path(FUNCTION_PATH, "transform-data.R")))
 source(here::here(file.path(FUNCTION_PATH, "format-add-cols.R")))
 
 
+retrieve_GP3_dataframe <- function(df) {
+  
+  # -----------------------------------------------------------
+  # tidyverse operations
+  # -----------------------------------------------------------
+  
+  ## Convert INCOME_DIST_CATEGCOLS to factor
+  df <- df |>
+    dplyr::mutate_at(MEASURE_COMBINED_CATEGCOLS, as.factor)
+  
+  
+  ## Append income_grp labels based on round_income to dataframe
+  df <- append_income_grp(df, INCOME_GRP_COL)
+  
+  
+  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
+  df <- df |>
+    dplyr::mutate_at(
+      names(df)[!(names(df) %in% c(MEASURE_COMBINED_CATEGCOLS, INCOME_GRP_COL))],
+      as.numeric
+    )
+  
+  return(df)
+}
+
+
 retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, game_round, interm_rounds) {
   
   df <- filter_game_rounds(df, game_round, interm_rounds)
@@ -22,15 +48,17 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   selected_bar_groupcol <- MEASURE_ALIAS_COL
   
   # Build xlabels on the row-level data
-  df <- filter_tables(df, selected_bar_groupcol, selected_table)
+  df <- filter_tables(df, selected_barseg_col, selected_table)
   
   # selected_cost_types() already normalized. Still filter to known keys.
   df <- create_GP2_barseg_labels(df, selected_barseg_col)
   
-  # Guard against empty states
-  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
+  selected_bar_groups <- update_selected_features(selected_measure_types, MEASURE_BAR_GROUPS)
   
-  n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, MEASURE_ICONS_COL, MEASURE_COSTREF_COL, GP3_BARGEGLABEL_COL), "id")
+  # Guard against empty states
+  shiny::req(nrow(df) > 0, length(selected_bar_groups) > 0, length(selected_table) > 0)
+  
+  n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, MEASURE_ICONS_COL, COST_INFO_COL, GP3_BARGEGLABEL_COL), "id")
   
   n_df <- create_GP3_xlabels(n_df)
   
@@ -38,7 +66,7 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   
   list(
     n_df                  = n_df,
-    selected_bar_segments = selected_bar_segments,
+    #selected_bar_segments = selected_bar_segments,
     xlevels               = xlevels
   )
 }

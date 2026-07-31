@@ -48,6 +48,9 @@ INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "
                            "groupround_id", "groupround_round_number", "welfaretype_id", "community_name")
 
 
+MEASURE_COMBINED_CATEGCOLS <- c("id", "measuretype_id",  "group_name", "player_code", "house_code", "groupround_round_number",
+                                "short_alias", "source", "icons_path", "cost_info")
+
 ## Default variables for handling data import/export
 
 IMPORTED_TABLE_TYPE <- ".csv"
@@ -319,6 +322,8 @@ MEASURE_ALIASES <- c("Underground rainbarrel", "Waterproof walls, floors", "Gree
                    "Modest house renovations", "Structural house changes",
                    "Personal improvements", "Flood insurance")
 
+MEASURE_BAR_GROUPS <- MEASURE_ALIASES
+names(MEASURE_BAR_GROUPS) <- MEASURE_ALIASES
 
 ICONS_PATH <- "data/dependencies/icons"
 
