@@ -325,7 +325,7 @@ make_rounds_reactive <- function(df) {
     
     shiny::req(nrow(df) > 0)
     
-    get_intermediate_rounds(df)
+    get_round_ids(df)
     
   })
 }
