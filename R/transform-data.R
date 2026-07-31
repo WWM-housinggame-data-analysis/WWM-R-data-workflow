@@ -112,7 +112,7 @@ filter_game_rounds <- function(df, game_round, interm_rounds) {
 
 retrieve_n_table <- function(df, group_cols, id_col = "player_code") {
   
-  if (identical(group_col, id_col)) {
+  if (identical(group_cols, id_col)) {
     n_df <- df |>
       dplyr::select(tidyselect::all_of(id_col)) |>
       dplyr::summarise(N = dplyr::n())
