@@ -51,7 +51,7 @@ create_GP2_xlabels <- function(df, group_col) {
 
 
 # Build xlabels on the row-level data
-create_GP3_xlabels <- function(df, group_col) {
+create_GP3_xlabels <- function(df) {
   
   df <- df |>
     dplyr::mutate(
@@ -62,6 +62,34 @@ create_GP3_xlabels <- function(df, group_col) {
                        sep = LINEBREAK)
       )
     )
+  
+  return(df)
+}
+
+
+# Build xlabels on the row-level data
+create_GP2_barseg_labels <- function(df, group_col) {
+  
+  if (identical(group_col, INCOME_GRP_COL)) {
+    
+    df <- df |>
+      dplyr::mutate(
+        !!GP3_BARGEGLABEL_COL := factor(
+          paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))], .data[[group_col]], sep = " - "),
+          levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = " - ")
+        )
+      )
+    
+  } else if (identical(group_col, PLAYER_CODE_COL)) {
+    
+    df <- df |>
+      dplyr::mutate(
+        !!GP3_BARGEGLABEL_COL := factor(
+          paste(.data[[group_col]], .data[[INCOME_GRP_COL]], sep = " - "),
+          levels = paste(.data[[PLAYER_CODE_COL]][match(names(WELFARE_LABELS), .data[[INCOME_GRP_COL]])], names(WELFARE_LABELS), sep = " - ")
+        )
+      )
+  }
   
   return(df)
 }
