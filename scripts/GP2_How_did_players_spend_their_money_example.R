@@ -124,7 +124,7 @@ selected_cost_types <- SELECT_ALL
 ## Retrieve income distribution data frame to be used for data visualization
 income_dist_df <- retrieve_GP2_dataframe(preprocess_data_list[[selected_gamesession]][["playerround"]][, INCOME_DIST_ALLCOLS])
 
-round_ids <- get_intermediate_rounds(income_dist_df)
+round_ids <- get_round_ids(income_dist_df)
 
 interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
 

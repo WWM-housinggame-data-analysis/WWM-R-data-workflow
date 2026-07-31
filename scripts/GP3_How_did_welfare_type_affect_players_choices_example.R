@@ -125,19 +125,24 @@ selected_cost_types <- SELECT_ALL
 ## Retrieve income distribution data frame to be used for data visualization
 measures_combined_df <- preprocess_data_list[[selected_gamesession]][["measures_combined"]]
 
-## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
+round_ids <- get_round_ids(measures_combined_df)
 
-# Export Summary table
-write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
+interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
+
+## Retrieve summary table for data plotted in analysis for GP2
+# GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
+# 
+# # Export Summary table
+# write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
 
 ## Retrieve data to be plotted in analysis for GP2.
 ## Data is retrieved for cost type and table group selection defined above.
 ## Data representative of the whole game session and of each game round is retrieved, respectively.
-GP2_plotall_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, fill_values_all)
-GP2_plot1_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "1", fill_values_all)
-GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "2", fill_values_all)
-GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", fill_values_all)
+
+GP3_plotall_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = SELECT_ALL, interm_rounds = interm_rids, fill_values_all)
+GP3_plot1_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "1", interm_rounds = interm_rids, fill_values_all)
+GP3_plot2_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "2", interm_rounds = interm_rids, fill_values_all)
+GP3_plot3_data <- retrieve_GP3_plot_data(income_dist_df, selected_table, selected_measure_types, game_round = "3", interm_rounds = interm_rids, fill_values_all)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
 save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, "GP2_plot.png"),  vheight = 1100)
