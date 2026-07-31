@@ -123,12 +123,13 @@ update_grouping_choice <- function(df, selected_table) {
 get_round_ids <- function(df) {
   
   rounds <- df |>
-    dplyr::pull(ROUND_NUMBER_COL) |>
+    dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% EXPECTED_ROUNDS[1] == FALSE) |>
+    dplyr::pull(.data[[ROUND_NUMBER_COL]]) |>
     unique() |>
     sort()
   
   # work on returning no round panels
-  if (length(rounds) < length(EXPECTED_INTERM_ROUNDS)) {
+  if (length(rounds) == 1) {
     
     warning(
       "No intermediate rounds found",
@@ -140,7 +141,7 @@ get_round_ids <- function(df) {
     
   } else {
     
-    interm_rounds <- as.character(rounds[2:(length(rounds)-1)])
+    interm_rounds <- as.character(rounds[1:(length(rounds)-1)])
     
     # Optional check against expected intermediate rounds
     if (exists("INTERM_ROUNDS", inherits = TRUE) &&
