@@ -52,25 +52,39 @@ retrieve_GP2_dataframe <- function(df) {
   return(df)
 }
 
-# Reactive plot based on user input
-retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
+process_GP2_dataframe <- function(df, selected_cost_types, selected_table, game_round, interm_rounds) {
   
-  # selected_cost_types() already normalized. Still filter to known keys.
-  selected_bar_segments <- update_bar_segments(selected_cost_types)
+  df <- filter_game_rounds(df, game_round, interm_rounds)
   
-  selected_table <- update_table_groups(df, selected_table)
+  selected_table <- translate_table_selection(df, selected_table)
   
-  # Guard against empty states
-  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
-  
-  selected_bar_groupcol <- update_bar_groupcol(df, selected_table)
+  selected_bar_groupcol <- update_grouping_choice(df, selected_table)
   
   # Build xlabels on the row-level data
   df <- filter_tables(df, selected_bar_groupcol, selected_table)
   
   df <- create_GP2_xlabels(df, selected_bar_groupcol)
   
-  df <- filter_game_rounds(df, game_round, interm_rounds)
+  # selected_cost_types() already normalized. Still filter to known keys.
+  selected_bar_segments <- update_selected_features(selected_cost_types, COST_BAR_SEGMENTS)
+  
+  # Guard against empty states
+  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
+  
+  list(
+    df                    = df,     # has xlabels, cost_type, mean_value, n, ...
+    selected_bar_segments = selected_bar_segments,
+    selected_bar_groupcol = selected_bar_groupcol
+  )
+  
+}
+
+# Reactive plot based on user input
+retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
+  
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  df <- processed_list$df
+  selected_bar_segments <- processed_list$selected_bar_segments
 
   # satisfaction series
   scatter_df <- retrieve_mean_table(df, GP2_XLABEL_COL, COST_SCATTER_LINE)
@@ -103,22 +117,9 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
 
 retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
-  # selected_cost_types() already normalized. Still filter to known keys.
-  selected_bar_segments <- update_bar_segments(selected_cost_types)
-  
-  selected_table <- update_table_groups(df, selected_table)
-  
-  # Guard against empty states
-  shiny::req(nrow(df) > 0, length(selected_bar_segments) > 0, length(selected_table) > 0)
-  
-  selected_bar_groupcol <- update_bar_groupcol(df, selected_table)
-  
-  # Build xlabels on the row-level data
-  df <- filter_tables(df, selected_bar_groupcol, selected_table)
-  
-  df <- create_GP2_xlabels(df, selected_bar_groupcol)
-  
-  df <- filter_game_rounds(df, game_round, interm_rounds)
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  df <- processed_list$df
+  selected_bar_groupcol <- processed_list$selected_bar_groupcol
   
   pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
   
