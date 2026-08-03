@@ -51,11 +51,11 @@ create_GP2_xlabels <- function(df, group_col) {
 
 
 # Build xlabels on the row-level data
-create_GP3_xlabels <- function(df) {
+create_GP3_ylabels <- function(df) {
   
   df <- df |>
     dplyr::mutate(
-      !!GP3_XLABEL_COL := factor(
+      !!GP3_YLABEL_COL := factor(
         paste(.data[[MEASURE_ALIAS_COL]], paste0("(", .data[[COST_INFO_COL]], ")"), sep = LINEBREAK),
         levels = paste(MEASURE_ALIASES,
                        paste0("(", .data[[COST_INFO_COL]][match(MEASURE_ALIASES, .data[[MEASURE_ALIAS_COL]])] , ")"),
@@ -68,7 +68,7 @@ create_GP3_xlabels <- function(df) {
 
 
 # Build xlabels on the row-level data
-create_GP2_barseg_labels <- function(df, group_col) {
+create_GP3_barseg_labels <- function(df, group_col) {
   
   if (identical(group_col, INCOME_GRP_COL)) {
     

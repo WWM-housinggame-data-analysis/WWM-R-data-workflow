@@ -51,7 +51,7 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   df <- filter_tables(df, selected_barseg_col, selected_table)
   
   # selected_cost_types() already normalized. Still filter to known keys.
-  df <- create_GP2_barseg_labels(df, selected_barseg_col)
+  df <- create_GP3_barseg_labels(df, selected_barseg_col)
   
   selected_bar_groups <- update_selected_features(selected_measure_types, MEASURE_BAR_GROUPS)
   
@@ -60,14 +60,14 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   
   n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, MEASURE_ICONS_COL, COST_INFO_COL, GP3_BARGEGLABEL_COL), "id")
   
-  n_df <- create_GP3_xlabels(n_df)
+  n_df <- create_GP3_ylabels(n_df)
   
-  xlevels <- levels(n_df[, GP3_XLABEL_COL])
+  ylevels <- levels(n_df[, GP3_YLABEL_COL])
   
   list(
-    n_df                  = n_df,
-    #selected_bar_segments = selected_bar_segments,
-    xlevels               = xlevels
+    n_df                = n_df,
+    selected_bar_groups = selected_bar_groups,
+    ylevels             = ylevels
   )
 }
 

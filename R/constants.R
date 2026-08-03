@@ -180,7 +180,7 @@ names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
 
 TABLE_GROUPCOL <- "group_name"
 GP2_XLABEL_COL <- "xlabels"
-GP3_XLABEL_COL <- "xlabels"
+GP3_YLABEL_COL <- "xlabels"
 
 GP3_BARGEGLABEL_COL <- "barseglabel"
 
@@ -211,8 +211,9 @@ names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
 
 # COST_BAR_COLORS
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
-
 names(fill_values_all) <- names(COST_BAR_SEGMENTS)
+
+WELFARE_BARSEG_COLORPALT <- colorRampPalette(c("yellow", "wheat",  "wheat3"))
 
 K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
