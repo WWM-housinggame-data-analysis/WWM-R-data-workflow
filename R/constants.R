@@ -342,6 +342,22 @@ MEASURE_ICONS_FILEPATHS <- file.path(ICONS_PATH,
 
 names(MEASURE_ICONS_FILEPATHS) <- MEASURE_ALIASES
 
+if (any(file.exists(MEASURE_ICONS_FILEPATHS) == FALSE)) {
+  stop(paste0("The following files do not match existing files within the project directory: \n",
+              paste(MEASURE_ICONS_FILEPATHS[file.exists(MEASURE_ICONS_FILEPATHS) == FALSE], collapse = "\n")
+              )
+       )
+}
+
+ACCEPTED_IMAGE_FORMATS <- c(".png", ".jpg", ".jpeg", ".svg")
+
+if (any(grepl(paste0("\\.(", paste(gsub("\\.", "", ACCEPTED_IMAGE_FORMATS), collapse = "|"), ")$"), MEASURE_ICONS_FILEPATHS) == FALSE)) {
+  stop(paste0("MEASURE_ICONS_FILEPATHS does contain filepaths whose format do not match the accepted image formats: ", paste(ACCEPTED_IMAGE_FORMATS, collapse = ", ")))
+}
+
+stopifnot("MEASURE_ICONS_FILEPATHS does contain filepaths whose format do not match the accepted image formats:" =
+            length(grepl(paste0("\\.(", paste(ACCEPTED_IMAGE_FORMATS, collapse = "|"), ")$"), MEASURE_ICONS_FILEPATHS)) == length(MEASURE_ICONS_FILEPATHS))
+
 MEASURE_COSTREF_COL <- "cost_reference"
  
 MEASURE_COSTREF_VALUES <- c(0,0,0,0,0,0,

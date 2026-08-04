@@ -10,6 +10,7 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 # ---------------------------------------------------------
 # Helper: base64 encode icon file for Plotly images
 # ---------------------------------------------------------
+
 encode_b64 <- function(path) {
   ext  <- tolower(tools::file_ext(path))
   mime <- if (ext %in% c("jpg", "jpeg")) "image/jpeg" else if (ext == "svg") "image/svg+xml" else "image/png"
@@ -165,10 +166,13 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
       ),
       
       yaxis = list(
-        title    = y_title,
+        title    = list(text = y_title,
+                        standoff = 300),
         
         categoryorder = "array",
         categoryarray = ylevels,
+        
+        showticklabels = FALSE,
         
         showgrid  = TRUE,
         gridcolor = "rgba(0,0,0,0.06)",
@@ -190,7 +194,7 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
         tracegroupgap = 12
       ),
       
-      margin = list(r = 280, t = 60)  # smaller right margin since legend moved left
+      margin = list(l = 400, r = 280, t = 60)  # smaller right margin since legend moved left
       
     )
   
@@ -257,20 +261,13 @@ create_GP3_plotly <- function(plot_data) {
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
   bar_x_max <- calculate_axis_max(bar_df, "ylabels", "N")
-  x_off  <- -0.12 * bar_x_max
+  x_off  <- -0.05
   
   icon_map <- bar_df %>%
     select(short_alias, ylabels, icons_path) %>%
     distinct() %>%
-    mutate(
-      icon_file = ifelse(
-        grepl("\\.(png|jpg|jpeg|svg)$", icons_path, ignore.case = TRUE),
-        as.character(icons_path),
-        paste0(icons_path, ".png")
-      )
-    ) %>%
-    filter(file.exists(icon_file)) %>%
-    mutate(src = vapply(icon_file, encode_b64, FUN.VALUE = character(1)))
+    mutate(icons_path = as.character(icons_path)) %>%
+    mutate(src = vapply(icons_path, encode_b64, FUN.VALUE = character(1)))
 
   # Start plotly
   
@@ -284,18 +281,31 @@ create_GP3_plotly <- function(plot_data) {
   images_list <- lapply(seq_len(nrow(icon_map)), function(i) {
     list(
       source   = icon_map$src[i],
-      xref     = "x", yref = "y",
+      xref     = "paper",
+      yref     = "y",
       x        = x_off,
-      y        = as.character(icon_map$label[i]),
+      y        = as.character(icon_map$ylabels[i]),
       sizex    = 0.08 * bar_x_max,
       sizey    = 0.8,
-      xanchor  = "left",
+      xanchor  = "center",
       yanchor  = "middle",
       layer    = "above"
     )
   })
   
-  GP3_plot <- layout(GP3_plot, images = images_list)
+  annotations <- lapply(seq_along(ylevels), function(i) {
+    list(
+      xref = "paper",
+      yref = "y",
+      x = -0.15,
+      y = ylevels[i],
+      text = ylevels[i],
+      showarrow = FALSE,
+      xanchor = "right"
+    )
+  })
+  
+  GP3_plot <- layout(GP3_plot, annotations = annotations, images = images_list)
   
   GP3_plot
 }
@@ -305,7 +315,7 @@ save_and_view_GP3_plot <- function(plot_data,
                                    file = file.path(RESULTS_PATH, "GP3_plot.png"),
                                    vwidth = 1600,
                                    vheight = 800) {
-
+  
   ## Create the interactive Plotly widget
   GP3_plot <- create_GP3_plotly(plot_data)
   
