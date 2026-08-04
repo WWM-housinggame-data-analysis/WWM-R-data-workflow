@@ -51,6 +51,7 @@ library(plotly)
 library(webshot2)
 library(htmlwidgets)
 library(rstudioapi)
+library(base64enc)
 
 
 
@@ -81,7 +82,7 @@ source(here::here(file.path(FUNCTION_PATH, "prepare-GP3-data.R")))
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 ### Load functions required to setup plotly visualizations
-# source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
+source(here::here(file.path(FUNCTION_PATH, "create-GP3-plot.R")))
 
 
 # Data Workflow ----
@@ -145,4 +146,4 @@ GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, s
 GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "3", interm_rounds = interm_rids)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
-save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, "GP3_plot.png"),  vheight = 1100)
+save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")),  vheight = 1100)

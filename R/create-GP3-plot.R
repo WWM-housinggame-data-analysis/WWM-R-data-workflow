@@ -124,7 +124,6 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
   
   xtitle <- signal_newline(xtitle, nl_char)
   y_title <- signal_newline(y_title, nl_char)
-  y2_title <- ifelse(is.na(y2_title), NA, signal_newline(y2_title, " - "))
   
   tick_vals <- pretty(max(x_axis_range), 6)
   
@@ -169,7 +168,7 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
         title    = y_title,
         
         categoryorder = "array",
-        categoryarray = xlevels,
+        categoryarray = ylevels,
         
         showgrid  = TRUE,
         gridcolor = "rgba(0,0,0,0.06)",
@@ -198,54 +197,62 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
   return(out_plot)
 }
 
-add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title) {
+add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
   
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
   
-  legend_label_order <- selected_bar_labels             # desired legend order (unchanged)
-  legend_label_match  <- rev(selected_bar_labels)        # stacking order (reversed)
+  legend_label_order <- selected_bar_segments             # desired legend order (unchanged)
+  legend_label_match  <- selected_bar_segments        # stacking order (reversed)
   
   barseg_colors <- WELFARE_BARSEG_COLORPALT(length(legend_label_match))
+  
+  
   
   # --- Add stacked bar traces ---
   for (label in legend_label_match) {
     
-    segment_df <- bar_df %>% dplyr::filter(mean_label == label)
+    segment_df <- bar_df %>% dplyr::filter(.data[[GP3_BARGEGLABEL_COL]] == label)
     
-    # label + color fallbacks
-    bar_color <- rlang::`%||%`(barseg_colors[which(legend_label_match %in% label)], "#808080")
-    
-    out_plot <- out_plot %>%
-      plotly::add_bars(
-        data = segment_df,
-        x = segment_df[, "N"],
-        y = segment_df[,  MEASURE_ALIAS_COL],
-        name = label,
-        marker = list(color = bar_color),
-        
-        legendgroup = "bars",
-        legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
-        legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
-        
-        hovertemplate = paste0(
-          "<b>", label, "</b><br>",
-          "Mean: %{y}<extra></extra>"
+    if (nrow(segment_df) > 0) {
+      
+      # label + color fallbacks
+      bar_color <- rlang::`%||%`(barseg_colors[which(legend_label_match %in% label)], "#808080")
+      
+      out_plot <- out_plot %>%
+        plotly::add_bars(
+          data = segment_df,
+          x = segment_df[, "N"],
+          y = segment_df[,  GP3_YLABEL_COL],
+          name = label,
+          text = paste(paste0("R", unique(segment_df[, ROUND_NUMBER_COL])), collapse = "/"),
+          marker = list(color = bar_color),
+          
+          legendgroup = "bars",
+          legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
+          legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
+          
+          texttemplate="%{text})",
+          textposition="inside",
+          
+          hovertemplate = paste0(
+            "<b>", label, "</b><br>",
+            "Mean: %{y}<extra></extra>"
+          )
         )
-      )
-    
-    first_bar <- FALSE
+      
+      first_bar <- FALSE
+    }
   }
-  
   return(out_plot)
 }
 
 
 create_GP3_plotly <- function(plot_data) {
   
-  bar_df                <- plot_data$n_df
-  selected_bar_groups   <- plot_data$selected_bar_groups
-  ylevels               <- plot_data$ylevels
+  bar_df                  <- plot_data$n_df
+  selected_bar_segments   <- levels(bar_df[, "barseglabel"])
+  ylevels                 <- plot_data$ylevels
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
@@ -253,18 +260,18 @@ create_GP3_plotly <- function(plot_data) {
   x_off  <- -0.12 * bar_x_max
   
   icon_map <- bar_df %>%
-    select(short_alias, label, icons_path) %>%
+    select(short_alias, ylabels, icons_path) %>%
     distinct() %>%
     mutate(
       icon_file = ifelse(
         grepl("\\.(png|jpg|jpeg|svg)$", icons_path, ignore.case = TRUE),
-        icons_path,
+        as.character(icons_path),
         paste0(icons_path, ".png")
       )
     ) %>%
     filter(file.exists(icon_file)) %>%
     mutate(src = vapply(icon_file, encode_b64, FUN.VALUE = character(1)))
-  
+
   # Start plotly
   
   GP3_plot <- create_plotly_layout("Frequency",
@@ -272,7 +279,7 @@ create_GP3_plotly <- function(plot_data) {
                                    "Private adaptation measures",
                                    c(bar_x_min, bar_x_max))
   
-  GP3_plot <- add_bar_data(GP3_plot, bar_df, selected_bar_labels, "Round costs") 
+  GP3_plot <- add_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
   
   images_list <- lapply(seq_len(nrow(icon_map)), function(i) {
     list(
@@ -307,3 +314,4 @@ save_and_view_GP3_plot <- function(plot_data,
   ## Return the PNG file path
   return(invisible(file))
 }
+

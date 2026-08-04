@@ -115,13 +115,15 @@ retrieve_n_table <- function(df, group_cols, id_col = "player_code") {
   if (identical(group_cols, id_col)) {
     n_df <- df |>
       dplyr::select(tidyselect::all_of(id_col)) |>
-      dplyr::summarise(N = dplyr::n())
+      dplyr::summarise(N = dplyr::n()) |>
+      as.data.frame()
     
   } else {
     n_df <- df |>
       dplyr::select(tidyselect::all_of(c(group_cols, id_col))) |>
       dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
-      dplyr::summarise(N = dplyr::n(), .groups = "drop")
+      dplyr::summarise(N = dplyr::n(), .groups = "drop") |>
+      as.data.frame()
   }
   return(n_df)
 }

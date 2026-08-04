@@ -55,6 +55,8 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   
   selected_bar_groups <- update_selected_features(selected_measure_types, MEASURE_BAR_GROUPS)
   
+  df <- df %>% dplyr::filter(.data[[MEASURE_ALIAS_COL]] %in% selected_bar_groups)
+  
   # Guard against empty states
   shiny::req(nrow(df) > 0, length(selected_bar_groups) > 0, length(selected_table) > 0)
   
@@ -66,7 +68,6 @@ retrieve_GP3_plot_data <- function(df, selected_table, selected_measure_types, g
   
   list(
     n_df                = n_df,
-    selected_bar_groups = selected_bar_groups,
     ylevels             = ylevels
   )
 }
