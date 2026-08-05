@@ -18,6 +18,7 @@ encode_b64 <- function(path) {
   paste0("data:", mime, ";base64,", base64enc::base64encode(raw))
 }
 
+
 view_image_in_rstudio <- function(image_path) {
   html_file <- tempfile(fileext = ".html")
   
@@ -46,6 +47,7 @@ view_image_in_rstudio <- function(image_path) {
   rstudioapi::viewer(html_file)
 }
 
+
 save_and_view_plotly <- function(plotly_plot, file = "plotly_plot.png", vwidth = 1600, vheight = 800) {
   
   # 1. Check input is interactive Plotly widget
@@ -70,6 +72,7 @@ save_and_view_plotly <- function(plotly_plot, file = "plotly_plot.png", vwidth =
   return(invisible(file))
 }
 
+
 calculate_bar_maxs <- function(bar_df, group_col, vals_col) {
   bar_maxs <- bar_df %>%
     dplyr::filter(.data[[vals_col]] > 0) %>%
@@ -83,6 +86,7 @@ calculate_bar_maxs <- function(bar_df, group_col, vals_col) {
   
   return(bar_maxs)
 }
+
 
 calculate_bar_mins <- function(bar_df, group_col, vals_col) {
   bar_mins <- bar_df %>%
@@ -99,6 +103,7 @@ calculate_bar_mins <- function(bar_df, group_col, vals_col) {
   return(bar_mins)
 }
 
+
 calculate_axis_min <- function(bar_df, group_col, vals_col) {
   
   bar_mins <- calculate_bar_mins(bar_df, group_col, vals_col)
@@ -107,6 +112,7 @@ calculate_axis_min <- function(bar_df, group_col, vals_col) {
   
   return(y_min)
 }
+
 
 calculate_axis_max <- function(bar_df, group_col, vals_col) {
   
@@ -117,9 +123,11 @@ calculate_axis_max <- function(bar_df, group_col, vals_col) {
   return(y_max)
 }
 
+
 signal_newline <- function(in_string, nl_char) {
   gsub(nl_char, "<br>", in_string)
 }
+
 
 create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", x_axis_range, nl_char = " - ") {
   
@@ -201,6 +209,7 @@ create_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", 
   return(out_plot)
 }
 
+
 add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
   
   # ---- (iii) legend group titles: set only once per group ----
@@ -251,6 +260,45 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_tit
   return(out_plot)
 }
 
+create_plotly_icon_list <- function(df, path_col, axislabel_col) {
+  
+  icon_map <- df %>%
+    dplyr::select(tidyselect::all_of(c(axislabel_col, path_col))) %>%
+    distinct() %>%
+    mutate(icons_path = as.character(.data[[path_col]])) %>%
+    mutate(src = vapply(.data[[path_col]], encode_b64, FUN.VALUE = character(1)))
+  
+  lapply(seq_len(nrow(icon_map)), function(i) {
+    list(
+      source   = icon_map$src[i],
+      xref     = "paper",
+      yref     = "y",
+      x        = -0.05,
+      y        = icon_map$ylabels[i],
+      sizex    = 0.8,
+      sizey    = 0.8,
+      xanchor  = "center",
+      yanchor  = "middle",
+      layer    = "above"
+    )
+  })
+}
+
+create_plotly_axislabels_annotations <- function(axislabels) {
+  
+  annotations <- lapply(seq_along(axislabels), function(i) {
+    list(
+      xref = "paper",
+      yref = "y",
+      x = -0.15,
+      y = axislabels[i],
+      text = axislabels[i],
+      showarrow = FALSE,
+      xanchor = "right"
+    )
+  })
+}
+
 
 create_GP3_plotly <- function(plot_data) {
   
@@ -261,13 +309,6 @@ create_GP3_plotly <- function(plot_data) {
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
   bar_x_max <- calculate_axis_max(bar_df, "ylabels", "N")
-  x_off  <- -0.05
-  
-  icon_map <- bar_df %>%
-    select(short_alias, ylabels, icons_path) %>%
-    distinct() %>%
-    mutate(icons_path = as.character(icons_path)) %>%
-    mutate(src = vapply(icons_path, encode_b64, FUN.VALUE = character(1)))
 
   # Start plotly
   
@@ -278,36 +319,15 @@ create_GP3_plotly <- function(plot_data) {
   
   GP3_plot <- add_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
   
-  images_list <- lapply(seq_len(nrow(icon_map)), function(i) {
-    list(
-      source   = icon_map$src[i],
-      xref     = "paper",
-      yref     = "y",
-      x        = x_off,
-      y        = as.character(icon_map$ylabels[i]),
-      sizex    = 0.08 * bar_x_max,
-      sizey    = 0.8,
-      xanchor  = "center",
-      yanchor  = "middle",
-      layer    = "above"
-    )
-  })
+  GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
   
-  annotations <- lapply(seq_along(ylevels), function(i) {
-    list(
-      xref = "paper",
-      yref = "y",
-      x = -0.15,
-      y = ylevels[i],
-      text = ylevels[i],
-      showarrow = FALSE,
-      xanchor = "right"
-    )
-  })
   
-  GP3_plot <- layout(GP3_plot, annotations = annotations, images = images_list)
+  GP3_yaxis_icons <- create_plotly_icon_list(bar_df, MEASURE_ICONS_COL, GP3_YLABEL_COL)
   
-  GP3_plot
+  plotly::layout(GP3_plot,
+                 annotations = GP3_ylabels_annotations,
+                 images = GP3_yaxis_icons)
+  
 }
 
 
