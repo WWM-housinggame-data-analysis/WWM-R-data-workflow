@@ -7,110 +7,10 @@ FUNCTION_PATH <- file.path("R")
 # Load required functions
 source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
-view_image_in_rstudio <- function(image_path) {
-  html_file <- tempfile(fileext = ".html")
-  
-  html <- sprintf(
-    '<html>
-       <head>
-         <style>
-           body { margin: 0; background: #ffffff; }
-           img  { width: 100%%; height: auto; }
-         </style>
-       </head>
-       <body>
-         <img src="%s" />
-       </body>
-     </html>',
-    basename(image_path)
-  )
-  
-  writeLines(html, html_file)
-  
-  # Copy image next to HTML so relative paths work
-  file.copy(image_path,
-            file.path(dirname(html_file), basename(image_path)),
-            overwrite = TRUE)
-  
-  rstudioapi::viewer(html_file)
-}
+source(here::here(file.path(FUNCTION_PATH, "help-plot-creation.R")))
 
-save_and_view_plotly <- function(plotly_plot, file = "plotly_plot.png", vwidth = 1600, vheight = 800) {
-  
-  # 1. Check input is interactive Plotly widget
-  stopifnot(inherits(plotly_plot, "htmlwidget"))
-  
-  # 2. Save to a temporary HTML file
-  html_file <- tempfile(fileext = ".html")
-  htmlwidgets::saveWidget(plotly_plot, html_file, selfcontained = TRUE)
-  
-  # 3. Convert the HTML to a PNG using webshot2 (NO Python required)
-  webshot2::webshot(
-    url = html_file,
-    file = file,
-    vwidth = vwidth,
-    vheight = vheight
-  )
-  
-  # 4. Display PNG INSIDE RStudio Viewer
-  view_image_in_rstudio(normalizePath(file))
-  
-  # 5. Return the PNG file path
-  return(invisible(file))
-}
 
-calculate_bar_maxs <- function(bar_df, group_col, y_col) {
-  bar_maxs <- bar_df %>%
-    dplyr::filter(.data[[y_col]] > 0) %>%
-    droplevels() %>%
-    dplyr::group_by(.data[[group_col]]) %>%
-    dplyr::summarise(
-      bar_max = sum(.data[[y_col]]),
-      .groups    = "drop"
-    ) %>%
-    dplyr::pull(bar_max)
-  
-  return(bar_maxs)
-}
-
-calculate_bar_mins <- function(bar_df, group_col, y_col) {
-  bar_mins <- bar_df %>%
-    dplyr::filter(.data[[y_col]] < 0) %>%
-    droplevels() %>%
-    dplyr::group_by(.data[[group_col]]) %>%
-    dplyr::summarise(
-      bar_min = sum(.data[[y_col]]),
-      .groups    = "drop"
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::pull(bar_min)
-
-  return(bar_mins)
-}
-
-calculate_y_min <- function(bar_df, group_col, y_col) {
-  
-  bar_mins <- calculate_bar_mins(bar_df, group_col, y_col)
-  
-  y_min <- min(0, bar_mins, na.rm = TRUE) + 0.05 * min(0, bar_mins, na.rm = TRUE)
-  
-  return(y_min)
-}
-
-calculate_y_max <- function(bar_df, group_col, y_col) {
-  
-  bar_maxs <- calculate_bar_maxs(bar_df, group_col, y_col)
-  
-  y_max <- max(bar_maxs, na.rm = TRUE) + 0.05 * max(bar_maxs, na.rm = TRUE)
-  
-  return(y_max)
-}
-
-signal_newline <- function(in_string, nl_char) {
-  gsub(nl_char, "<br>", in_string)
-}
-
-create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_title = NA, nl_char = " - ") {
+create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_title = NA, nl_char = " - ") {
   
   xtitle <- signal_newline(xtitle, nl_char)
   y_title <- signal_newline(y_title, nl_char)
@@ -178,7 +78,7 @@ create_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_titl
   return(out_plot)
 }
 
-add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title) {
+add_GP2_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title) {
   
   # ---- (iii) legend group titles: set only once per group ----
   first_bar <- TRUE
@@ -220,7 +120,7 @@ add_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_title
   return(out_plot)
 }
 
-add_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
+add_GP2_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
   # --- Add satisfaction line+markers on y2 ---
   
   # label + color fallbacks
