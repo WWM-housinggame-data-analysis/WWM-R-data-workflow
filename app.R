@@ -73,12 +73,17 @@ source(here::here(file.path(FUNCTION_PATH, "make-data-reactive.R")))
 ### Load function containing the transformation of data tables to fit the format required for GP2 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
 source(here::here(file.path(FUNCTION_PATH, "prepare-GP2-data.R")))
 
+### Load function containing the transformation of data tables to fit the format required for GP3 plotly visualization (i.e. dropping columns, aggregate and pivoting tables)
+source(here::here(file.path(FUNCTION_PATH, "prepare-GP3-data.R")))
+
 ### Load functions required to handle dashboard user interactivity
 source(here::here(file.path(FUNCTION_PATH, "interact-data.R")))
 
 ### Load functions required to create GP2 plotly visualizations
 source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 
+### Load functions required to create GP3 plotly visualizations
+source(here::here(file.path(FUNCTION_PATH, "create-GP3-plot.R")))
 
 # Data Workflow ----
 
@@ -105,13 +110,20 @@ gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FA
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 income_dist_list <- list()
+measures_combined_list <- list()
+dashboard_data_list <- list(income_dist_list, measures_combined_list)
+names(dashboard_data_list) <- c("GP2", "GP3")
 
 for (session_name in names(gamesession_data_list)) {
   
   ##R/preprocess-dbtables.R
   preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
   
-  income_dist_list[[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
+  dashboard_data_list[["GP2"]][[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
+  
+  preprocess_data_list[[session_name]] <- preprocess_extra_dbtables_GP3(preprocess_data_list[[session_name]], session_name, excel = FALSE)
+  
+  dashboard_data_list[["GP3"]][[session_name]] <- retrieve_GP3_dataframe(preprocess_data_list[[session_name]][["measures_combined"]])
 }
 
 
@@ -123,6 +135,7 @@ for (session_name in names(gamesession_data_list)) {
 ##R/interact-data.R
 default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
 
+default_question <- process_config_selection(c("GP2", "GP3"), SELECT_ALL, fallback = SELECT_ALL)
 
 ## Design Dashboard User Interface
 ### All local functions stored in R/design-shiny-ui.R
@@ -151,6 +164,11 @@ ui <- bslib::page_navbar(
                           mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
                           ),
           
+          ## Game Session Filter Details
+          bslib::accordion_panel(QUESTION_ACCORDION_TITLE,
+                                 mod_input_reset_ui(QUESTION_ACCORDION_VALUE, QUESTION_ACCORDION_LABEL)
+          ),
+          
           ## Table Group Filter Details
           bslib::accordion_panel(GROUP_ACCORDION_TITLE,
                                  mod_input_reset_ui(GROUP_ACCORDION_VALUE, GROUP_ACCORDION_LABEL)
@@ -161,8 +179,8 @@ ui <- bslib::page_navbar(
                                  ),
           
           ## Players' Costs Filter Details (Used to segment bars)
-          bslib::accordion_panel(SEGMENT_ACCORDION_TITLE,
-                          mod_multicheck_reset_ui(SEGMENT_ACCORDION_VALUE, SEGMENT_ACCORDION_LABEL)
+          bslib::accordion_panel(GP2_SEGMENT_ACCORDION_TITLE,
+                          mod_multicheck_reset_ui(GP2_SEGMENT_ACCORDION_VALUE, GP2_SEGMENT_ACCORDION_LABEL)
                           
           ),
           
@@ -203,21 +221,29 @@ ui <- bslib::page_navbar(
 
 
 server <- function(input, output, session) {
-
+  
+  # --- centralize selection + derived data
+  qs <- make_question_reactives(
+    dashboard_data_list = dashboard_data_list,
+    question_selection  = default_question,  # SELECT_ALL or vector from config
+    id = "question"                              # matches your UI module id
+  )
+  
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
-    session_data_list     = income_dist_list,
+    session_data_list     = qs$selected_question_list,
     gamesession_selection = default_gamesession,  # SELECT_ALL or vector from config
     id = "gamesession"                              # matches your UI module id
   )
 
   # Keep names for readability
-  selected_gamesession <- gs$selected_gamesession
-  income_dist_df       <- gs$selected_session_df
+  selected_question         <- qs$selected_question
+  selected_gamesession      <- gs$selected_gamesession
+  question_session_df       <- gs$selected_session_df
 
   
   role_table <- make_role_table_reactives(
-    income_dist_df = income_dist_df,    # reactive returned from previous helper
+    question_session_df = question_session_df,    # reactive returned from previous helper
     selected_username = SELECTED_USERNAME,
     id = "table"
   )
@@ -228,7 +254,7 @@ server <- function(input, output, session) {
   
   
   # ---- Dynamic rounds (IDs + labels) ----
-  round_ids <- make_rounds_reactive(income_dist_df)
+  round_ids <- make_rounds_reactive(question_session_df)
   
   
   # ---- Dynamic UI ----

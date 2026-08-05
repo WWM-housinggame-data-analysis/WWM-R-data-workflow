@@ -180,6 +180,64 @@ add_global_reset_observer <- function(input, session, reset_button_id = "reset_a
 # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
 #Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
 
+make_question_reactives <- function(dashboard_data_list, question_selection, id = "question") {
+  force(dashboard_data_list)
+  force(question_selection)
+  
+  # This function must be called inside a server() or moduleServer() context
+  # because it uses Shiny reactives and your input module.
+  
+  # 1) Choices reactive
+  question_choices <- shiny::reactive({
+    if (identical(question_selection, SELECT_ALL)) {
+      names(dashboard_data_list)
+    } else {
+      # When YAML or config pre-filters the sessions
+      question_selection
+    }
+  })
+  
+  # 2) Selected gamesession (uses your existing module)
+  selected_question <- mod_input_reset_server(
+    id = id,
+    default_value = shiny::reactive({
+      ch <- question_choices()
+      # fallback to last choice if available
+      if (length(ch) > 0) ch[[length(ch)]] else NULL
+    }),
+    get_choices = question_choices
+  )
+  
+  # 3) Derived income_dist_df reactive for the selected session
+  selected_question_list <- shiny::reactive({
+    quest <- selected_question()
+    shiny::req(!is.null(quest), quest %in% names(dashboard_data_list))
+    # Guard against missing table
+    tbl_list <- dashboard_data_list[[quest]]
+    if (is.null(tbls)) {
+      # Return an empty tibble to avoid errors downstream
+      return(list(tibble::tibble()))
+    }
+    tbl_list
+  })
+  
+  # Return both reactives
+  list(
+    selected_question = selected_question,
+    selected_question_list  = selected_question_list
+  )
+}
+
+
+
+# ---- Gamesession reactives helper -------------------------------------------
+# Returns a list with:
+#   $selected_gamesession  -> reactive() with the selected session name
+#   $income_dist_df        -> reactive() with the selected session's income_dist_df
+
+# Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
+#Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
+
 make_gamesession_reactives <- function(session_data_list, gamesession_selection, id = "gamesession") {
   force(session_data_list)
   force(gamesession_selection)
@@ -233,13 +291,13 @@ make_gamesession_reactives <- function(session_data_list, gamesession_selection,
 # Helper: Create role_selection(), table_choices(), and selected_table()
 # ------------------------------------------------------------------------------
 
-make_role_table_reactives <- function(income_dist_df,
+make_role_table_reactives <- function(reactive_df,
                                       selected_username = SELECTED_USERNAME,
                                       id = "table") {
   
   # -- role_selection ----------------------------------------------------------
   role_selection <- shiny::reactive({
-    df <- income_dist_df()
+    df <- reactive_df()
     groups <- character(0)
     
     if (!is.null(df) && nrow(df) > 0 && TABLE_GROUPCOL %in% names(df)) {
@@ -252,7 +310,7 @@ make_role_table_reactives <- function(income_dist_df,
   
   # -- table_choices -----------------------------------------------------------
   table_choices <- shiny::reactive({
-    df <- income_dist_df()
+    df <- reactive_df()
     
     # Guard: return SELECT_ALL if no usable data
     if (is.null(df) || nrow(df) == 0 || TABLE_GROUPCOL %in% names(df) == FALSE) {
@@ -314,14 +372,14 @@ make_cost_types_reactive <- function(id = "cost_types") {
 }
 
 # ------------------------------------------------------------------------------
-# Module 1: derive round_ids + round_labels from income_dist_df()
+# Module 1: derive round_ids + round_labels from reactive_df()
 # ------------------------------------------------------------------------------
 
-make_rounds_reactive <- function(df) {
+make_rounds_reactive <- function(reactive_df) {
   
   shiny::reactive({
     
-    df <- df()
+    df <- reactive_df()
     
     shiny::req(nrow(df) > 0)
     
