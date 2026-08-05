@@ -178,21 +178,21 @@ create_GP2_plotly <- function(plot_data) {
   bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_labels]
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
-  bar_y_min <- calculate_y_min(bar_df, "xlabels", "mean_k")
-  bar_y_max <- calculate_y_max(bar_df, "xlabels", "mean_k")
+  bar_y_min <- calculate_axis_min(bar_df, "xlabels", "mean_k")
+  bar_y_max <- calculate_axis_max(bar_df, "xlabels", "mean_k")
   
   # Start plotly
   
-  GP2_plot <- create_plotly_layout("Round income (k) - Players per class",
+  GP2_plot <- create_GP2_plotly_layout("Round income (k) - Players per class",
                                    xlevels,
                                    "Game Currency (k)",
                                    c(bar_y_min, bar_y_max),
                                    "Average total satisfaction", " - ")
   
-  GP2_plot <- add_bar_data(GP2_plot, bar_df, selected_bar_labels, "Round costs") 
+  GP2_plot <- add_GP2_bar_data(GP2_plot, bar_df, selected_bar_labels, "Round costs") 
   
   
-  GP2_plot <- add_scatter_data(GP2_plot, scatter_df, "Satisfaction") 
+  GP2_plot <- add_GP2_scatter_data(GP2_plot, scatter_df, "Satisfaction") 
   
   GP2_plot
 }

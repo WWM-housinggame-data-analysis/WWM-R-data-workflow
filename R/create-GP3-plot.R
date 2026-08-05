@@ -193,12 +193,12 @@ create_GP3_plotly <- function(plot_data) {
 
   # Start plotly
   
-  GP3_plot <- create_plotly_layout("Frequency",
-                                   ylevels,
-                                   "Private adaptation measures",
-                                   c(bar_x_min, bar_x_max))
+  GP3_plot <- create_GP3_plotly_layout("Frequency",
+                                       ylevels,
+                                       "Private adaptation measures",
+                                       c(bar_x_min, bar_x_max))
   
-  GP3_plot <- add_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
+  GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
   
   GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
   
