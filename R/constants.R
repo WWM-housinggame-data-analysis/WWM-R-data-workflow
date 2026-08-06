@@ -262,6 +262,7 @@ FLOOD_ACCORDION_TITLE <- "6: Flood in gameplay"
 SATISFACTION_ACCORDION_TITLE <- "7: Damage & satisfaction"
 
 UI_ROUNDS_RENDERING <- "ui_round_rendering"
+UI_GP2_SEGMENT_RENDERING <- "UI_GP2_segment_rendering"
 
 # Apply a top margin of 1rem (typically 16px) to the div.
 DIV_16PX_MARGIN <- "mt-3"

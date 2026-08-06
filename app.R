@@ -180,7 +180,7 @@ ui <- bslib::page_navbar(
           
           ## Players' Costs Filter Details (Used to segment bars)
           bslib::accordion_panel(GP2_SEGMENT_ACCORDION_TITLE,
-                          mod_multicheck_reset_ui(GP2_SEGMENT_ACCORDION_VALUE, GP2_SEGMENT_ACCORDION_LABEL)
+                                 shiny::uiOutput(UI_GP2_SEGMENT_RENDERING)
                           
           ),
           
@@ -240,6 +240,10 @@ server <- function(input, output, session) {
   selected_question         <- qs$selected_question
   selected_gamesession      <- gs$selected_gamesession
   question_session_df       <- gs$selected_session_df
+  
+  output[[UI_GP2_SEGMENT_RENDERING]] <- shiny::renderUI({
+    make_GP2_segment_accordion(selected_question())
+  })
 
   
   role_table <- make_role_table_reactives(
@@ -263,10 +267,11 @@ server <- function(input, output, session) {
   })
   
   
-  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
-    
   # global "Reset all filters"
   add_global_reset_observer(input, session)
+  
+  
+  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
   
 
   shiny::observe({
