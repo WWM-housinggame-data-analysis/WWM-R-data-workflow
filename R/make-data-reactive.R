@@ -214,7 +214,7 @@ make_question_reactives <- function(dashboard_data_list, question_selection, id 
     shiny::req(!is.null(quest), quest %in% names(dashboard_data_list))
     # Guard against missing table
     tbl_list <- dashboard_data_list[[quest]]
-    if (is.null(tbls)) {
+    if (is.null(tbl_list)) {
       # Return an empty tibble to avoid errors downstream
       return(list(tibble::tibble()))
     }
@@ -239,8 +239,11 @@ make_question_reactives <- function(dashboard_data_list, question_selection, id 
 #Why this helps: You’ll never send character(0) to process_config_selection() or the module. The module also won’t try to update until choices are non-empty.
 
 make_gamesession_reactives <- function(session_data_list, gamesession_selection, id = "gamesession") {
+  
   force(session_data_list)
   force(gamesession_selection)
+  
+  
   
   # This function must be called inside a server() or moduleServer() context
   # because it uses Shiny reactives and your input module.
@@ -248,7 +251,7 @@ make_gamesession_reactives <- function(session_data_list, gamesession_selection,
   # 1) Choices reactive
   gamesession_choices <- shiny::reactive({
     if (identical(gamesession_selection, SELECT_ALL)) {
-      names(session_data_list)
+      names(session_data_list())
     } else {
       # When YAML or config pre-filters the sessions
       gamesession_selection
@@ -269,9 +272,9 @@ make_gamesession_reactives <- function(session_data_list, gamesession_selection,
   # 3) Derived income_dist_df reactive for the selected session
   selected_session_df <- shiny::reactive({
     sess <- selected_gamesession()
-    shiny::req(!is.null(sess), sess %in% names(session_data_list))
+    shiny::req(!is.null(sess), sess %in% names(session_data_list()))
     # Guard against missing table
-    tbls <- session_data_list[[sess]]
+    tbls <- session_data_list()[[sess]]
     if (is.null(tbls)) {
       # Return an empty tibble to avoid errors downstream
       return(tibble::tibble())

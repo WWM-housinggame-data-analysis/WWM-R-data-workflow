@@ -133,9 +133,9 @@ for (session_name in names(gamesession_data_list)) {
 ## Define default game session
 
 ##R/interact-data.R
-default_gamesession <- process_config_selection(names(preprocess_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
+default_gamesession <- process_config_selection(names(gamesession_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
 
-default_question <- process_config_selection(c("GP2", "GP3"), SELECT_ALL, fallback = SELECT_ALL)
+default_question <- process_config_selection(names(dashboard_data_list), SELECTED_QUESTION, fallback = SELECT_ALL)
 
 ## Design Dashboard User Interface
 ### All local functions stored in R/design-shiny-ui.R
@@ -160,15 +160,15 @@ ui <- bslib::page_navbar(
           multiple = EXPAND_MULTIPLE_ACCORDIONS,
           
           ## Game Session Filter Details
-          bslib::accordion_panel(SESSION_ACCORDION_TITLE,
-                          mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
-                          ),
-          
-          ## Game Session Filter Details
           bslib::accordion_panel(QUESTION_ACCORDION_TITLE,
                                  mod_input_reset_ui(QUESTION_ACCORDION_VALUE, QUESTION_ACCORDION_LABEL)
           ),
           
+          ## Game Session Filter Details
+          bslib::accordion_panel(SESSION_ACCORDION_TITLE,
+                          mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
+                          ),
+
           ## Table Group Filter Details
           bslib::accordion_panel(GROUP_ACCORDION_TITLE,
                                  mod_input_reset_ui(GROUP_ACCORDION_VALUE, GROUP_ACCORDION_LABEL)
@@ -247,7 +247,7 @@ server <- function(input, output, session) {
 
   
   role_table <- make_role_table_reactives(
-    question_session_df = question_session_df,    # reactive returned from previous helper
+    reactive_df = question_session_df,    # reactive returned from previous helper
     selected_username = SELECTED_USERNAME,
     id = "table"
   )
@@ -271,9 +271,20 @@ server <- function(input, output, session) {
   add_global_reset_observer(input, session)
   
   
-  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
+  selected_cost_types <- reactive({
+    
+    if (identical(selected_question(), "GP2")) {
+      
+      make_cost_types_reactive(id = "cost_types")()
+      
+    } else {
+      
+      reactive({NULL})
+    }
+    
+  })
   
-
+  
   shiny::observe({
     
     shiny::req(length(round_ids()) > 0)
@@ -283,7 +294,7 @@ server <- function(input, output, session) {
     lapply(unname(round_ids()), function(rid) {
       
       local({
-
+        
         plot_id    <- paste0("plot_", rid)
         summary_id <- paste0("summary_", rid)
         table_id   <- paste0("table_", rid)
@@ -293,39 +304,89 @@ server <- function(input, output, session) {
         
         
         plot_data <- shiny::reactive({
-          retrieve_GP2_plot_data(
-            income_dist_df(),
-            selected_cost_types(),
-            selected_table(),
-            game_round = rid_value,
-            interm_rounds = interm_rids,
-            fill_values_all
-          )
+          
+          if (identical(selected_question(), "GP2")) {
+            
+            retrieve_GP2_plot_data(
+              question_session_df(),
+              selected_cost_types(),
+              selected_table(),
+              game_round = rid_value,
+              interm_rounds = interm_rids,
+              fill_values_all
+            )
+            
+          } else if (identical(selected_question(), "GP3")) {
+            
+            retrieve_GP3_plot_data(
+              question_session_df(),
+              selected_table(),
+              game_round = rid_value,
+              interm_rounds = interm_rids
+            )
+          } else {
+            stop("selected_question not found")
+          }
         })
         
-        summary_tables <- shiny::reactive({
-          retrieve_GP2_summary_tables(
-            income_dist_df(),
-            selected_cost_types(),
-            selected_table(),
-            game_round = rid_value,
-            interm_rounds = interm_rids)
+        if (identical(selected_question(), "GP2")) {
+          
+          summary_tables <- shiny::reactive({
+            
+            retrieve_GP2_summary_tables(
+              question_session_df(),
+              selected_cost_types(),
+              selected_table(),
+              game_round = rid_value,
+              interm_rounds = interm_rids)
           })
+          
+          num_summary_df <- shiny::reactive({summary_tables()$num_df})
+          kval_summary_df <- shiny::reactive({summary_tables()$kval_df})
+          
+          
+        } else if (identical(selected_question(), "GP3")) {
+          
+          n_summary_df <- shiny::reactive({
+            retrieve_GP3_summary_tables(
+              question_session_df(),
+              selected_table(),
+              game_round = rid_value,
+              interm_rounds = interm_rids
+            )
+          })
+        } else {
+          stop("selected_question not found")
+        }
         
-        num_summary_df <- shiny::reactive({summary_tables()$num_df})
-        kval_summary_df <- shiny::reactive({summary_tables()$kval_df})
-        
-        output[[plot_id]] <- plotly::renderPlotly({
-          create_GP2_plotly(plot_data())
-        })
-        
-        output[[summary_id]] <- shiny::renderPrint({
-          summary(num_summary_df())
-        })
-        
-        output[[table_id]] <- shiny::renderTable({
-          kval_summary_df()
-        })
+        if (identical(selected_question(), "GP2")) {
+          
+          output[[plot_id]] <- plotly::renderPlotly({
+            create_GP2_plotly(plot_data())
+          })
+          
+          output[[summary_id]] <- shiny::renderPrint({
+            summary(num_summary_df())
+          })
+          
+          output[[table_id]] <- shiny::renderTable({
+            kval_summary_df()
+          })
+          
+        } else if (identical(selected_question(), "GP3")) {
+          
+          output[[plot_id]] <- plotly::renderPlotly({
+            create_GP3_plotly(plot_data())
+          })
+          
+          output[[summary_id]] <- shiny::renderPrint({
+            summary(n_summary_df())
+          })
+          
+          output[[table_id]] <- shiny::renderTable({
+            n_summary_df()
+          })
+        }
       })
     })
   })
