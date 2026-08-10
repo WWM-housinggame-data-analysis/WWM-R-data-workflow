@@ -40,6 +40,7 @@ library(tibble)
 library(ggplot2)
 library(ggtext)
 library(shiny)
+library(shinyjs)
 library(bslib)
 library(plotly)
 
@@ -137,6 +138,8 @@ default_gamesession <- process_config_selection(names(gamesession_data_list), SE
 
 default_question <- process_config_selection(names(dashboard_data_list), SELECTED_QUESTION, fallback = SELECT_ALL)
 
+default_cost_selection <- SELECT_ALL
+
 ## Design Dashboard User Interface
 ### All local functions stored in R/design-shiny-ui.R
 ### Explanations for arguments with CONSTANTS assigned to them is provided in constants.R
@@ -179,9 +182,17 @@ ui <- bslib::page_navbar(
                                  ),
           
           ## Players' Costs Filter Details (Used to segment bars)
-          bslib::accordion_panel(GP2_SEGMENT_ACCORDION_TITLE,
-                                 shiny::uiOutput(UI_GP2_SEGMENT_RENDERING)
-                          
+          bslib::accordion_panel(
+            GP2_SEGMENT_ACCORDION_TITLE,
+            
+            shiny::conditionalPanel(
+              condition = paste0("input['", QUESTION_ACCORDION_VALUE, "-input_value'] == '", "GP2", "'"),
+              
+              mod_multicheck_reset_ui(
+                GP2_SEGMENT_ACCORDION_VALUE,
+                GP2_SEGMENT_ACCORDION_LABEL
+              )
+            )
           ),
           
           ## Measures Filter Details
@@ -241,11 +252,6 @@ server <- function(input, output, session) {
   selected_gamesession      <- gs$selected_gamesession
   question_session_df       <- gs$selected_session_df
   
-  output[[UI_GP2_SEGMENT_RENDERING]] <- shiny::renderUI({
-    make_GP2_segment_accordion(selected_question())
-  })
-
-  
   role_table <- make_role_table_reactives(
     reactive_df = question_session_df,    # reactive returned from previous helper
     selected_username = SELECTED_USERNAME,
@@ -266,26 +272,27 @@ server <- function(input, output, session) {
     make_round_panels(round_ids())
   })
   
+  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
   
   # global "Reset all filters"
   add_global_reset_observer(input, session)
   
   
-  selected_cost_types <- reactive({
-    
-    if (identical(selected_question(), "GP2")) {
-      
-      make_cost_types_reactive(id = "cost_types")()
-      
-    } else {
-      
-      reactive({NULL})
-    }
-    
-  })
-  
-  
   shiny::observe({
+    
+    shinyjs::toggle(
+      "cost_types_container",
+      condition = identical(selected_question(), "GP2")
+    )
+    
+    cat(
+      "Question:",
+      selected_question(),
+      "| Cost types:",
+      paste(selected_cost_types(), collapse=","),
+      "\n"
+    )
+    
     
     shiny::req(length(round_ids()) > 0)
     

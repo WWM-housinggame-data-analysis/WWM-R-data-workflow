@@ -79,8 +79,20 @@ mod_input_reset_server <- function(id, default_value, get_choices) {
 # Handle multi-select with SELECT_ALL semantics (optional helper)
 # If user selects SELECT_ALL, you can choose to keep only SELECT_ALL OR expand to all real choices.
 normalize_multicheck_selection <- function(selection, choices, all_label = SELECT_ALL, expand_all = FALSE) {
-  if (is.null(selection) || length(selection) == 0) return(character(0))
+  
+  if (is.null(choices) || length(choices) == 0)
+    return(character(0))
+  
+  if (is.null(selection) || length(selection) == 0) {
+    
+    if (all_label %in% choices)
+      return(all_label)
+    
+    return(choices[1])
+  }
+  
   selection <- intersect(selection, choices)  # sanitize
+  
   if (all_label %in% choices && all_label %in% selection) {
     if (expand_all) {
       # Expand to all (excluding All if you want)
@@ -91,6 +103,7 @@ normalize_multicheck_selection <- function(selection, choices, all_label = SELEC
       return(all_label)
     }
   }
+
   selection
 }
 
@@ -143,11 +156,21 @@ mod_multicheck_reset_server <- function(id, default_values, get_choices, all_lab
     
     
     # Returned reactive selection, normalized (enforce All semantics consistently)
-    return(shiny::reactive({
+    shiny::reactive({
+      
       choices <- get_choices()
-      normalize_multicheck_selection(input$input_values, choices, all_label = all_label, expand_all = expand_all)
-    }))
-  })
+      
+      normalize_multicheck_selection(
+        input$input_values,
+        choices,
+        all_label = all_label,
+        expand_all = expand_all
+      )
+      
+    })
+    
+  }
+  )
 }
 
 

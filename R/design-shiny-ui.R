@@ -78,22 +78,3 @@ make_round_panels <- function(round_ids) {
   )
   
 }
-
-
-make_GP2_segment_accordion <- function(selected_question) {
-  
-    req(selected_question)
-    
-    if (identical(selected_question, "GP2")) {
-      
-      mod_multicheck_reset_ui(
-        GP2_SEGMENT_ACCORDION_VALUE,
-        GP2_SEGMENT_ACCORDION_LABEL
-      )
-      
-    } else {
-      
-      NULL
-      
-    }
-}

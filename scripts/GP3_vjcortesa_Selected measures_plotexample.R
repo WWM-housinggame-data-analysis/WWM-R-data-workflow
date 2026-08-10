@@ -15,9 +15,9 @@ library(tidyr)
 library(ggplot2)
 library(ggtext)
 library(plotly)
-library(ggimage)
+#library(ggimage)
 library(htmlwidgets)
-library(webshot)
+#library(webshot)
 
 # Step 1: Data Settings ---------------------------------------------------
 
