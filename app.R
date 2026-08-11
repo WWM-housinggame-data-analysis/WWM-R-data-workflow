@@ -106,14 +106,23 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP3-plot.R")))
 ##
 
 ##R/list-upload-export-dbtables.R
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
+
+available_gamesessions <- basename(list_matching_subfolders(RAWDATA_PATH, GAMESESSION_FLAG))
+
+gamesession_data_list <- list()
+
+for (subfolder in available_gamesessions) {
+  gamesession_data_list[[subfolder]] <- upload_dbtables(RAWDATA_PATH, subfolder, excel = FALSE)
+}
+
+
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 preprocess_data_list <- list()
 income_dist_list <- list()
 measures_combined_list <- list()
 dashboard_data_list <- list(income_dist_list, measures_combined_list)
-names(dashboard_data_list) <- c("GP2", "GP3")
+names(dashboard_data_list) <- QUESTION_SELECTION
 
 for (session_name in names(gamesession_data_list)) {
   
@@ -284,15 +293,6 @@ server <- function(input, output, session) {
       "cost_types_container",
       condition = identical(selected_question(), "GP2")
     )
-    
-    cat(
-      "Question:",
-      selected_question(),
-      "| Cost types:",
-      paste(selected_cost_types(), collapse=","),
-      "\n"
-    )
-    
     
     shiny::req(length(round_ids()) > 0)
     

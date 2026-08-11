@@ -31,6 +31,10 @@ SELECTED_GAMESESSION <- SELECT_ALL
 SELECTED_QUESTION <- SELECT_ALL
 SELECTED_USERNAME <- SELECTED_USERTABLE
 
+GAMESESSION_FLAG <- "housinggame"
+
+QUESTION_SELECTION <- c("GP2", "GP3")
+
 
 # Set all default variables or global options and all the path variables at the top of the code.
 
