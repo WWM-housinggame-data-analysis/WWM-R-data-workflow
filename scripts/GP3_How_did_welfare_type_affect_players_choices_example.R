@@ -104,24 +104,26 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP3-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
+available_gamesessions <- basename(list_matching_subfolders(RAWDATA_PATH, GAMESESSION_FLAG))
 
-## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
+gamesession_data_list <- list()
 preprocess_data_list <- list()
 
-for (session_name in names(gamesession_data_list)) {
+
+for (session_name in available_gamesessions) {
+  gamesession_data_list[[session_name]] <- upload_dbtables(RAWDATA_PATH, session_name, excel = FALSE)
+  
+  ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
   preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  
   preprocess_data_list[[session_name]] <- preprocess_extra_dbtables_GP3(preprocess_data_list[[session_name]], session_name, excel = FALSE)
 }
 
 ## Select game session for analysis
-selected_gamesession <- names(preprocess_data_list)[length(names(preprocess_data_list))]
+selected_gamesession <- available_gamesessions[length(available_gamesessions)]
 
 ## Select table group for analysis. To select all define with SELECT_ALL
 selected_table <- SELECT_ALL
-
-## Select cost types to be included in analysis. To select all define with SELECT_ALL
-selected_measure_types <- SELECT_ALL
 
 ## Retrieve income distribution data frame to be used for data visualization
 measures_combined_df <- retrieve_GP3_dataframe(preprocess_data_list[[selected_gamesession]][["measures_combined"]])
@@ -140,10 +142,10 @@ interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_AL
 ## Data is retrieved for cost type and table group selection defined above.
 ## Data representative of the whole game session and of each game round is retrieved, respectively.
 
-GP3_plotall_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = SELECT_ALL, interm_rounds = interm_rids)
-GP3_plot1_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "1", interm_rounds = interm_rids)
-GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "2", interm_rounds = interm_rids)
-GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, selected_measure_types, game_round = "3", interm_rounds = interm_rids)
+GP3_plotall_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)
+GP3_plot1_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "1", interm_rounds = interm_rids)
+GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "2", interm_rounds = interm_rids)
+GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "3", interm_rounds = interm_rids)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
 save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")),  vheight = 1100)

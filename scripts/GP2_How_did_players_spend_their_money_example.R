@@ -103,17 +103,21 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP2-plot.R")))
 ##  ...
 ##
 
-gamesession_data_list <- upload_dbtables(RAWDATA_PATH, "housinggame", excel = FALSE)
+available_gamesessions <- basename(list_matching_subfolders(RAWDATA_PATH, GAMESESSION_FLAG))
 
-## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
+gamesession_data_list <- list()
 preprocess_data_list <- list()
 
-for (session_name in names(gamesession_data_list)) {
+
+for (session_name in available_gamesessions) {
+  gamesession_data_list[[session_name]] <- upload_dbtables(RAWDATA_PATH, session_name, excel = FALSE)
+  
+  ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with same overarching structure as the input gamesession_data_list
   preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
 }
 
 ## Select game session for analysis
-selected_gamesession <- names(preprocess_data_list)[length(names(preprocess_data_list))]
+selected_gamesession <- available_gamesessions[length(available_gamesessions)]
 
 ## Select table group for analysis. To select all define with SELECT_ALL
 selected_table <- SELECT_ALL
@@ -144,4 +148,3 @@ GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, se
 
 ## Save GP2 plot in main directory and display it in RStudio viewer. Always add date and time to generate new figure
 save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP2_plot.png")),  vheight = 1100)
-
