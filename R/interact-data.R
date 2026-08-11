@@ -15,33 +15,43 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 #Right now it stops when valid_values is empty. For robustness, allow empty and return the fallback (with a warning). Also, ensure fallback is length 1 and not empty.
 # Why this helps: During initial reactivity when data hasn’t arrived, you’ll get a sane fallback instead of a hard error.
-process_config_selection <- function(valid_values, default_value, fallback = character(0)) {
+process_dashboard_choice <- function(valid_values, choice, fallback = character(0), return_choice = TRUE) {
   
   # Coerce to character to avoid factor issues
   valid_values <- as.character(valid_values)
-  default_value <- as.character(default_value)
+  choice <- as.character(choice)
   fallback <- as.character(fallback)
   
   # If no valid values yet, return fallback (or stop with a clear message)
   if (length(valid_values) == 0) {
     if (length(fallback) == 1 && nzchar(fallback)) {
+      warning("process_dashboard_choice: No valid_values available. fallback value is returned.")
       return(fallback)
     } else {
-      stop("process_config_selection: No valid_values available and fallback is missing/invalid.")
+      stop("process_dashboard_choice: No valid_values available and fallback is missing/invalid.")
     }
   }
   
   
-  stopifnot("(Only) one choice needs to be provided in default_value" = length(default_value) == 1)
+  stopifnot("(Only) one choice needs to be provided in choice" = length(choice) == 1)
   
-  chosen_value <- valid_values[grep(default_value, valid_values)]
+  if(identical(SELECT_ALL, choice)){
+    if (return_ALL) {
+      return(choice)
+    } else {
+      return(valid_values)
+    }
+    
+  }
   
+  chosen_value <- valid_values[grep(choice, valid_values)]
   
   if (length(chosen_value) == 0) {
     if (length(fallback) == 1 && nzchar(fallback)) {
       chosen_value <- fallback
+      warning("process_dashboard_choice: No choice found in valid_values. fallback value is returned.")
     } else {
-      stop("process_config_selection: default not found and fallback is missing/invalid.")
+      stop("process_dashboard_choice: default not found and fallback is missing/invalid.")
     }
   }
   
@@ -85,9 +95,9 @@ update_selected_features <- function(checked_features, available_features) {
 
 translate_table_selection <- function(df, selected_table) {
   
-  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
+  table_options <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  selected_table <- translate_selected_categs(selected_table, table_choices)
+  selected_table <- translate_selected_categs(selected_table, table_options)
   
   return(selected_table)
 }
@@ -100,13 +110,13 @@ translate_table_selection <- function(df, selected_table) {
 
 update_grouping_choice <- function(df, selected_table) {
   
-  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
+  table_options <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  if (all(table_choices %in% selected_table)) {
+  if (all(table_options %in% selected_table)) {
     
     groupcol <- INCOME_GRP_COL
     
-  } else if (any(table_choices %in% selected_table) && length(selected_table) == 1) {
+  } else if (any(table_options %in% selected_table) && length(selected_table) == 1) {
     
     groupcol <- PLAYER_CODE_COL
     

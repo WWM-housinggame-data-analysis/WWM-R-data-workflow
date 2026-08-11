@@ -109,22 +109,32 @@ source(here::here(file.path(FUNCTION_PATH, "create-GP3-plot.R")))
 
 available_gamesessions <- basename(list_matching_subfolders(RAWDATA_PATH, GAMESESSION_FLAG))
 
-gamesession_data_list <- list()
+## Define default game session
 
-for (subfolder in available_gamesessions) {
-  gamesession_data_list[[subfolder]] <- upload_dbtables(RAWDATA_PATH, subfolder, excel = FALSE)
-}
+##R/interact-data.R
+gamesession_choice <- process_dashboard_choices(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL)
+
+gamesession_options <- process_dashboard_choices(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL, rreturn_choice = FALSE)
+
+question_choice <- process_dashboard_choices(QUESTION_SELECTION, SELECTED_QUESTION, fallback = SELECT_ALL)
+
+question_options <- process_dashboard_choices(QUESTION_SELECTION, SELECTED_QUESTION, fallback = SELECT_ALL, return_choice = FALSE)
+
+default_cost_choice <- SELECT_ALL
 
 
 
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
+gamesession_data_list <- list()
 preprocess_data_list <- list()
 income_dist_list <- list()
 measures_combined_list <- list()
 dashboard_data_list <- list(income_dist_list, measures_combined_list)
-names(dashboard_data_list) <- QUESTION_SELECTION
+names(dashboard_data_list) <- 
 
-for (session_name in names(gamesession_data_list)) {
+for (session_name in available_gamesessions) {
+  
+  gamesession_data_list[[session_name]] <- upload_dbtables(RAWDATA_PATH, session_name, excel = FALSE)
   
   ##R/preprocess-dbtables.R
   preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
@@ -139,15 +149,6 @@ for (session_name in names(gamesession_data_list)) {
 
 
 # Shiny App ----
-
-## Define default game session
-
-##R/interact-data.R
-default_gamesession <- process_config_selection(names(gamesession_data_list), SELECTED_GAMESESSION, fallback = SELECT_ALL)
-
-default_question <- process_config_selection(names(dashboard_data_list), SELECTED_QUESTION, fallback = SELECT_ALL)
-
-default_cost_selection <- SELECT_ALL
 
 ## Design Dashboard User Interface
 ### All local functions stored in R/design-shiny-ui.R
@@ -245,14 +246,14 @@ server <- function(input, output, session) {
   # --- centralize selection + derived data
   qs <- make_question_reactives(
     dashboard_data_list = dashboard_data_list,
-    question_selection  = default_question,  # SELECT_ALL or vector from config
+    question_options  = question_options,  # SELECT_ALL or vector from config
     id = "question"                              # matches your UI module id
   )
   
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
     session_data_list     = qs$selected_question_list,
-    gamesession_selection = default_gamesession,  # SELECT_ALL or vector from config
+    gamesession_options = gamesession_options ,  # SELECT_ALL or vector from config
     id = "gamesession"                              # matches your UI module id
   )
 
@@ -267,7 +268,7 @@ server <- function(input, output, session) {
     id = "table"
   )
   
-  role_selection <- role_table$role_selection
+  role_choice    <- role_table$role_choice
   table_choices  <- role_table$table_choices
   selected_table <- role_table$selected_table
   
