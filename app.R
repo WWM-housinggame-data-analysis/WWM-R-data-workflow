@@ -62,6 +62,8 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 ### Load functions required for listing, uploading and exporting data
 source(here::here(file.path(FUNCTION_PATH, "list-upload-export-dbtables.R")))
 
+source(here::here(file.path(FUNCTION_PATH, "question-data-workflows.R")))
+
 ### Load functions containing the preprocessing of data tables coming from the database (i.e. formatting existing adding existing or calculating new columns)
 source(here::here(file.path(FUNCTION_PATH, "preprocess-dbtables.R")))
 
@@ -127,22 +129,28 @@ default_cost_choice <- SELECT_ALL
 ## Preprocess tables available for each session. Preprocessed tables are returned in a single list with sameoverarching structure as the input gamesession_data_list
 gamesession_data_list <- list()
 preprocess_data_list <- list()
-income_dist_list <- list()
-measures_combined_list <- list()
-dashboard_data_list <- list(income_dist_list, measures_combined_list)
+dashboard_data_list <- vector(mode = "list", length = length(question_options))
+names(dashboard_data_list) <- question_options
 
 for (session_name in available_gamesessions) {
   
   gamesession_data_list[[session_name]] <- upload_dbtables(RAWDATA_PATH, session_name, excel = FALSE)
   
-  ##R/preprocess-dbtables.R
-  preprocess_data_list[[session_name]] <- preprocess_selected_dbtables(gamesession_data_list[[session_name]], session_name, excel = FALSE)
+  if (identical(question_choice, "GP2")) {
+    
+    preprocess_data_list[[session_name]] <- question_preprocessing_workflow[[question_choice]]$get_preprocessed_data(gamesession_data_list[[session_name]], session_name)
+
+  } else {
+    preprocess_data_list[[session_name]] <- question_preprocessing_workflow[[SELECT_ALL]]$get_preprocessed_data(gamesession_data_list[[session_name]], session_name)
+  }
   
-  dashboard_data_list[["GP2"]][[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
+  if ("GP2" %in% question_options) {
+    dashboard_data_list[["GP2"]][[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
+  }
   
-  preprocess_data_list[[session_name]] <- preprocess_extra_dbtables_GP3(preprocess_data_list[[session_name]], session_name, excel = FALSE)
-  
-  dashboard_data_list[["GP3"]][[session_name]] <- retrieve_GP3_dataframe(preprocess_data_list[[session_name]][["measures_combined"]])
+  if ("GP3" %in% question_options) {
+    dashboard_data_list[["GP3"]][[session_name]] <- retrieve_GP3_dataframe(preprocess_data_list[[session_name]][["measures_combined"]])
+  }
 }
 
 

@@ -659,20 +659,20 @@ preprocess_extra_dbtables_GP3 <- function(dbtable_list, session_name, excel = FA
   )
   
   
-  measuretype_df <- sqldf::sqldf(left_join_sqlquery(measuretype_df, match_dbtable1_cols = "short_alias",
-                                                    MEASURETEXT_DF, match_dbtable2_cols = "short_alias",
-                                                    kept_dbtable1_cols = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house"),
-                                                    kept_dbtable2_cols = c(MEASURE_COSTREF_COL, MEASURE_COSTPLOT_COL, MEASURE_ICONS_COL))
+  measures_combined_info_df <- sqldf::sqldf(left_join_sqlquery(measuretype_df, match_dbtable1_cols = "short_alias",
+                                                               MEASURETEXT_DF, match_dbtable2_cols = "short_alias",
+                                                               kept_dbtable1_cols = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house"),
+                                                               kept_dbtable2_cols = c(MEASURE_COSTREF_COL, MEASURE_COSTPLOT_COL, MEASURE_ICONS_COL))
   )
   
-  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, MEASURE_COSTPLOT_COL))
-  measuretype_df <- sqldf::sqldf(sort_dbtable_sqlquery(measuretype_df, "cost_absolute", asc = FALSE))
+  measures_combined_info_df <- sqldf::sqldf(sort_dbtable_sqlquery(measures_combined_info_df, MEASURE_COSTPLOT_COL))
+  measures_combined_info_df <- sqldf::sqldf(sort_dbtable_sqlquery(measures_combined_info_df, "cost_absolute", asc = FALSE))
   
-  measuretype_df <- append_cost_info(measuretype_df, COST_INFO_COL)
+  measures_combined_info_df <- append_cost_info(measures_combined_info_df, COST_INFO_COL)
   
   
   measures_combined_df <- sqldf::sqldf(left_join_sqlquery(measures_combined_df, match_dbtable1_cols = "short_alias",
-                                                          measuretype_df, match_dbtable2_cols = "short_alias",
+                                                          measures_combined_info_df, match_dbtable2_cols = "short_alias",
                                                           kept_dbtable2_cols = c(MEASURE_ICONS_COL, COST_INFO_COL))
                                        )
   
