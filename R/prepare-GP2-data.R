@@ -123,20 +123,25 @@ retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table,
   
   pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
   
-  num_summary_df <- pivoted_mean_df |>
+  pivoted_mean_df |>
     dplyr::select(-tidyselect::all_of("column_name")) |>
     tidyr::pivot_wider(names_from = "mean_label", values_from = "mean_value") |>
     as.data.frame()
+}
+
+retrieve_GP2_stats_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
-  kval_summary_df <- pivoted_mean_df |>
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  df <- processed_list$df
+  selected_bar_groupcol <- processed_list$selected_bar_groupcol
+  
+  pivoted_mean_df <- retrieve_mean_table(df, selected_bar_groupcol, pivoted_cols)
+  
+  pivoted_mean_df |>
     dplyr::select(-tidyselect::all_of("column_name")) |>
     dplyr::mutate(
       mean_value = paste0(mean_value / K_FACTOR, names(K_FACTOR))
     ) |>
     tidyr::pivot_wider(names_from = "mean_label", values_from = "mean_value") |>
     as.data.frame()
-  
-  list(num_df = num_summary_df,
-       kval_df = kval_summary_df)
-  
 }

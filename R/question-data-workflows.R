@@ -70,93 +70,132 @@ question_preprocessing_workflow <- list(
   )
 )
 
-# question_strategies <- list(
-#   
-#   GP2 = list(
-#     
-#     get_plot_data = function(
-#     df,
-#     selected_table,
-#     selected_cost_types,
-#     game_round,
-#     interm_rounds
-#     ) {
-#       
-#       retrieve_GP2_plot_data(
-#         df,
-#         selected_cost_types,
-#         selected_table,
-#         game_round,
-#         interm_rounds,
-#         fill_values_all
-#       )
-#       
-#     },
-#     
-#     get_summary = function(
-#     df,
-#     selected_table,
-#     selected_cost_types,
-#     game_round,
-#     interm_rounds
-#     ) {
-#       
-#       retrieve_GP2_summary_tables(
-#         df,
-#         selected_cost_types,
-#         selected_table,
-#         game_round,
-#         interm_rounds
-#       )
-#       
-#     },
-#     
-#     render_plot = create_GP2_plotly,
-#     
-#     summary_type = "gp2"
-#     
-#   ),
-#   
-#   GP3 = list(
-#     
-#     get_plot_data = function(
-#     df,
-#     selected_table,
-#     selected_cost_types,
-#     game_round,
-#     interm_rounds
-#     ) {
-#       
-#       retrieve_GP3_plot_data(
-#         df,
-#         selected_table,
-#         game_round,
-#         interm_rounds
-#       )
-#       
-#     },
-#     
-#     get_summary = function(
-#     df,
-#     selected_table,
-#     selected_cost_types,
-#     game_round,
-#     interm_rounds
-#     ) {
-#       
-#       retrieve_GP3_summary_tables(
-#         df,
-#         selected_table,
-#         game_round,
-#         interm_rounds
-#       )
-#       
-#     },
-#     
-#     render_plot = create_GP3_plotly,
-#     
-#     summary_type = "gp3"
-#     
-#   )
-#   
-# )
+question_dashboard_workflow <- list(
+  
+  GP2 = list(
+    
+    get_plot_data = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP2_plot_data(
+        df,
+        selected_cost_types,
+        selected_table,
+        game_round,
+        interm_rounds,
+        fill_values_all
+      )
+      
+    },
+    
+    get_summary_table = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP2_summary_tables(
+        df,
+        selected_cost_types,
+        selected_table,
+        game_round,
+        interm_rounds
+      )
+      
+    },
+    
+    get_stats_table = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP2_stats_tables(
+        df,
+        selected_cost_types,
+        selected_table,
+        game_round,
+        interm_rounds
+      )
+      
+    },
+    
+    render_plot = create_GP2_plotly,
+    
+    summary_type = "gp2",
+    
+    show_cost_filter = TRUE
+    
+  ),
+  
+  GP3 = list(
+    
+    get_plot_data = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP3_plot_data(
+        df,
+        selected_table,
+        game_round,
+        interm_rounds
+      )
+      
+    },
+    
+    get_summary_table = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP3_summary_tables(
+        df,
+        selected_table,
+        game_round,
+        interm_rounds
+      )
+      
+    },
+    
+    get_stats_table = function(
+    df,
+    selected_table,
+    selected_cost_types,
+    game_round,
+    interm_rounds
+    ) {
+      
+      retrieve_GP3_stats_tables(
+        df,
+        selected_table,
+        game_round,
+        interm_rounds
+      )
+      
+    },
+    
+    render_plot = create_GP3_plotly,
+    
+    summary_type = "gp3",
+    
+    show_cost_filter = FALSE
+    
+  )
+  
+)

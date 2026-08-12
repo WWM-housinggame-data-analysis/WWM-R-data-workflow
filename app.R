@@ -297,9 +297,17 @@ server <- function(input, output, session) {
   
   shiny::observe({
     
+    selected_dashboard_workflow <- reactive({
+      
+      req(selected_question())
+      
+      question_dashboard_workflow[[selected_question()]]
+      
+    })
+    
     shinyjs::toggle(
       "cost_types_container",
-      condition = identical(selected_question(), "GP2")
+      condition = selected_dashboard_workflow()$show_cost_filter
     )
     
     shiny::req(length(round_ids()) > 0)
@@ -318,90 +326,54 @@ server <- function(input, output, session) {
         rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
         
         
-        plot_data <- shiny::reactive({
+        plot_data <- reactive({
           
-          if (identical(selected_question(), "GP2")) {
-            
-            retrieve_GP2_plot_data(
-              question_session_df(),
-              selected_cost_types(),
-              selected_table(),
-              game_round = rid_value,
-              interm_rounds = interm_rids,
-              fill_values_all
-            )
-            
-          } else if (identical(selected_question(), "GP3")) {
-            
-            retrieve_GP3_plot_data(
-              question_session_df(),
-              selected_table(),
-              game_round = rid_value,
-              interm_rounds = interm_rids
-            )
-          } else {
-            stop("selected_question not found")
-          }
+          selected_dashboard_workflow()$get_plot_data(
+            df = question_session_df(),
+            selected_table = selected_table(),
+            selected_cost_types = selected_cost_types(),
+            game_round = rid_value,
+            interm_rounds = interm_rids
+          )
+          
         })
         
-        if (identical(selected_question(), "GP2")) {
-          
-          summary_tables <- shiny::reactive({
-            
-            retrieve_GP2_summary_tables(
-              question_session_df(),
-              selected_cost_types(),
-              selected_table(),
-              game_round = rid_value,
-              interm_rounds = interm_rids)
-          })
-          
-          num_summary_df <- shiny::reactive({summary_tables()$num_df})
-          kval_summary_df <- shiny::reactive({summary_tables()$kval_df})
-          
-          
-        } else if (identical(selected_question(), "GP3")) {
-          
-          n_summary_df <- shiny::reactive({
-            retrieve_GP3_summary_tables(
-              question_session_df(),
-              selected_table(),
-              game_round = rid_value,
-              interm_rounds = interm_rids
-            )
-          })
-        } else {
-          stop("selected_question not found")
-        }
         
-        if (identical(selected_question(), "GP2")) {
+        summary_data <- reactive({
           
-          output[[plot_id]] <- plotly::renderPlotly({
-            create_GP2_plotly(plot_data())
-          })
+          selected_dashboard_workflow()$get_summary_table(
+            df = question_session_df(),
+            selected_table = selected_table(),
+            selected_cost_types = selected_cost_types(),
+            game_round = rid_value,
+            interm_rounds = interm_rids
+          )
           
-          output[[summary_id]] <- shiny::renderPrint({
-            summary(num_summary_df())
-          })
+        })
+        
+        stats_data <- reactive({
           
-          output[[table_id]] <- shiny::renderTable({
-            kval_summary_df()
-          })
+          selected_dashboard_workflow()$get_stats_table(
+            df = question_session_df(),
+            selected_table = selected_table(),
+            selected_cost_types = selected_cost_types(),
+            game_round = rid_value,
+            interm_rounds = interm_rids
+          )
           
-        } else if (identical(selected_question(), "GP3")) {
+        })
           
-          output[[plot_id]] <- plotly::renderPlotly({
-            create_GP3_plotly(plot_data())
-          })
-          
-          output[[summary_id]] <- shiny::renderPrint({
-            summary(n_summary_df())
-          })
-          
-          output[[table_id]] <- shiny::renderTable({
-            n_summary_df()
-          })
-        }
+        output[[plot_id]] <- plotly::renderPlotly({
+          (selected_dashboard_workflow()$render_plot(plot_data()))
+        })
+        
+        output[[summary_id]] <- shiny::renderPrint({
+          summary(summary_data())
+        })
+        
+        output[[table_id]] <- shiny::renderTable({
+          stats_data()
+        })
       })
     })
   })
