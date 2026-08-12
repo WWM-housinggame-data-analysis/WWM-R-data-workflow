@@ -39,7 +39,7 @@ mod_input_reset_server <- function(id, choice, get_options) {
       }
       
       shiny::updateSelectInput(session, "input_value",
-                               options = options,
+                               choices =  options,
                                selected = ch)
     })
     
@@ -125,7 +125,7 @@ mod_multicheck_reset_server <- function(id, choice, get_options, all_label = SEL
       }
       
       shiny::updateCheckboxGroupInput(session, "input_values",
-                                      options = options,
+                                      choices =  options,
                                       selected = ch)
     })
     
@@ -254,9 +254,9 @@ make_question_reactives <- function(dashboard_data_list, question_options, id = 
 # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
 #Why this helps: You’ll never send character(0) to process_dashboard_choice() or the module. The module also won’t try to update until options are non-empty.
 
-make_gamesession_reactives <- function(session_data_list, gamesession_options, id = "gamesession") {
+make_gamesession_reactives <- function(gamesession_data_list, gamesession_options, id = "gamesession") {
   
-  force(session_data_list)
+  force(gamesession_data_list)
   force(gamesession_options)
   
   
@@ -281,9 +281,9 @@ make_gamesession_reactives <- function(session_data_list, gamesession_options, i
   # 3) Derived income_dist_df reactive for the selected session
   selected_gamesession_df <- shiny::reactive({
     sess <- selected_gamesession_reactive()
-    shiny::req(!is.null(sess), sess %in% names(session_data_list()))
+    shiny::req(!is.null(sess), sess %in% names(gamesession_data_list()))
     # Guard against missing table
-    tbls <- session_data_list()[[sess]]
+    tbls <- gamesession_data_list()[[sess]]
     if (is.null(tbls)) {
       # Return an empty tibble to avoid errors downstream
       return(tibble::tibble())

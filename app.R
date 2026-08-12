@@ -112,13 +112,13 @@ available_gamesessions <- basename(list_matching_subfolders(RAWDATA_PATH, GAMESE
 ## Define default game session
 
 ##R/interact-data.R
-gamesession_choice <- process_dashboard_choices(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL)
+gamesession_choice <- process_dashboard_choice(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL)
 
-gamesession_options <- process_dashboard_choices(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL, rreturn_choice = FALSE)
+gamesession_options <- process_dashboard_choice(available_gamesessions, SELECTED_GAMESESSION, fallback = SELECT_ALL, return_choice = FALSE)
 
-question_choice <- process_dashboard_choices(QUESTION_SELECTION, SELECTED_QUESTION, fallback = SELECT_ALL)
+question_choice <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTION, fallback = SELECT_ALL)
 
-question_options <- process_dashboard_choices(QUESTION_SELECTION, SELECTED_QUESTION, fallback = SELECT_ALL, return_choice = FALSE)
+question_options <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTION, fallback = SELECT_ALL, return_choice = FALSE)
 
 default_cost_choice <- SELECT_ALL
 
@@ -130,7 +130,6 @@ preprocess_data_list <- list()
 income_dist_list <- list()
 measures_combined_list <- list()
 dashboard_data_list <- list(income_dist_list, measures_combined_list)
-names(dashboard_data_list) <- 
 
 for (session_name in available_gamesessions) {
   
@@ -252,7 +251,7 @@ server <- function(input, output, session) {
   
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
-    session_data_list     = qs$selected_question_list,
+    gamesession_data_list     = qs$selected_question_list,
     gamesession_options = gamesession_options ,  # SELECT_ALL or vector from config
     id = "gamesession"                              # matches your UI module id
   )
@@ -260,7 +259,7 @@ server <- function(input, output, session) {
   # Keep names for readability
   selected_question         <- qs$selected_question
   selected_gamesession      <- gs$selected_gamesession
-  question_session_df       <- gs$selected_session_df
+  question_session_df       <- gs$selected_gamesession_df
   
   role_table <- make_role_table_reactives(
     reactive_df = question_session_df,    # reactive returned from previous helper
@@ -269,7 +268,7 @@ server <- function(input, output, session) {
   )
   
   role_choice    <- role_table$role_choice
-  table_choices  <- role_table$table_choices
+  table_options  <- role_table$table_options
   selected_table <- role_table$selected_table
   
   

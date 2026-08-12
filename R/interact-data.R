@@ -36,7 +36,7 @@ process_dashboard_choice <- function(valid_values, choice, fallback = character(
   stopifnot("(Only) one choice needs to be provided in choice" = length(choice) == 1)
   
   if(identical(SELECT_ALL, choice)){
-    if (return_ALL) {
+    if (return_choice) {
       return(choice)
     } else {
       return(valid_values)
