@@ -18,10 +18,27 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 # ============================
 
 
+handle_option_choice <- function(options, choice, all_label = SELECT_ALL) {
+  
+  # Skip updating until options are available
+  shiny::req(length(options) > 0)
+  
+  if (length(choice) > 0) choice[[length(choice)]] else NULL
+  
+  # Ensure options is within options; fallback to SELECT_ALL if available, else first choice
+  # Ensure selected default is inside options; fallback to first
+  if (is.null(choice) || length(choice) != 1 || !(choice %in% options)) {
+    choice <- if (all_label %in% options) all_label else options[[1]]
+  }
+  
+  return(choice)
+  
+}
+
 # Update your mod_input_reset_server() so it skips UI updates until there are actual options, and ensures the selected value is in those options
 # Why this helps: Even if get_options() briefly returns character(0) during app start, the module won’t try to update the UI and won’t trigger process_dashboard_choice() with empty valid_values.
 
-mod_input_reset_server <- function(id, choice, get_options) {
+mod_input_reset_server <- function(id, get_choice, get_options, all_label = SELECT_ALL) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -29,40 +46,28 @@ mod_input_reset_server <- function(id, choice, get_options) {
     shiny::observe({
       
       options <- get_options()
-      # Skip updating until options are available
-      shiny::req(length(options) > 0)
       
-      # Ensure selected default is inside options; fallback to first
-      ch <- choice()
-      if (is.null(ch) || length(ch) != 1 || !(ch %in% options)) {
-        ch <- options[[1]]
-      }
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
       
       shiny::updateSelectInput(session, "input_value",
                                choices =  options,
-                               selected = ch)
+                               selected = choice)
     })
     
     
     # Reset button returns to default (if present), else first option
     shiny::observeEvent(input$reset, {
       
-      options <- get_options()
-      shiny::req(length(options) > 0)
-      
-      ch <- choice()
-      if (is.null(ch) || length(ch) != 1 || !(ch %in% options)) {
-        ch <- options[[1]]
-      }
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
       
       shiny::updateSelectInput(session, "input_value",
-                               selected = ch)
+                               selected = choice)
     })
     
     
     # Expose a reset function via session$userData
     session$userData[[paste0(id, "_reset")]] <- function() {
-      shiny::updateSelectInput(session, "input_value", selected = choice())
+      shiny::updateSelectInput(session, "input_value", selected = get_choice())
     }
     
     
@@ -107,51 +112,40 @@ normalize_multicheck_selection <- function(input_values, options, all_label = SE
   input_values
 }
 
-mod_multicheck_reset_server <- function(id, choice, get_options, all_label = SELECT_ALL, expand_all = FALSE) {
+mod_multicheck_reset_server <- function(id, get_choice, get_options, all_label = SELECT_ALL, expand_all = FALSE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
     # Initialize / update when options or defaults change
     shiny::observe({
       options <- get_options()
-      shiny::req(length(options) > 0)
       
-      # choice is reactive(): can be a single value SELECT_ALL or a vector of types
-      ch <- choice()
+      # get_choice is reactive(): can be a single value SELECT_ALL or a vector of types
       
-      # Ensure options is within options; fallback to SELECT_ALL if available, else first choice
-      if (is.null(ch) || length(intersect(ch, options)) == 0) {
-        ch <- if (all_label %in% options) all_label else options[[1]]
-      }
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
       
       shiny::updateCheckboxGroupInput(session, "input_values",
                                       choices =  options,
-                                      selected = ch)
+                                      selected = choice)
     })
     
     # Reset button -> back to defaults, normalized
     shiny::observeEvent(input$reset, {
       options <- get_options()
-      shiny::req(length(options) > 0)
+
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
       
-      ch <- choice()
-      if (is.null(ch) || length(intersect(ch, options)) == 0) {
-        ch <- if (all_label %in% options) all_label else options[[1]]
-      }
-      
-      shiny::updateCheckboxGroupInput(session, "input_values", selected = ch)
+      shiny::updateCheckboxGroupInput(session, "input_values", selected = choice)
     })
     
     
     # Inside mod_multicheck_reset_server after the observeEvent for reset:
     session$userData[[paste0(id, "_reset")]] <- function() {
       options <- get_options()
-      shiny::req(length(options) > 0)
-      ch <- choice()
-      if (is.null(ch) || length(intersect(ch, options)) == 0) {
-        ch <- if (all_label %in% options) all_label else options[[1]]
-      }
-      shiny::updateCheckboxGroupInput(session, "input_values", selected = ch)
+
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
+      
+      shiny::updateCheckboxGroupInput(session, "input_values", selected = choice)
     }
     
     
@@ -194,7 +188,36 @@ add_global_reset_observer <- function(input, session, reset_button_id = "reset_a
 }
 
 
-
+filter_choice <- function(data_object, sess) {
+  
+  sess <- selected_gamesession_reactive()
+  shiny::req(!is.null(sess))
+  
+  stopifnot(is.list(data_object))
+  
+  if(is.data.frame(data_object)) {
+    # Guard against missing table
+    if (is.null(data_object) | (is.data.frame(data_object) & ncol(data_object) == 0 & nrow(data_object) == 0)) {
+      # Return an empty tibble to avoid errors downstream
+      return(tibble::tibble())
+    } else {
+      stop("Non-empty dataframe not expected as input")
+    }
+    
+  } else {
+    shiny::req(sess %in% names(data_object))
+    
+    tbls <- data_object[[sess]]
+    
+    if (is.null(tbls) | (is.data.frame(tbls) & ncol(tbls) == 0 & nrow(tbls) == 0)) {
+      # Return an empty tibble to avoid errors downstream
+      return(tibble::tibble())
+    }
+    
+    return(tbls)
+  }
+}  
+  
 # ---- Gamesession reactives helper -------------------------------------------
 # Returns a list with:
 #   $selected_gamesession  -> reactive() with the selected session name
@@ -210,18 +233,11 @@ make_question_reactives <- function(dashboard_data_list, question_options, id = 
   # This function must be called inside a server() or moduleServer() context
   # because it uses Shiny reactives and your input module.
   
-  # 1) options reactive
-  question_options_reactive <- shiny::reactive({question_options})
-  
   # 2) Selected gamesession (uses your existing module)
   selected_question_reactive <- mod_input_reset_server(
     id = id,
-    choice = shiny::reactive({
-      ch <- question_options_reactive()
-      # fallback to last choice if available
-      if (length(ch) > 0) ch[[length(ch)]] else NULL
-    }),
-    get_options = question_options_reactive
+    get_choice = shiny::reactive({ default_option }),
+    get_options = shiny::reactive({question_options})
   )
   
   # 3) Derived income_dist_df reactive for the selected session
@@ -254,28 +270,19 @@ make_question_reactives <- function(dashboard_data_list, question_options, id = 
 # Add a req() or a safe fallback for the case where income_dist_df() doesn’t yet contain group_names.
 #Why this helps: You’ll never send character(0) to process_dashboard_choice() or the module. The module also won’t try to update until options are non-empty.
 
-make_gamesession_reactives <- function(gamesession_data_list, gamesession_options, id = "gamesession") {
+make_gamesession_reactives <- function(gamesession_data_list, gamesession_options, default_option, id = "gamesession") {
   
   force(gamesession_data_list)
   force(gamesession_options)
   
-  
-  
   # This function must be called inside a server() or moduleServer() context
   # because it uses Shiny reactives and your input module.
-  
-  # 1) options reactive
-  gamesession_options_reactive <- shiny::reactive({gamesession_options})
   
   # 2) Selected gamesession (uses your existing module)
   selected_gamesession_reactive <- mod_input_reset_server(
     id = id,
-    choice = shiny::reactive({
-      ch <- gamesession_options_reactive()
-      # fallback to last choice if available
-      if (length(ch) > 0) ch[[length(ch)]] else NULL
-    }),
-    get_options = gamesession_options_reactive
+    get_choice = shiny::reactive({ default_option }),
+    get_options = shiny::reactive({gamesession_options})
   )
   
   # 3) Derived income_dist_df reactive for the selected session
@@ -342,7 +349,7 @@ make_role_table_reactives <- function(reactive_df,
   # -- selected_table via your existing module ---------------------------------
   selected_table <- mod_input_reset_server(
     id = id,
-    choice = role_choice,   # reactive
+    get_choice = role_choice,   # reactive
     get_options   = table_options     # reactive
   )
   
@@ -374,7 +381,7 @@ make_cost_types_reactive <- function(id = "cost_types") {
   
   selected_cost_types <- mod_multicheck_reset_server(
     id            = "cost_types",
-    choice        = cost_types_default,   # reactive() returning a vector (e.g., SELECT_ALL or c("Mortgage payment", ...))
+    get_choice    = cost_types_default,   # reactive() returning a vector (e.g., SELECT_ALL or c("Mortgage payment", ...))
     get_options   = cost_types_options,
     all_label     = SELECT_ALL,
     expand_all    = FALSE                  # keep only SELECT_ALL when All is selected (set TRUE to expand to all)

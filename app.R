@@ -122,7 +122,11 @@ question_choice <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTI
 
 question_options <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTION, fallback = SELECT_ALL, return_choice = FALSE)
 
-default_cost_choice <- SELECT_ALL
+default_question_option <- question_options[1]
+
+default_gamesession_option <- gamesession_options[length(gamesession_options)]
+
+default_cost_option <- SELECT_ALL
 
 
 
@@ -253,14 +257,16 @@ server <- function(input, output, session) {
   # --- centralize selection + derived data
   qs <- make_question_reactives(
     dashboard_data_list = dashboard_data_list,
-    question_options  = question_options,  # SELECT_ALL or vector from config
+    question_options    = question_options,  # SELECT_ALL or vector from config
+    default_option      = default_question_option,
     id = "question"                              # matches your UI module id
   )
   
   # --- centralize selection + derived data
   gs <- make_gamesession_reactives(
-    gamesession_data_list     = qs$selected_question_list,
-    gamesession_options = gamesession_options ,  # SELECT_ALL or vector from config
+    gamesession_data_list  = qs$selected_question_list,
+    gamesession_options    = gamesession_options ,  # SELECT_ALL or vector from config
+    default_option         = default_gamesession_option,
     id = "gamesession"                              # matches your UI module id
   )
 
