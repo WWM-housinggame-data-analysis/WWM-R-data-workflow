@@ -69,7 +69,10 @@ mod_input_reset_server <- function(id, get_choice, get_options, all_label = SELE
     
     # Expose a reset function via session$userData
     session$userData[[paste0(id, "_reset")]] <- function() {
-      shiny::updateSelectInput(session, "input_value", selected = get_choice())
+      
+      choice <- handle_option_choice(get_options(), get_choice(), all_label)
+      
+      shiny::updateSelectInput(session, "input_value", selected = choice)
     }
     
     
