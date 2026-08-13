@@ -122,6 +122,8 @@ question_choice <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTI
 
 question_options <- process_dashboard_choice(AVAILABLE_QUESTIONS, SELECTED_QUESTION, fallback = SELECT_ALL, return_choice = FALSE)
 
+cost_options <- c(SELECT_ALL, names(COST_BAR_SEGMENTS))
+
 default_question_option <- question_options[1]
 
 default_gamesession_option <- gamesession_options[length(gamesession_options)]
@@ -254,37 +256,34 @@ ui <- bslib::page_navbar(
 
 server <- function(input, output, session) {
   
+  dashboard_data_reactive <- shiny::reactive({dashboard_data_list})
+  
   # --- centralize selection + derived data
-  qs <- make_question_reactives(
-    dashboard_data_list = dashboard_data_list,
-    question_options    = question_options,  # SELECT_ALL or vector from config
-    default_option      = default_question_option,
-    id = "question"                              # matches your UI module id
+  question_filtered_output <- filter_data_reactive(
+    data_reactive  = dashboard_data_reactive,
+    options        = question_options,  # SELECT_ALL or vector from config
+    default_option = default_question_option,
+    id             = "question"                              # matches your UI module id
   )
   
   # --- centralize selection + derived data
-  gs <- make_gamesession_reactives(
-    gamesession_data_list  = qs$selected_question_list,
-    gamesession_options    = gamesession_options ,  # SELECT_ALL or vector from config
-    default_option         = default_gamesession_option,
-    id = "gamesession"                              # matches your UI module id
+  gamesession_filtered_output <- filter_data_reactive(
+    data_reactive  = question_filtered_output$filtered_data_reactive,
+    options        = gamesession_options ,  # SELECT_ALL or vector from config
+    default_option = default_gamesession_option,
+    id             = "gamesession"                              # matches your UI module id
   )
 
   # Keep names for readability
-  selected_question         <- qs$selected_question
-  selected_gamesession      <- gs$selected_gamesession
-  question_session_df       <- gs$selected_gamesession_df
+  selected_question         <- question_filtered_output$filter_choice_reactive
+  selected_gamesession      <- gamesession_filtered_output$filter_choice_reactive
+  question_session_df       <- gamesession_filtered_output$filtered_data_reactive
   
-  role_table <- make_role_table_reactives(
+  selected_table <- make_table_choice_reactive(
     reactive_df = question_session_df,    # reactive returned from previous helper
-    selected_username = SELECTED_USERNAME,
+    table_choice = SELECTED_TABLEGROUP,
     id = "table"
   )
-  
-  role_choice    <- role_table$role_choice
-  table_options  <- role_table$table_options
-  selected_table <- role_table$selected_table
-  
   
   # ---- Dynamic rounds (IDs + labels) ----
   round_ids <- make_rounds_reactive(question_session_df)
@@ -295,8 +294,12 @@ server <- function(input, output, session) {
     make_round_panels(round_ids())
   })
   
-  selected_cost_types <- make_cost_types_reactive(id = "cost_types")
-  
+  selected_cost_types <- make_multicheck_filter_reactive(id = "cost_types",
+                                                         get_choice = shiny::reactive({default_cost_option}),
+                                                         get_options = shiny::reactive({cost_options}),
+                                                         all_label = SELECT_ALL,
+                                                         expand_all = FALSE)
+
   # global "Reset all filters"
   add_global_reset_observer(input, session)
   
