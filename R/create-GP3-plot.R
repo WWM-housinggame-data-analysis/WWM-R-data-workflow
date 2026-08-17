@@ -1,0 +1,228 @@
+#R/create-GP3-plot.R
+
+# Set all default variables or global options and all the path variables at the top of the code.
+
+FUNCTION_PATH <- file.path("R")
+
+# Load required functions
+source(here::here(file.path(FUNCTION_PATH, "constants.R")))
+
+source(here::here(file.path(FUNCTION_PATH, "help-plot-creation.R")))
+
+
+create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", x_axis_range, nl_char = " - ") {
+  
+  xtitle <- signal_newline(xtitle, nl_char)
+  y_title <- signal_newline(y_title, nl_char)
+  
+  tick_vals <- pretty(max(x_axis_range), 6)
+  
+  out_plot <- plotly::plot_ly() %>%
+    plotly::layout(
+      
+      title = list(
+        text = paste0(
+          "Limited information scenario distribution", LINEBREAK,
+          "<sub style='color:#666666;font-size:16px'>",
+          "</sub>"
+        ),
+        x = 0.5,
+        xanchor = "center",
+        font = list(size = 22, color = "#333333")
+      ),
+      
+      barmode   = "stack",
+      hovermode = "closest",
+      
+      xaxis = list(
+        title         = xtitle,
+        
+        range = x_axis_range,
+        rangemode = "normal",
+        
+        tickmode = "array",
+        tickvals = tick_vals,
+        ticktext = tick_vals,
+        
+        zeroline = TRUE,
+        zerolinecolor = "#aaaaaa",
+        zerolinewidth = 1,
+        
+        # (ii) vertical grid lines
+        showgrid = TRUE,
+        gridcolor = "rgba(0,0,0,0.08)",
+        gridwidth = 1
+      ),
+      
+      yaxis = list(
+        title    = list(text = y_title,
+                        standoff = 300),
+        
+        categoryorder = "array",
+        categoryarray = ylevels,
+        
+        showticklabels = FALSE,
+        
+        showgrid  = TRUE,
+        gridcolor = "rgba(0,0,0,0.06)",
+        gridwidth = 1,
+        
+        zeroline  = TRUE,
+        zerolinecolor = "rgba(0,0,0,0.25)",
+        zerolinewidth = 1
+      ),
+      
+      # (iv) legend position near top/right (over/near y2 title)
+      
+      legend = list(
+        x = 1.20, y = 1.08,          # moved left (inside/closer to plot)
+        xanchor = "left",           # anchor from right edge so it pulls inward
+        yanchor = "top",
+        bgcolor = "rgba(255,255,255,0.65)",
+        traceorder = "grouped",     # <-- THIS makes legend split by 
+        tracegroupgap = 12
+      ),
+      
+      margin = list(l = 400, r = 280, t = 60)  # smaller right margin since legend moved left
+      
+    )
+  
+  return(out_plot)
+}
+
+
+add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend_title) {
+  
+  # ---- (iii) legend group titles: set only once per group ----
+  first_bar <- TRUE
+  
+  legend_label_order <- selected_bar_segments             # desired legend order (unchanged)
+  legend_label_match  <- selected_bar_segments        # stacking order (reversed)
+  
+  barseg_colors <- WELFARE_BARSEG_COLORPALT(length(legend_label_match))
+  
+  
+  
+  # --- Add stacked bar traces ---
+  for (label in legend_label_match) {
+    
+    segment_df <- bar_df %>% dplyr::filter(.data[[GP3_BARGEGLABEL_COL]] == label)
+    
+    if (nrow(segment_df) > 0) {
+      
+      # label + color fallbacks
+      bar_color <- rlang::`%||%`(barseg_colors[which(legend_label_match %in% label)], "#808080")
+      
+      out_plot <- out_plot %>%
+        plotly::add_bars(
+          data = segment_df,
+          x = segment_df[, "N"],
+          y = segment_df[,  GP3_YLABEL_COL],
+          name = label,
+          text = paste(paste0("R", unique(segment_df[, ROUND_NUMBER_COL])), collapse = "/"),
+          marker = list(color = bar_color),
+          
+          legendgroup = "bars",
+          legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
+          legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
+          
+          texttemplate="%{text})",
+          textposition="inside",
+          
+          hovertemplate = paste0(
+            "<b>", label, "</b><br>",
+            "Mean: %{y}<extra></extra>"
+          )
+        )
+      
+      first_bar <- FALSE
+    }
+  }
+  return(out_plot)
+}
+
+create_plotly_icon_list <- function(df, path_col, axislabel_col) {
+  
+  icon_map <- df %>%
+    dplyr::select(tidyselect::all_of(c(axislabel_col, path_col))) %>%
+    distinct() %>%
+    mutate(icons_path = as.character(.data[[path_col]])) %>%
+    mutate(src = vapply(.data[[path_col]], encode_b64, FUN.VALUE = character(1)))
+  
+  lapply(seq_len(nrow(icon_map)), function(i) {
+    list(
+      source   = icon_map$src[i],
+      xref     = "paper",
+      yref     = "y",
+      x        = -0.05,
+      y        = icon_map$ylabels[i],
+      sizex    = 0.8,
+      sizey    = 0.8,
+      xanchor  = "center",
+      yanchor  = "middle",
+      layer    = "above"
+    )
+  })
+}
+
+create_plotly_axislabels_annotations <- function(axislabels) {
+  
+  annotations <- lapply(seq_along(axislabels), function(i) {
+    list(
+      xref = "paper",
+      yref = "y",
+      x = -0.15,
+      y = axislabels[i],
+      text = axislabels[i],
+      showarrow = FALSE,
+      xanchor = "right"
+    )
+  })
+}
+
+
+create_GP3_plotly <- function(plot_data) {
+  
+  bar_df                  <- plot_data$n_df
+  selected_bar_segments   <- levels(bar_df[, "barseglabel"])
+  ylevels                 <- plot_data$ylevels
+  
+  # compute a symmetric-ish range so negatives are visible (optional but helps)
+  bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
+  bar_x_max <- calculate_axis_max(bar_df, "ylabels", "N")
+
+  # Start plotly
+  
+  GP3_plot <- create_GP3_plotly_layout("Frequency",
+                                       ylevels,
+                                       "Private adaptation measures",
+                                       c(bar_x_min, bar_x_max))
+  
+  GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
+  
+  GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
+  
+  
+  GP3_yaxis_icons <- create_plotly_icon_list(bar_df, MEASURE_ICONS_COL, GP3_YLABEL_COL)
+  
+  plotly::layout(GP3_plot,
+                 annotations = GP3_ylabels_annotations,
+                 images = GP3_yaxis_icons)
+  
+}
+
+
+save_and_view_GP3_plot <- function(plot_data,
+                                   file = file.path(RESULTS_PATH, "GP3_plot.png"),
+                                   vwidth = 1600,
+                                   vheight = 800) {
+  
+  ## Create the interactive Plotly widget
+  GP3_plot <- create_GP3_plotly(plot_data)
+  
+  save_and_view_plotly(GP3_plot, file, vwidth, vheight)
+  
+  ## Return the PNG file path
+  return(invisible(file))
+}
+

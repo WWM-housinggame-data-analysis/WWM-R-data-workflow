@@ -26,9 +26,14 @@ SELECT_ALL <- "All"
 #   
 # }
 
-SELECTED_USERTABLE <- SELECT_ALL
+GAMESESSION_FLAG <- "housinggame"
+AVAILABLE_QUESTIONS <- c("GP2", "GP3")
+
+SELECTED_TABLEGROUP <- SELECT_ALL
 SELECTED_GAMESESSION <- SELECT_ALL
-SELECTED_USERNAME <- SELECTED_USERTABLE
+SELECTED_QUESTION <- SELECT_ALL
+
+
 
 
 # Set all default variables or global options and all the path variables at the top of the code.
@@ -48,6 +53,9 @@ INCOME_DIST_CATEGCOLS <- c("gamesession_name", "group_name", "playerround_id", "
                            "groupround_id", "groupround_round_number", "welfaretype_id", "community_name")
 
 
+MEASURE_COMBINED_CATEGCOLS <- c("id", "measuretype_id",  "group_name", "player_code", "house_code", "groupround_round_number",
+                                "short_alias", "source", "icons_path", "cost_info")
+
 ## Default variables for handling data import/export
 
 IMPORTED_TABLE_TYPE <- ".csv"
@@ -55,7 +63,10 @@ IMPORTED_TABLE_TYPE <- ".csv"
 WORKFLOW_STAGES <- c("raw", "preprocessed")
 names(WORKFLOW_STAGES) <- c(RAWDATA_PATH, PREPRDATA_PATH)
 
-PREPROCESSED_DBTABLES <- c("income_dist_df")
+PREPROCESSED_DBTABLES <- c("playerround", "measuretype", "personalmeasure",
+                           "housemeasure", "questionscore", "questionitem",
+                           "initialhousemeasure", "house", "housegroup",
+                           "group", "groupround", "player", "gamesession")
 
 
 ## Default variables for preprocessing data
@@ -174,6 +185,9 @@ names(COST_BAR_SEGMENTS) <- c("Damage (river + rain)",
 
 TABLE_GROUPCOL <- "group_name"
 GP2_XLABEL_COL <- "xlabels"
+GP3_YLABEL_COL <- "ylabels"
+
+GP3_BARGEGLABEL_COL <- "barseglabel"
 
 COST_SCATTER_LINE <- "satisfaction_total"
 names(COST_SCATTER_LINE) <-  "Average total satisfaction"
@@ -202,14 +216,17 @@ names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
 
 # COST_BAR_COLORS
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
-
 names(fill_values_all) <- names(COST_BAR_SEGMENTS)
+
+WELFARE_BARSEG_COLORPALT <- grDevices::colorRampPalette(c("wheat3",  "wheat", "yellow"))
 
 K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 
 
 BAR_WIDTH = 0.9
-EXPECTED_INTERM_ROUNDS <- as.character(1:3)
+
+EXPECTED_ROUNDS <- as.character(0:4)
+EXPECTED_INTERM_ROUNDS <- EXPECTED_ROUNDS[2 : (length(EXPECTED_ROUNDS) - 1)]
 
 HEADER_TITLE <- "WhereWeMove Dashboard"
 HEADER_BACKCOLOR <- "#2D89C8"
@@ -231,21 +248,26 @@ SESSION_ACCORDION_TITLE <- "1: Select Game Session"
 SESSION_ACCORDION_LABEL <- "Session"
 SESSION_ACCORDION_VALUE <- "gamesession"
 
+QUESTION_ACCORDION_TITLE <- "2: Research Question"
+QUESTION_ACCORDION_LABEL <- "Question"
+QUESTION_ACCORDION_VALUE <- "question"
+
 GROUP_ACCORDION_TITLE <- "2: Select Table"
 GROUP_ACCORDION_LABEL <- "Table"
 GROUP_ACCORDION_VALUE <- "table"
 
 ADDRESS_ACCORDION_TITLE <- "3: Where players live"
 
-SEGMENT_ACCORDION_TITLE <- "4: Player spending"
-SEGMENT_ACCORDION_LABEL <- "Cost Types"
-SEGMENT_ACCORDION_VALUE <- "cost_types"
+GP2_SEGMENT_ACCORDION_TITLE <- "4: Player spending"
+GP2_SEGMENT_ACCORDION_LABEL <- "Cost Types"
+GP2_SEGMENT_ACCORDION_VALUE <- "cost_types"
 
 MEASURES_ACCORDION_TITLE <- "5: Selected measures"
 FLOOD_ACCORDION_TITLE <- "6: Flood in gameplay"
 SATISFACTION_ACCORDION_TITLE <- "7: Damage & satisfaction"
 
 UI_ROUNDS_RENDERING <- "ui_round_rendering"
+UI_GP2_SEGMENT_RENDERING <- "UI_GP2_segment_rendering"
 
 # Apply a top margin of 1rem (typically 16px) to the div.
 DIV_16PX_MARGIN <- "mt-3"
@@ -296,15 +318,23 @@ REFS_HEADER_TAB <- bslib::nav_menu(
   bslib::nav_item(shiny::tags$a(names(PLAYER_LINK), href = PLAYER_LINK))
 )
 
-LINEBREAK<- "<br>"
+LINEBREAK <- "<br>"
+
+EXCLUDE_IHM <- FALSE  # TRUE = keep only initialhousemeasure = 0; FALSE = ignore this filter
+IHM_CONDITION <- if (EXCLUDE_IHM) paste0(IS_IHM_COL, " = 0 AND ") else NULL
+PLAYER_CODE_CONDITION <- paste0(PLAYER_CODE_COL, " IS NOT NULL")
+
+COST_INFO_COL <- "cost_info"
 
 MEASURE_ALIAS_COL <- "short_alias"
 
-MEASURE_ALIASES <- c("Rainbarrel for recycling", "Waterproof walls, floors", "Green garden",
+MEASURE_ALIASES <- c("Underground rainbarrel", "Waterproof walls, floors", "Green garden",
                    "Self-activating wall", "Water pump installation", "Sandbags",
                    "Modest house renovations", "Structural house changes",
                    "Personal improvements", "Flood insurance")
 
+MEASURE_BAR_GROUPS <- MEASURE_ALIASES
+names(MEASURE_BAR_GROUPS) <- MEASURE_ALIASES
 
 ICONS_PATH <- "data/dependencies/icons"
 
@@ -321,6 +351,22 @@ MEASURE_ICONS_FILEPATHS <- file.path(ICONS_PATH,
                                      paste0(MEASURE_ICONS_FILENAMES, MEASURE_ICONS_FILETYPE))
 
 names(MEASURE_ICONS_FILEPATHS) <- MEASURE_ALIASES
+
+if (any(file.exists(MEASURE_ICONS_FILEPATHS) == FALSE)) {
+  stop(paste0("The following files do not match existing files within the project directory: \n",
+              paste(MEASURE_ICONS_FILEPATHS[file.exists(MEASURE_ICONS_FILEPATHS) == FALSE], collapse = "\n")
+              )
+       )
+}
+
+ACCEPTED_IMAGE_FORMATS <- c(".png", ".jpg", ".jpeg", ".svg")
+
+if (any(grepl(paste0("\\.(", paste(gsub("\\.", "", ACCEPTED_IMAGE_FORMATS), collapse = "|"), ")$"), MEASURE_ICONS_FILEPATHS) == FALSE)) {
+  stop(paste0("MEASURE_ICONS_FILEPATHS does contain filepaths whose format do not match the accepted image formats: ", paste(ACCEPTED_IMAGE_FORMATS, collapse = ", ")))
+}
+
+stopifnot("MEASURE_ICONS_FILEPATHS does contain filepaths whose format do not match the accepted image formats:" =
+            length(grepl(paste0("\\.(", paste(ACCEPTED_IMAGE_FORMATS, collapse = "|"), ")$"), MEASURE_ICONS_FILEPATHS)) == length(MEASURE_ICONS_FILEPATHS))
 
 MEASURE_COSTREF_COL <- "cost_reference"
  
@@ -348,3 +394,13 @@ MEASURETEXT_DF[,MEASURE_ALIAS_COL] <- MEASURE_ALIASES
 MEASURETEXT_DF[,MEASURE_COSTREF_COL] <- MEASURE_COSTREF_VALUES
 MEASURETEXT_DF[,MEASURE_ICONS_COL] <- MEASURE_ICONS_FILEPATHS
 MEASURETEXT_DF[,MEASURE_COSTPLOT_COL] <- MEASURE_COSTPLOT_ORDER
+
+ROUND_SPLIT_COLORS <- c(
+  "#e0e0e0",
+  "#b3b3b3",
+  "#808080",
+  "#4d4d4d",
+  "#1a1a1a"
+)
+
+names(ROUND_SPLIT_COLORS) <- EXPECTED_ROUNDS

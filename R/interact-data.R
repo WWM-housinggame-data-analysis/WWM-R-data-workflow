@@ -15,33 +15,43 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 
 #Right now it stops when valid_values is empty. For robustness, allow empty and return the fallback (with a warning). Also, ensure fallback is length 1 and not empty.
 # Why this helps: During initial reactivity when data hasn’t arrived, you’ll get a sane fallback instead of a hard error.
-process_config_selection <- function(valid_values, default_value, fallback = character(0)) {
+process_dashboard_choice <- function(valid_values, choice, fallback = character(0), return_choice = TRUE) {
   
   # Coerce to character to avoid factor issues
   valid_values <- as.character(valid_values)
-  default_value <- as.character(default_value)
+  choice <- as.character(choice)
   fallback <- as.character(fallback)
   
   # If no valid values yet, return fallback (or stop with a clear message)
   if (length(valid_values) == 0) {
     if (length(fallback) == 1 && nzchar(fallback)) {
+      warning("process_dashboard_choice: No valid_values available. fallback value is returned.")
       return(fallback)
     } else {
-      stop("process_config_selection: No valid_values available and fallback is missing/invalid.")
+      stop("process_dashboard_choice: No valid_values available and fallback is missing/invalid.")
     }
   }
   
   
-  stopifnot("(Only) one choice needs to be provided in default_value" = length(default_value) == 1)
+  stopifnot("(Only) one choice needs to be provided in choice" = length(choice) == 1)
   
-  chosen_value <- valid_values[grep(default_value, valid_values)]
+  if(identical(SELECT_ALL, choice)){
+    if (return_choice) {
+      return(choice)
+    } else {
+      return(valid_values)
+    }
+    
+  }
   
+  chosen_value <- valid_values[grep(choice, valid_values)]
   
   if (length(chosen_value) == 0) {
     if (length(fallback) == 1 && nzchar(fallback)) {
       chosen_value <- fallback
+      warning("process_dashboard_choice: No choice found in valid_values. fallback value is returned.")
     } else {
-      stop("process_config_selection: default not found and fallback is missing/invalid.")
+      stop("process_dashboard_choice: default not found and fallback is missing/invalid.")
     }
   }
   
@@ -56,7 +66,7 @@ process_config_selection <- function(valid_values, default_value, fallback = cha
 # Handle SELECT_ALL and selected filtering
 # -----------------------------------------------
 
-filter_selected_categs <- function(input_categs, req_categs) {
+translate_selected_categs <- function(input_categs, req_categs) {
   
     shiny::req(input_categs, req_categs)
     
@@ -72,22 +82,22 @@ filter_selected_categs <- function(input_categs, req_categs) {
     }
 }
 
-update_bar_segments <- function(checked_features) {
+update_selected_features <- function(checked_features, available_features) {
   
-  checked_features <- filter_selected_categs(checked_features, names(COST_BAR_SEGMENTS))
+  checked_features <- translate_selected_categs(checked_features, names(available_features))
   
-  bar_segs <- COST_BAR_SEGMENTS[names(COST_BAR_SEGMENTS) %in% checked_features]
+  selected_features <- available_features[names(available_features) %in% checked_features]
   
-  names(bar_segs) <- names(COST_BAR_SEGMENTS)[names(COST_BAR_SEGMENTS) %in% checked_features]
+  names(selected_features) <- names(available_features)[names(available_features) %in% checked_features]
   
-  return(bar_segs)
+  return(selected_features)
 }
 
-update_table_groups <- function(df, selected_table) {
+translate_table_selection <- function(df, selected_table) {
   
-  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
+  table_options <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  selected_table <- filter_selected_categs(selected_table, table_choices)
+  selected_table <- translate_selected_categs(selected_table, table_options)
   
   return(selected_table)
 }
@@ -98,15 +108,15 @@ update_table_groups <- function(df, selected_table) {
 # -----------------------------------------------
 
 
-update_bar_groupcol <- function(df, selected_table) {
+update_grouping_choice <- function(df, selected_table) {
   
-  table_choices <- as.character(unique(df[, TABLE_GROUPCOL]))
+  table_options <- as.character(unique(df[, TABLE_GROUPCOL]))
   
-  if (all(table_choices %in% selected_table)) {
+  if (all(table_options %in% selected_table)) {
     
     groupcol <- INCOME_GRP_COL
     
-  } else if (any(table_choices %in% selected_table) && length(selected_table) == 1) {
+  } else if (any(table_options %in% selected_table) && length(selected_table) == 1) {
     
     groupcol <- PLAYER_CODE_COL
     
@@ -120,15 +130,16 @@ update_bar_groupcol <- function(df, selected_table) {
 }
 
 
-get_intermediate_rounds <- function(df) {
+get_round_ids <- function(df) {
   
   rounds <- df |>
-    dplyr::pull(ROUND_NUMBER_COL) |>
+    dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% EXPECTED_ROUNDS[1] == FALSE) |>
+    dplyr::pull(.data[[ROUND_NUMBER_COL]]) |>
     unique() |>
     sort()
   
   # work on returning no round panels
-  if (length(rounds) < length(EXPECTED_INTERM_ROUNDS)) {
+  if (length(rounds) == 1) {
     
     warning(
       "No intermediate rounds found",
@@ -140,7 +151,7 @@ get_intermediate_rounds <- function(df) {
     
   } else {
     
-    interm_rounds <- as.character(rounds[2:(length(rounds)-1)])
+    interm_rounds <- as.character(rounds[1:(length(rounds)-1)])
     
     # Optional check against expected intermediate rounds
     if (exists("INTERM_ROUNDS", inherits = TRUE) &&
