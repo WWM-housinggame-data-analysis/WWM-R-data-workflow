@@ -218,7 +218,7 @@ names(COST_TABLE_ENTRIES) <- c("Average Income - Living Costs",
 fill_values_all <- c("#79A2C5", "#dfaba3", "#433E5E", "#a3a3a3", "#cccccc", "black")
 names(fill_values_all) <- names(COST_BAR_SEGMENTS)
 
-WELFARE_BARSEG_COLORPALT <- colorRampPalette(c("wheat3",  "wheat", "yellow"))
+WELFARE_BARSEG_COLORPALT <- grDevices::colorRampPalette(c("wheat3",  "wheat", "yellow"))
 
 K_FACTOR <- 1000
 names(K_FACTOR) <- "k" 

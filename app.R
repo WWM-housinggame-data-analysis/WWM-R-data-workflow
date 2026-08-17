@@ -306,7 +306,7 @@ server <- function(input, output, session) {
   
   shiny::observe({
     
-    selected_dashboard_workflow <- reactive({
+    selected_dashboard_workflow <- shiny::reactive({
       
       req(selected_question())
       
@@ -335,7 +335,7 @@ server <- function(input, output, session) {
         rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
         
         
-        plot_data <- reactive({
+        plot_data <- shiny::reactive({
           
           selected_dashboard_workflow()$get_plot_data(
             df = question_session_df(),
@@ -348,7 +348,7 @@ server <- function(input, output, session) {
         })
         
         
-        summary_data <- reactive({
+        summary_data <- shiny::reactive({
           
           selected_dashboard_workflow()$get_summary_table(
             df = question_session_df(),
@@ -360,7 +360,7 @@ server <- function(input, output, session) {
           
         })
         
-        stats_data <- reactive({
+        stats_data <- shiny::reactive({
           
           selected_dashboard_workflow()$get_stats_table(
             df = question_session_df(),
