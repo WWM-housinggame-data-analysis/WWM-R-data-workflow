@@ -10,6 +10,18 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 source(here::here(file.path(FUNCTION_PATH, "help-plot-creation.R")))
 
 
+adjust_GP3_plotly_height <- function(barlevels) {
+  
+  n_measures <- length(barlevels)
+  
+  height_px <- max(600, n_measures * 50)
+  
+  paste0(height_px, "px")
+
+}
+
+
+
 create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", x_axis_range, nl_char = " - ") {
   
   xtitle <- signal_newline(xtitle, nl_char)
@@ -56,7 +68,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement typ
       
       yaxis = list(
         title    = list(text = y_title,
-                        standoff = 300),
+                        standoff = 320),
         
         categoryorder = "array",
         categoryarray = ylevels,
@@ -75,16 +87,16 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement typ
       # (iv) legend position near top/right (over/near y2 title)
       
       legend = list(
-        x = 1.20, y = 1.08,          # moved left (inside/closer to plot)
+        x = 1.05, y = 1.08,          # moved left (inside/closer to plot)
         xanchor = "left",           # anchor from right edge so it pulls inward
         yanchor = "top",
         bgcolor = "rgba(255,255,255,0.65)",
         traceorder = "grouped",     # <-- THIS makes legend split by 
         tracegroupgap = 12
       ),
-      
-      margin = list(l = 400, r = 280, t = 60)  # smaller right margin since legend moved left
-      
+
+      margin = list(t = 60), #l = 400, r = 50, )  # smaller right margin since legend moved left
+      autosize = TRUE
     )
   
   return(out_plot)
@@ -154,10 +166,10 @@ create_plotly_icon_list <- function(df, path_col, axislabel_col) {
       source   = icon_map$src[i],
       xref     = "paper",
       yref     = "y",
-      x        = -0.05,
+      x        = -0.03,
       y        = icon_map$ylabels[i],
-      sizex    = 0.8,
-      sizey    = 0.8,
+      sizex    = .8,
+      sizey    = .8,
       xanchor  = "center",
       yanchor  = "middle",
       layer    = "above"
@@ -171,7 +183,7 @@ create_plotly_axislabels_annotations <- function(axislabels) {
     list(
       xref = "paper",
       yref = "y",
-      x = -0.15,
+      x = -0.06,
       y = axislabels[i],
       text = axislabels[i],
       showarrow = FALSE,
@@ -185,7 +197,7 @@ create_GP3_plotly <- function(plot_data) {
   
   bar_df                  <- plot_data$n_df
   selected_bar_segments   <- levels(bar_df[, "barseglabel"])
-  ylevels                 <- plot_data$ylevels
+  ylevels                 <- plot_data$barlevels
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")

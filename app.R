@@ -288,12 +288,6 @@ server <- function(input, output, session) {
   # ---- Dynamic rounds (IDs + labels) ----
   round_ids <- make_rounds_reactive(question_session_df)
   
-  
-  # ---- Dynamic UI ----
-  output[[UI_ROUNDS_RENDERING]] <- shiny::renderUI({
-    make_round_panels(round_ids())
-  })
-  
   selected_cost_types <- make_multicheck_filter_reactive(id = "cost_types",
                                                          get_choice = shiny::reactive({default_cost_option}),
                                                          get_options = shiny::reactive({cost_options}),
@@ -334,7 +328,6 @@ server <- function(input, output, session) {
         
         rid_value = if (rid == SELECT_ALL) SELECT_ALL else gsub(ROUND_ACCORDION_IDPREF, "", rid)
         
-        
         plot_data <- shiny::reactive({
           
           selected_dashboard_workflow()$get_plot_data(
@@ -347,6 +340,7 @@ server <- function(input, output, session) {
           
         })
         
+        plot_height <- shiny::reactive({selected_dashboard_workflow()$adjust_plotly_height(plot_data()$barlevels)})
         
         summary_data <- shiny::reactive({
           
@@ -370,6 +364,12 @@ server <- function(input, output, session) {
             interm_rounds = interm_rids
           )
           
+        })
+        
+        # ---- Dynamic UI ----
+        output[[UI_ROUNDS_RENDERING]] <- shiny::renderUI({
+          make_round_panels(round_ids(),
+                            plot_height = plot_height())
         })
           
         output[[plot_id]] <- plotly::renderPlotly({

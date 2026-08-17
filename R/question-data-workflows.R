@@ -131,6 +131,8 @@ question_dashboard_workflow <- list(
     
     render_plot = create_GP2_plotly,
     
+    adjust_plotly_height = adjust_GP2_plotly_height,
+    
     summary_type = "gp2",
     
     show_cost_filter = TRUE
@@ -191,6 +193,8 @@ question_dashboard_workflow <- list(
     },
     
     render_plot = create_GP3_plotly,
+    
+    adjust_plotly_height = adjust_GP3_plotly_height,
     
     summary_type = "gp3",
     

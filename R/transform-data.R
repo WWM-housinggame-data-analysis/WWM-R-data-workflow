@@ -56,10 +56,10 @@ create_GP3_ylabels <- function(df) {
   df <- df |>
     dplyr::mutate(
       !!GP3_YLABEL_COL := factor(
-        paste(.data[[MEASURE_ALIAS_COL]], paste0("(", .data[[COST_INFO_COL]], ")"), sep = LINEBREAK),
+        paste(.data[[MEASURE_ALIAS_COL]], paste0("(", .data[[COST_INFO_COL]], ")"), sep = " - "),
         levels = paste(MEASURE_ALIASES,
                        paste0("(", .data[[COST_INFO_COL]][match(MEASURE_ALIASES, .data[[MEASURE_ALIAS_COL]])] , ")"),
-                       sep = LINEBREAK)
+                       sep = " - ")
       )
     )
   

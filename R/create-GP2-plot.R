@@ -10,6 +10,12 @@ source(here::here(file.path(FUNCTION_PATH, "constants.R")))
 source(here::here(file.path(FUNCTION_PATH, "help-plot-creation.R")))
 
 
+adjust_GP2_plotly_height <- function(barlevels) {
+  
+  "600px"
+}
+
+
 create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_title = NA, nl_char = " - ") {
   
   xtitle <- signal_newline(xtitle, nl_char)
@@ -48,7 +54,7 @@ create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_
       # (iv) legend position near top/right (over/near y2 title)
       
       legend = list(
-        x = 1.20, y = 1.08,          # moved left (inside/closer to plot)
+        x = 1.1, y = 1.08,          # moved left (inside/closer to plot)
         xanchor = "left",           # anchor from right edge so it pulls inward
         yanchor = "top",
         bgcolor = "rgba(255,255,255,0.65)",
@@ -56,8 +62,8 @@ create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_
         tracegroupgap = 12
       ),
       
-      margin = list(r = 280, t = 60)  # smaller right margin since legend moved left
-      
+      margin = list(r = 280, t = 60),  # smaller right margin since legend moved left
+      autosize = TRUE
     )
   
   if (is.na(y2_title) == FALSE) {
@@ -172,7 +178,7 @@ create_GP2_plotly <- function(plot_data) {
   bar_df                <- plot_data$bar_df
   scatter_df            <- plot_data$scatter_df
   selected_bar_labels   <- names(plot_data$selected_bar_segments)
-  xlevels               <- plot_data$xlevels
+  xlevels               <- plot_data$barlevels
   
   # keep only colors/labels for selected stacks
   bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_labels]

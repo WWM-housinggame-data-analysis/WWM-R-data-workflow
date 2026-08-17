@@ -81,7 +81,7 @@ retrieve_GP3_plot_data <- function(df, selected_table, game_round, interm_rounds
   
   list(
     n_df                = n_df,
-    ylevels             = ylevels
+    barlevels             = ylevels
   )
 }
 
