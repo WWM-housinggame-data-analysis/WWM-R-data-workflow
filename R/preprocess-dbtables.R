@@ -542,53 +542,7 @@ preprocess_selected_dbtables <- function(dbtable_list, session_name, excel = FAL
   ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_name, question_description FROM questionitem_df"
   
   questionitem_df <- sqldf::sqldf(select_sqlquery(questionitem_df, names(questionitem_df)[names(questionitem_df) %in% "question_id" == F]))
-  
-  
-  ## Run the query to filter the playerround_df dataframe with the var_income_dist
-  ## "SELECT gamesession_name, group_name, playerround_id, player_id, player_code, house_code, groupround_id, groupround_round_number,
-  ##  round_income, living_costs, paid_debt, profit_sold_house, spent_savings_for_buying_house, cost_taxes, mortgage_payment,
-  ##  cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage, cost_pluvial_damage, spendable_income,
-  ##  calculated_costs_personal_measures, calculated_costs_house_measures, calculated_costs_measures_difference,
-  ##  satisfaction_total, welfaretype_id, total_damage_costs, community_name, fluvial_house_delta, pluvial_house_delta
-  ##  FROM playerround_df"
 
-  income_dist_df <- sqldf::sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
-
-  # -----------------------------------------------------------
-  # tidyverse operations
-  # -----------------------------------------------------------
-
-  ## Convert INCOME_DIST_CATEGCOLS to factor
-  income_dist_df <- income_dist_df |>
-    dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
-
-
-  ## Append income_grp labels based on round_income to dataframe
-  income_dist_df <- append_income_grp(income_dist_df, INCOME_GRP_COL)
-
-
-  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
-  income_dist_df <- income_dist_df |>
-    dplyr::mutate_at(
-      names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
-      as.numeric
-    )
-
-
-  ## Calculate the round costs to check the spendable income
-  income_dist_df <- append_total_costs(income_dist_df, TOTAL_COSTS_COL)
-
-
-  ## Calculate the spendable income
-  income_dist_df <- append_spendable_income_cols(income_dist_df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
-
-
-  ## Calculate income - living costs
-  income_dist_df <- append_income_living_diff(income_dist_df, INCOME_LIVING_DIFFCOL)
-
-
-  ## Calculate  "profit - spent savings house moving"
-  income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
   
   # -----------------------------------------------------------
   # Collect results
@@ -596,7 +550,6 @@ preprocess_selected_dbtables <- function(dbtable_list, session_name, excel = FAL
 
   ## Update list to be returned with the tables used in the calculation 
   dbtable_list <- list(
-    income_dist_df = income_dist_df,
     playerround = playerround_df,
     measuretype = measuretype_df,
     personalmeasure = personalmeasure_df,
