@@ -110,7 +110,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
     bar_df                = bar_df,     # has xlabels, cost_type, mean_value, n, ...
     scatter_df            = scatter_df,       # has xlabels, ave_satisfaction, series
     selected_bar_segments = selected_bar_segments,
-    xlevels               = xlevels
+    barlevels               = xlevels
   )
 }
 

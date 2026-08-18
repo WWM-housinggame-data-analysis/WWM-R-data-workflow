@@ -133,7 +133,7 @@ round_ids <- get_round_ids(income_dist_df)
 interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)$num_df
+GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)
 
 # Export Summary table
 write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
@@ -147,4 +147,4 @@ GP2_plot2_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, se
 GP2_plot3_data <- retrieve_GP2_plot_data(income_dist_df, selected_cost_types, selected_table, game_round = "3", interm_rounds = interm_rids, fill_values_all)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer. Always add date and time to generate new figure
-save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP2_plot.png")),  vheight = 1100)
+save_and_view_GP2_plot(GP2_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP2_plot.png")), CONFIG[["plotly"]][["GP2"]][["script"]], vheight = 1100)
