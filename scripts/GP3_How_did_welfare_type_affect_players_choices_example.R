@@ -148,4 +148,4 @@ GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, g
 GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "3", interm_rounds = interm_rids)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
-save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")),  vheight = 1100)
+save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")), CONFIG[["plotly"]][["GP3"]][["script"]], vheight = 1100)

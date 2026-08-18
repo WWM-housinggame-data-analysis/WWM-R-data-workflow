@@ -22,10 +22,10 @@ adjust_GP3_plotly_height <- function(barlevels) {
 
 
 
-create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement type", x_axis_range, nl_char = " - ") {
+create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_configs, nl_char = " - ") {
   
   xtitle <- signal_newline(xtitle, nl_char)
-  y_title <- signal_newline(y_title, nl_char)
+  yaxis_title <- signal_newline(plotly_configs[["yaxis_title"]], nl_char)
   
   tick_vals <- pretty(max(x_axis_range), 6)
   
@@ -67,8 +67,8 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement typ
       ),
       
       yaxis = list(
-        title    = list(text = y_title,
-                        standoff = 320),
+        title    = list(text = yaxis_title,
+                        standoff = plotly_configs[["yaxis_standoff"]]),
         
         categoryorder = "array",
         categoryarray = ylevels,
@@ -95,7 +95,9 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, y_title = "Improvement typ
         tracegroupgap = 12
       ),
 
-      margin = list(t = 60), #l = 400, r = 50, )  # smaller right margin since legend moved left
+      margin = list(t = plotly_configs[["top_margin"]],
+                    r = plotly_configs[["right_margin"]],
+                    l = plotly_configs[["left_margin"]]),  # smaller right margin since legend moved left
       autosize = TRUE
     )
   
@@ -193,7 +195,7 @@ create_plotly_axislabels_annotations <- function(axislabels) {
 }
 
 
-create_GP3_plotly <- function(plot_data) {
+create_GP3_plotly <- function(plot_data, plotly_configs) {
   
   bar_df                  <- plot_data$n_df
   selected_bar_segments   <- levels(bar_df[, "barseglabel"])
@@ -207,8 +209,8 @@ create_GP3_plotly <- function(plot_data) {
   
   GP3_plot <- create_GP3_plotly_layout("Frequency",
                                        ylevels,
-                                       "Private adaptation measures",
-                                       c(bar_x_min, bar_x_max))
+                                       c(bar_x_min, bar_x_max),
+                                       plotly_configs)
   
   GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
   
@@ -226,11 +228,12 @@ create_GP3_plotly <- function(plot_data) {
 
 save_and_view_GP3_plot <- function(plot_data,
                                    file = file.path(RESULTS_PATH, "GP3_plot.png"),
-                                   vwidth = 1600,
+                                   plotly_configs,
+                                   vwidth = 2000,
                                    vheight = 800) {
   
   ## Create the interactive Plotly widget
-  GP3_plot <- create_GP3_plotly(plot_data)
+  GP3_plot <- create_GP3_plotly(plot_data, plotly_configs)
   
   save_and_view_plotly(GP3_plot, file, vwidth, vheight)
   

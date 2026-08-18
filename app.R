@@ -373,7 +373,7 @@ server <- function(input, output, session) {
         })
           
         output[[plot_id]] <- plotly::renderPlotly({
-          (selected_dashboard_workflow()$render_plot(plot_data()))
+          (selected_dashboard_workflow()$render_plot(plot_data(), CONFIG[["plotly"]][[selected_question()]][["app"]]))
         })
         
         output[[summary_id]] <- shiny::renderPrint({

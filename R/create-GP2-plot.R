@@ -16,11 +16,11 @@ adjust_GP2_plotly_height <- function(barlevels) {
 }
 
 
-create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_title = NA, nl_char = " - ") {
+create_GP2_plotly_layout <- function(xtitle, xlevels, y_axis_range, plotly_configs, nl_char = " - ") {
   
   xtitle <- signal_newline(xtitle, nl_char)
-  y_title <- signal_newline(y_title, nl_char)
-  y2_title <- ifelse(is.na(y2_title), NA, signal_newline(y2_title, " - "))
+  yaxis_title <- signal_newline(plotly_configs[["yaxis_title"]], nl_char)
+  yaxis2_title <- ifelse(is.na(plotly_configs[["yaxis2_title"]]), NA, signal_newline(plotly_configs[["yaxis2_title"]], " - "))
   
   out_plot <- plotly::plot_ly() %>%
     plotly::layout(
@@ -40,7 +40,7 @@ create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_
       ),
       
       yaxis = list(
-        title    = y_title,
+        title    = yaxis_title,
         rangemode = "normal",
         range     = y_axis_range,
         showgrid  = TRUE,
@@ -51,7 +51,7 @@ create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_
         zerolinewidth = 1
       ),
       
-      # (iv) legend position near top/right (over/near y2 title)
+      # (iv) legend position near top/right (over/near yaxis2 title)
       
       legend = list(
         x = 1.1, y = 1.08,          # moved left (inside/closer to plot)
@@ -66,12 +66,12 @@ create_GP2_plotly_layout <- function(xtitle, xlevels, y_title, y_axis_range, y2_
       autosize = TRUE
     )
   
-  if (is.na(y2_title) == FALSE) {
+  if (is.na(yaxis2_title) == FALSE) {
     
     out_plot <- out_plot %>%
       plotly::layout(
         yaxis2 = list(
-          title     = y2_title,
+          title     = yaxis2_title,
           overlaying = "y",
           side      = "right",
           rangemode = "tozero",
@@ -127,7 +127,7 @@ add_GP2_bar_data <- function(out_plot, bar_df, selected_bar_labels, bar_legend_t
 }
 
 add_GP2_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
-  # --- Add satisfaction line+markers on y2 ---
+  # --- Add satisfaction line+markers on yaxis2 ---
   
   # label + color fallbacks
   line_color <- "darkgreen"
@@ -149,7 +149,7 @@ add_GP2_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
         name = label,
         showlegend = TRUE,             # <--- add this
         
-        yaxis = "y2",
+        yaxis = "yaxis2",
         legendgroup = "line1",
         legendgrouptitle = list(text = scatter_legend_title),
         
@@ -173,7 +173,7 @@ add_GP2_scatter_data <- function(out_plot, scatter_df, scatter_legend_title) {
 }
 
 
-create_GP2_plotly <- function(plot_data) {
+create_GP2_plotly <- function(plot_data, plotly_configs) {
   
   bar_df                <- plot_data$bar_df
   scatter_df            <- plot_data$scatter_df
@@ -190,10 +190,9 @@ create_GP2_plotly <- function(plot_data) {
   # Start plotly
   
   GP2_plot <- create_GP2_plotly_layout("Round income (k) - Players per class",
-                                   xlevels,
-                                   "Game Currency (k)",
-                                   c(bar_y_min, bar_y_max),
-                                   "Average total satisfaction", " - ")
+                                       xlevels,
+                                       c(bar_y_min, bar_y_max),
+                                       plotly_configs)
   
   GP2_plot <- add_GP2_bar_data(GP2_plot, bar_df, selected_bar_labels, "Round costs") 
   
@@ -206,11 +205,12 @@ create_GP2_plotly <- function(plot_data) {
 
 save_and_view_GP2_plot <- function(plot_data,
                                    file = file.path(RESULTS_PATH, "GP2_plot.png"),
+                                   plotly_configs,
                                    vwidth = 1600,
                                    vheight = 800) {
 
   ## Create the interactive Plotly widget
-  GP2_plot <- create_GP2_plotly(plot_data)
+  GP2_plot <- create_GP2_plotly(plot_data, plotly_configs)
   
   save_and_view_plotly(GP2_plot, file, vwidth, vheight)
   
