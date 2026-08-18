@@ -89,17 +89,23 @@ retrieve_GP3_plot_data <- function(df, selected_table, game_round, interm_rounds
 retrieve_GP3_summary_tables <- function(df, selected_table, game_round, interm_rounds) {
 
   processed_list <- process_GP3_dataframe(df, selected_table, game_round, interm_rounds)
+  
   df <- processed_list$df
 
-  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL), "id")
+  selected_group_col <- processed_list$selected_barseg_col
+  
+  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
 
 }
 
 retrieve_GP3_stats_tables <- function(df, selected_table, game_round, interm_rounds) {
   
   processed_list <- process_GP3_dataframe(df, selected_table, game_round, interm_rounds)
+
   df <- processed_list$df
   
-  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL), "id")
+  selected_group_col <- processed_list$selected_barseg_col
+  
+  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
   
 }
