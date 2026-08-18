@@ -404,3 +404,5 @@ ROUND_SPLIT_COLORS <- c(
 )
 
 names(ROUND_SPLIT_COLORS) <- EXPECTED_ROUNDS
+
+FREQUENT_ROUND_COL <- "most_frequent_round"

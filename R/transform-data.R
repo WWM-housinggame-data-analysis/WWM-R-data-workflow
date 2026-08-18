@@ -94,6 +94,21 @@ create_GP3_barseg_labels <- function(df, group_col) {
   return(df)
 }
 
+retrieve_most_frequent_round <- function(df, group_cols, round_col, n_col, mostfreq_col) {
+  
+  df |>
+    left_join(df |>
+                dplyr::select(tidyselect::all_of(c(group_cols, round_col, n_col))) |>
+                dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+                slice_max(.data[[n_col]], n = 1, with_ties = TRUE) |>
+                dplyr::summarise(
+                  !!mostfreq_col := paste(paste0("R", sort(unique(.data[[round_col]]))), collapse = "/"),
+                  .groups = "drop"
+                ),
+              by = group_cols
+    )
+}
+
 filter_game_rounds <- function(df, game_round, interm_rounds) {
   
   shiny::req(nrow(df) > 0)

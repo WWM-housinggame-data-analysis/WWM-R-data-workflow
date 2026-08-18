@@ -133,7 +133,7 @@ add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend
           x = segment_df[, "N"],
           y = segment_df[,  GP3_YLABEL_COL],
           name = label,
-          text = paste(paste0("R", unique(segment_df[, ROUND_NUMBER_COL])), collapse = "/"),
+          text = segment_df[, FREQUENT_ROUND_COL],
           marker = list(color = bar_color),
           
           legendgroup = "bars",

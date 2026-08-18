@@ -47,10 +47,6 @@ process_GP3_dataframe <- function(df, selected_table, game_round, interm_rounds)
   
   selected_bar_groupcol <- MEASURE_ALIAS_COL
   
-  # selected_bar_groups <- update_selected_features(selected_measure_types, MEASURE_BAR_GROUPS)
-  # 
-  # df <- df %>% dplyr::filter(.data[[MEASURE_ALIAS_COL]] %in% selected_bar_groups)
-  
   # Build xlabels on the row-level data
   df <- filter_tables(df, selected_barseg_col, selected_table)
   
@@ -75,6 +71,8 @@ retrieve_GP3_plot_data <- function(df, selected_table, game_round, interm_rounds
 
   n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, MEASURE_ICONS_COL, COST_INFO_COL, GP3_BARGEGLABEL_COL), "id")
   
+  n_df <- retrieve_most_frequent_round(n_df, c(MEASURE_ALIAS_COL, GP3_BARGEGLABEL_COL), ROUND_NUMBER_COL, "N", FREQUENT_ROUND_COL)
+  
   n_df <- create_GP3_ylabels(n_df)
   
   ylevels <- levels(n_df[, GP3_YLABEL_COL])
@@ -94,7 +92,11 @@ retrieve_GP3_summary_tables <- function(df, selected_table, game_round, interm_r
 
   selected_group_col <- processed_list$selected_barseg_col
   
-  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
+  n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
+  
+  n_df <- retrieve_most_frequent_round(n_df, c(MEASURE_ALIAS_COL, selected_group_col), ROUND_NUMBER_COL, "N", FREQUENT_ROUND_COL)
+  
+  return(n_df)
 
 }
 
@@ -106,6 +108,10 @@ retrieve_GP3_stats_tables <- function(df, selected_table, game_round, interm_rou
   
   selected_group_col <- processed_list$selected_barseg_col
   
-  retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
+  n_df <- retrieve_n_table(df, c(ROUND_NUMBER_COL, MEASURE_ALIAS_COL, COST_INFO_COL, selected_group_col), "id")
+  
+  n_df <- retrieve_most_frequent_round(n_df, c(MEASURE_ALIAS_COL, selected_group_col), ROUND_NUMBER_COL, "N", FREQUENT_ROUND_COL)
+  
+  return(n_df)
   
 }

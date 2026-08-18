@@ -133,8 +133,8 @@ round_ids <- get_round_ids(measures_combined_df)
 interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
 
 ## Retrieve summary table for data plotted in analysis for GP2
-# GP2_summary_df <- retrieve_GP2_summary_tables(income_dist_df, selected_cost_types, selected_table, game_round = SELECT_ALL)$num_df
-# 
+GP3_summary_df <- retrieve_GP3_summary_tables(measures_combined_df, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)
+ 
 # # Export Summary table
 # write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
 
