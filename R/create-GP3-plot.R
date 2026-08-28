@@ -235,6 +235,10 @@ save_and_view_GP3_plot <- function(plot_data,
   ## Create the interactive Plotly widget
   GP3_plot <- create_GP3_plotly(plot_data, plotly_configs)
   
+  Sys.setenv(
+    CHROMOTE_CHROME = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+  )
+  
   save_and_view_plotly(GP3_plot, file, vwidth, vheight)
   
   ## Return the PNG file path
