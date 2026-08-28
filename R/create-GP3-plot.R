@@ -140,7 +140,7 @@ add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend
           legendgrouptitle = if (first_bar) list(text = bar_legend_title) else NULL,
           legendrank = match(label, legend_label_order), # keep legend order the same as original stacked_vec
           
-          texttemplate="%{text})",
+         # texttemplate="%{text}",
           textposition="inside",
           
           hovertemplate = paste0(

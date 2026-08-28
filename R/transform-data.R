@@ -109,6 +109,19 @@ retrieve_most_frequent_round <- function(df, group_cols, round_col, n_col, mostf
     )
 }
 
+aggregate_all_rounds <- function(df, group_cols, n_col, mostfreq_col) {
+  
+  df |>
+    dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+    dplyr::summarise(
+      !!n_col := sum(.data[[n_col]]),
+      !!mostfreq_col := first(.data[[FREQUENT_ROUND_COL]]),
+      .groups = "drop"
+    ) |>
+    as.data.frame()
+  
+}
+
 filter_game_rounds <- function(df, game_round, interm_rounds) {
   
   shiny::req(nrow(df) > 0)
