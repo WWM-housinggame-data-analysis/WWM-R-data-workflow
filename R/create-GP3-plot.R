@@ -27,7 +27,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
   xtitle <- signal_newline(xtitle, nl_char)
   yaxis_title <- signal_newline(plotly_configs[["yaxis_title"]], nl_char)
   
-  tick_vals <- pretty(max(x_axis_range), 6)
+  tick_vals <- round(seq(x_axis_range[1], round(x_axis_range[2]), (round(x_axis_range[2]) - x_axis_range[1]) / 5), 0)
   
   out_plot <- plotly::plot_ly() %>%
     plotly::layout(
@@ -130,8 +130,10 @@ add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend
       out_plot <- out_plot %>%
         plotly::add_bars(
           data = segment_df,
-          x = segment_df[, "N"],
-          y = segment_df[,  GP3_YLABEL_COL],
+          x = ~get("N"),
+          y = ~get(GP3_YLABEL_COL),
+          customdata = segment_df[, "measure_total_N"],
+          
           name = label,
           text = segment_df[, FREQUENT_ROUND_COL],
           marker = list(color = bar_color),
@@ -144,8 +146,9 @@ add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend
           textposition="inside",
           
           hovertemplate = paste0(
-            "<b>", label, "</b><br>",
-            "Mean: %{y}<extra></extra>"
+            bar_legend_title, ": ", label, "<br>",
+            "N", ": %{x}", "<br>",
+            "Measure Total N", ": %{customdata}<extra></extra>"
           )
         )
       
@@ -200,6 +203,7 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
   bar_df                  <- plot_data$n_df
   selected_bar_segments   <- levels(bar_df[, "barseglabel"])
   ylevels                 <- plot_data$barlevels
+  group_col               <- plot_data$grouping_choice
   
   # compute a symmetric-ish range so negatives are visible (optional but helps)
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
@@ -212,7 +216,7 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
                                        c(bar_x_min, bar_x_max),
                                        plotly_configs)
   
-  GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, "Welfare Type") 
+  GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, names(GP3_LEGEND_OPTIONS)[GP3_LEGEND_OPTIONS %in% group_col]) 
   
   GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
   

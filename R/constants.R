@@ -409,3 +409,6 @@ ROUND_SPLIT_COLORS <- c(
 names(ROUND_SPLIT_COLORS) <- EXPECTED_ROUNDS
 
 FREQUENT_ROUND_COL <- "most_frequent_round"
+
+GP3_LEGEND_OPTIONS <- c(INCOME_GRP_COL, PLAYER_CODE_COL)
+names(GP3_LEGEND_OPTIONS) <- c("Welfare Type", "Table Player")

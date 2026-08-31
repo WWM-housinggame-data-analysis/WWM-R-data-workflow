@@ -84,11 +84,18 @@ retrieve_GP3_plot_data <- function(df, selected_table, game_round, indiv_rounds)
   
   n_df <- create_GP3_ylabels(n_df)
   
+  n_df <- n_df |>
+    dplyr::group_by(.data[[GP3_YLABEL_COL]]) |>
+    dplyr::mutate(measure_total_N = sum(N, na.rm = TRUE)) |>
+    dplyr::ungroup()|>
+    as.data.frame()
+  
   ylevels <- levels(n_df[, GP3_YLABEL_COL])
   
   list(
-    n_df                = n_df,
-    barlevels             = ylevels
+    n_df            = n_df,
+    barlevels       = ylevels,
+    grouping_choice = selected_barseg_col
   )
 }
 
