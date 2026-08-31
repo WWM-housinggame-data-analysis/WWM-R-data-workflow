@@ -285,8 +285,10 @@ server <- function(input, output, session) {
     id = "table"
   )
   
+  final_round_choice <- shiny::reactive(FINAL_ROUND_CHOICE[selected_question()])
+  
   # ---- Dynamic rounds (IDs + labels) ----
-  round_ids <- make_rounds_reactive(question_session_df)
+  round_ids <- make_rounds_reactive(question_session_df, final_round_choice)
   
   selected_cost_types <- make_multicheck_filter_reactive(id = "cost_types",
                                                          get_choice = shiny::reactive({default_cost_option}),
@@ -315,7 +317,7 @@ server <- function(input, output, session) {
     
     shiny::req(length(round_ids()) > 0)
     
-    interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids()[ round_ids() != SELECT_ALL])
+    indiv_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids()[ round_ids() != SELECT_ALL])
     
     lapply(unname(round_ids()), function(rid) {
       
@@ -335,7 +337,7 @@ server <- function(input, output, session) {
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
             game_round = rid_value,
-            interm_rounds = interm_rids
+            indiv_rounds = indiv_rids
           )
           
         })
@@ -349,7 +351,7 @@ server <- function(input, output, session) {
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
             game_round = rid_value,
-            interm_rounds = interm_rids
+            indiv_rounds = indiv_rids
           )
           
         })
@@ -361,7 +363,7 @@ server <- function(input, output, session) {
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
             game_round = rid_value,
-            interm_rounds = interm_rids
+            indiv_rounds = indiv_rids
           )
           
         })

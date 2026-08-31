@@ -79,7 +79,7 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP2_plot_data(
@@ -87,7 +87,7 @@ question_dashboard_workflow <- list(
         selected_cost_types,
         selected_table,
         game_round,
-        interm_rounds,
+        indiv_rounds,
         fill_values_all
       )
       
@@ -98,7 +98,7 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP2_summary_tables(
@@ -106,7 +106,7 @@ question_dashboard_workflow <- list(
         selected_cost_types,
         selected_table,
         game_round,
-        interm_rounds
+        indiv_rounds
       )
       
     },
@@ -116,7 +116,7 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP2_stats_tables(
@@ -124,7 +124,7 @@ question_dashboard_workflow <- list(
         selected_cost_types,
         selected_table,
         game_round,
-        interm_rounds
+        indiv_rounds
       )
       
     },
@@ -146,14 +146,14 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP3_plot_data(
         df,
         selected_table,
         game_round,
-        interm_rounds
+        indiv_rounds
       )
       
     },
@@ -163,14 +163,14 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP3_summary_tables(
         df,
         selected_table,
         game_round,
-        interm_rounds
+        indiv_rounds
       )
       
     },
@@ -180,14 +180,14 @@ question_dashboard_workflow <- list(
     selected_table,
     selected_cost_types,
     game_round,
-    interm_rounds
+    indiv_rounds
     ) {
       
       retrieve_GP3_stats_tables(
         df,
         selected_table,
         game_round,
-        interm_rounds
+        indiv_rounds
       )
       
     },

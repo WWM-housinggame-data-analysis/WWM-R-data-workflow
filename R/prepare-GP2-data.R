@@ -52,9 +52,9 @@ retrieve_GP2_dataframe <- function(df) {
   return(df)
 }
 
-process_GP2_dataframe <- function(df, selected_cost_types, selected_table, game_round, interm_rounds) {
+process_GP2_dataframe <- function(df, selected_cost_types, selected_table, game_round, indiv_rounds) {
   
-  df <- filter_game_rounds(df, game_round, interm_rounds)
+  df <- filter_game_rounds(df, game_round, indiv_rounds)
   
   selected_table <- translate_table_selection(df, selected_table)
   
@@ -80,9 +80,9 @@ process_GP2_dataframe <- function(df, selected_cost_types, selected_table, game_
 }
 
 # Reactive plot based on user input
-retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, fill_values_all) {
+retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game_round, indiv_rounds, fill_values_all) {
   
-  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, indiv_rounds)
   df <- processed_list$df
   selected_bar_segments <- processed_list$selected_bar_segments
 
@@ -115,9 +115,9 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
 }
 
 
-retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table, game_round, indiv_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
-  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, indiv_rounds)
   df <- processed_list$df
   selected_bar_groupcol <- processed_list$selected_bar_groupcol
   
@@ -129,9 +129,9 @@ retrieve_GP2_summary_tables <- function(df, selected_cost_types, selected_table,
     as.data.frame()
 }
 
-retrieve_GP2_stats_tables <- function(df, selected_cost_types, selected_table, game_round, interm_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
+retrieve_GP2_stats_tables <- function(df, selected_cost_types, selected_table, game_round, indiv_rounds, selected_bar_groupcol = GP2_XLABEL_COL, pivoted_cols = COST_TABLE_ENTRIES) {
   
-  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, interm_rounds)
+  processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, indiv_rounds)
   df <- processed_list$df
   selected_bar_groupcol <- processed_list$selected_bar_groupcol
   

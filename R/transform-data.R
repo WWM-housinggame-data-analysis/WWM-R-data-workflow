@@ -122,11 +122,11 @@ aggregate_all_rounds <- function(df, group_cols, n_col, mostfreq_col) {
   
 }
 
-filter_game_rounds <- function(df, game_round, interm_rounds) {
+filter_game_rounds <- function(df, game_round, indiv_rounds) {
   
   shiny::req(nrow(df) > 0)
   
-  if (game_round %in% interm_rounds) {
+  if (game_round %in% indiv_rounds) {
     
     df <- df |>
       dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% game_round) |>

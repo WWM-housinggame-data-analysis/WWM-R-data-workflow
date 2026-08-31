@@ -130,10 +130,10 @@ measures_combined_df <- retrieve_GP3_dataframe(preprocess_data_list[[selected_ga
 
 round_ids <- get_round_ids(measures_combined_df)
 
-interm_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
+indiv_rids <- gsub(ROUND_ACCORDION_IDPREF, "", round_ids[round_ids != SELECT_ALL])
 
 ## Retrieve summary table for data plotted in analysis for GP2
-GP3_summary_df <- retrieve_GP3_summary_tables(measures_combined_df, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)
+GP3_summary_df <- retrieve_GP3_summary_tables(measures_combined_df, selected_table, game_round = SELECT_ALL, indiv_rounds = indiv_rids)
  
 # # Export Summary table
 # write.csv(GP2_summary_df, file.path(RESULTS_PATH, "GP2_sumstats.csv"), row.names = FALSE, quote = FALSE)
@@ -142,10 +142,10 @@ GP3_summary_df <- retrieve_GP3_summary_tables(measures_combined_df, selected_tab
 ## Data is retrieved for cost type and table group selection defined above.
 ## Data representative of the whole game session and of each game round is retrieved, respectively.
 
-GP3_plotall_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = SELECT_ALL, interm_rounds = interm_rids)
-GP3_plot1_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "1", interm_rounds = interm_rids)
-GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "2", interm_rounds = interm_rids)
-GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "3", interm_rounds = interm_rids)
+GP3_plotall_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = SELECT_ALL, indiv_rounds = indiv_rids)
+GP3_plot1_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "1", indiv_rounds = indiv_rids)
+GP3_plot2_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "2", indiv_rounds = indiv_rids)
+GP3_plot3_data <- retrieve_GP3_plot_data(measures_combined_df, selected_table, game_round = "3", indiv_rounds = indiv_rids)
 
 ## Save GP2 plot in main directory and display it in RStudio viewer
 save_and_view_GP3_plot(GP3_plotall_data, file = file.path(RESULTS_PATH, paste0(format(Sys.time(), "%Y%m%d_%H%M%S"), "_GP3_plot.png")), CONFIG[["plotly"]][["GP3"]][["script"]], vheight = 1100)
