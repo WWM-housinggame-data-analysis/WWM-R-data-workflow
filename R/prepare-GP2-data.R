@@ -85,6 +85,7 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
   processed_list <- process_GP2_dataframe(df, selected_cost_types, selected_table, game_round, indiv_rounds)
   df <- processed_list$df
   selected_bar_segments <- processed_list$selected_bar_segments
+  selected_bar_groupcol <- processed_list$selected_bar_groupcol
 
   # satisfaction series
   scatter_df <- retrieve_mean_table(df, GP2_XLABEL_COL, COST_SCATTER_LINE)
@@ -110,7 +111,8 @@ retrieve_GP2_plot_data <- function(df, selected_cost_types, selected_table, game
     bar_df                = bar_df,     # has xlabels, cost_type, mean_value, n, ...
     scatter_df            = scatter_df,       # has xlabels, ave_satisfaction, series
     selected_bar_segments = selected_bar_segments,
-    barlevels               = xlevels
+    barlevels             = xlevels,
+    grouping_choice       = selected_bar_groupcol
   )
 }
 
