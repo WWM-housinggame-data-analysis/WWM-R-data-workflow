@@ -88,7 +88,8 @@ retrieve_GP3_plot_data <- function(df, selected_table, game_round, indiv_rounds)
     dplyr::group_by(.data[[GP3_YLABEL_COL]]) |>
     dplyr::mutate(measure_total_N = sum(N, na.rm = TRUE)) |>
     dplyr::ungroup()|>
-    as.data.frame()
+    as.data.frame() |>
+    droplevels()
   
   ylevels <- levels(n_df[, GP3_YLABEL_COL])
   
@@ -122,7 +123,7 @@ retrieve_GP3_summary_tables <- function(df, selected_table, game_round, indiv_ro
   }
   
   
-  return(n_df)
+  droplevels(n_df)
 
 }
 
@@ -147,6 +148,6 @@ retrieve_GP3_stats_tables <- function(df, selected_table, game_round, indiv_roun
     n_df[, FREQUENT_ROUND_COL] <- NA
   }
   
-  return(n_df)
+  droplevels(n_df)
   
 }
