@@ -179,6 +179,7 @@ create_GP2_plotly <- function(plot_data, plotly_configs) {
   scatter_df            <- plot_data$scatter_df
   selected_bar_labels   <- names(plot_data$selected_bar_segments)
   xlevels               <- plot_data$barlevels
+  group_col             <- plot_data$grouping_choice
   
   # keep only colors/labels for selected stacks
   bar_colors <- fill_values_all[names(fill_values_all) %in% selected_bar_labels]
@@ -189,7 +190,9 @@ create_GP2_plotly <- function(plot_data, plotly_configs) {
   
   # Start plotly
   
-  GP2_plot <- create_GP2_plotly_layout("Round income (k) - Players per class",
+  xtitle <- paste0(names(PLAYER_AGGREGATION_OPTIONS)[PLAYER_AGGREGATION_OPTIONS %in% group_col], " - Round income (k)")
+  
+  GP2_plot <- create_GP2_plotly_layout(xtitle,
                                        xlevels,
                                        c(bar_y_min, bar_y_max),
                                        plotly_configs)

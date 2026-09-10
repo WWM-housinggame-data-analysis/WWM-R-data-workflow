@@ -130,7 +130,7 @@ update_grouping_choice <- function(df, selected_table) {
 }
 
 
-get_round_ids <- function(df) {
+get_round_ids <- function(df, show_final_round = FALSE) {
   
   rounds <- df |>
     dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% EXPECTED_ROUNDS[1] == FALSE) |>
@@ -151,24 +151,39 @@ get_round_ids <- function(df) {
     
   } else {
     
-    interm_rounds <- as.character(rounds[1:(length(rounds)-1)])
+    indiv_rounds <- as.character(rounds)
     
-    # Optional check against expected intermediate rounds
-    if (exists("INTERM_ROUNDS", inherits = TRUE) &&
-        !identical(interm_rounds, INTERM_ROUNDS)) {
-      warning(
-        "Detected intermediate rounds differ from INTERM_ROUNDS. ",
-        "Proceeding with detected rounds."
-      )
+    if (show_final_round) {
+      
+      # Optional check against expected completed rounds
+      if (!identical(indiv_rounds, EXPECTED_COMPLET_ROUNDS)) {
+        warning(
+          "Detected completed rounds differ from EXPECTED_COMPLET_ROUNDS. ",
+          "Proceeding with detected rounds."
+        )
+      }
+      
+    } else {
+      
+      indiv_rounds <- indiv_rounds[1 : (length(indiv_rounds) - 1)]
+      
+      # Optional check against expected intermediate rounds
+      if (exists("EXPECTED_INTERM_ROUNDS", inherits = TRUE) &&
+          !identical(indiv_rounds, EXPECTED_INTERM_ROUNDS)) {
+        warning(
+          "Detected intermediate rounds differ from EXPECTED_INTERM_ROUNDS. ",
+          "Proceeding with detected rounds."
+        )
+      }
     }
     
     # IDs used internally (All + r1, r2, ...)
     round_ids <- c(SELECT_ALL,
-                   paste0(ROUND_ACCORDION_IDPREF, interm_rounds)
+                   paste0(ROUND_ACCORDION_IDPREF, indiv_rounds)
     )
     
     names(round_ids) <- c(ROUND_ACCORDION_LABELALL,
-                          paste(names(ROUND_ACCORDION_IDPREF), interm_rounds))
+                          paste(names(ROUND_ACCORDION_IDPREF), indiv_rounds))
   }
   
   return(round_ids)

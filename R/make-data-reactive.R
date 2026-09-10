@@ -320,7 +320,7 @@ make_table_choice_reactive <- function(reactive_df,
 # Module 1: derive round_ids + round_labels from reactive_df()
 # ------------------------------------------------------------------------------
 
-make_rounds_reactive <- function(reactive_df) {
+make_rounds_reactive <- function(reactive_df, show_final_round = shiny::reactive(FALSE)) {
   
   shiny::reactive({
     
@@ -328,7 +328,7 @@ make_rounds_reactive <- function(reactive_df) {
     
     shiny::req(nrow(df) > 0)
     
-    get_round_ids(df)
+    get_round_ids(df, show_final_round())
     
   })
 }
