@@ -36,7 +36,7 @@ unpack_dbtable_list <- function(dblist, suffix = "_df") {
 # Main preprocessing function
 # ---------------------------------------------------------------
 
-preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
+preprocess_selected_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   
   ## Unpack into global environment
   unpack_dbtable_list(dbtable_list, "_df")
@@ -493,25 +493,6 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   questionitem_df <- sqldf::sqldf(rename_cols_sqlquery(questionitem_df, c("name", "description"), c("question_name", "question_description")))
   
   
-  
-  
-  # Add to question score the question, question item and player_round tables relevant variables
-  # questionscore_df <- sqldf("
-  # SELECT 
-  #   qs.id AS answer_id, qs.answer, qs.late_answer,qi.name AS answer_option, CAST(qs.answer AS INTEGER) || ' - ' || qi.name AS answer_plus_option, 
-  #   qs.question_id, q.name AS question_name, q.description AS question_description,
-  #   qs.playerround_id, pr.groupround_round_number, pr.player_code, pr.group_name, pr.gamesession_name
-  # FROM questionscore_df AS qs
-  # LEFT JOIN question_df AS q
-  #   ON qs.question_id = q.id
-  # LEFT JOIN questionitem_df AS qi
-  #   ON qs.answer = qi.code
-  #  AND qs.question_id = qi.question_id
-  # LEFT JOIN  playerround_df AS pr
-  #  ON qs.playerround_id = pr.playerround_id
-  # ")
-
-  
   ## Rename columns in the dataframe
   ## "SELECT id AS answer_id, answer, late_answer, playerround_id, question_id FROM questionscore_df"  
   
@@ -561,53 +542,7 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   ## "SELECT questionitem_id, answer_code, answer_name, answercode_plus_name, question_name, question_description FROM questionitem_df"
   
   questionitem_df <- sqldf::sqldf(select_sqlquery(questionitem_df, names(questionitem_df)[names(questionitem_df) %in% "question_id" == F]))
-  
-  
-  ## Run the query to filter the playerround_df dataframe with the var_income_dist
-  ## "SELECT gamesession_name, group_name, playerround_id, player_id, player_code, house_code, groupround_id, groupround_round_number,
-  ##  round_income, living_costs, paid_debt, profit_sold_house, spent_savings_for_buying_house, cost_taxes, mortgage_payment,
-  ##  cost_house_measures_bought, cost_personal_measures_bought, cost_fluvial_damage, cost_pluvial_damage, spendable_income,
-  ##  calculated_costs_personal_measures, calculated_costs_house_measures, calculated_costs_measures_difference,
-  ##  satisfaction_total, welfaretype_id, total_damage_costs, community_name, fluvial_house_delta, pluvial_house_delta
-  ##  FROM playerround_df"
-  
-  income_dist_df <- sqldf::sqldf(select_sqlquery(playerround_df, INCOME_DIST_ALLCOLS))
-  
-  # -----------------------------------------------------------
-  # tidyverse operations
-  # -----------------------------------------------------------
-  
-  ## Convert INCOME_DIST_CATEGCOLS to factor
-  income_dist_df <- income_dist_df |>
-    dplyr::mutate_at(INCOME_DIST_CATEGCOLS, as.factor)
-  
-  
-  ## Append income_grp labels based on round_income to dataframe
-  income_dist_df <- append_income_grp(income_dist_df, INCOME_GRP_COL)
-  
-  
-  ## Convert columns not in INCOME_DIST_CATEGCOLS nor INCOME_GRP_COL to numeric
-  income_dist_df <- income_dist_df |>
-    dplyr::mutate_at(
-      names(income_dist_df)[!(names(income_dist_df) %in% c(INCOME_DIST_CATEGCOLS, INCOME_GRP_COL))],
-      as.numeric
-    )
-  
-  
-  ## Calculate the round costs to check the spendable income
-  income_dist_df <- append_total_costs(income_dist_df, TOTAL_COSTS_COL)
-  
-  
-  ## Calculate the spendable income
-  income_dist_df <- append_spendable_income_cols(income_dist_df, CALCULATED_SPENDABLE_COL, SPENDABLE_DIFFCOL)
-  
-  
-  ## Calculate income - living costs
-  income_dist_df <- append_income_living_diff(income_dist_df, INCOME_LIVING_DIFFCOL)
-  
-  
-  ## Calculate  "profit - spent savings house moving"
-  income_dist_df <- append_housemoving_diff(income_dist_df, HOUSEMOVING_DIFFCOL)
+
   
   # -----------------------------------------------------------
   # Collect results
@@ -615,7 +550,6 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
 
   ## Update list to be returned with the tables used in the calculation 
   dbtable_list <- list(
-    income_dist_df = income_dist_df,
     playerround = playerround_df,
     measuretype = measuretype_df,
     personalmeasure = personalmeasure_df,
@@ -636,4 +570,90 @@ preprocess_dbtables <- function(dbtable_list, session_name, excel = FALSE) {
   }
   
   return(dbtable_list)
+}
+
+#Add if the player implemented house or personal measures after flood experience (either river or rain damage)in the previous round
+#Control if exclude or not pre-existing house measures or initial house measures already implemented when the player buys and moves into a house
+preprocess_extra_dbtables_GP3 <- function(dbtable_list, session_name, excel = FALSE) {
+    
+  ## Unpack into global environment
+  unpack_dbtable_list(dbtable_list, "_df")
+  
+  housemeasure_filtered_df <- sqldf::sqldf(select_sqlquery(housemeasure_df, c("id", "measuretype_id", "group_name",
+                                                                              "player_code", "house_code",
+                                                                              "groupround_round_number", "round_income",
+                                                                              "short_alias", "cost_absolute",
+                                                                              "satisfaction_delta_once",
+                                                                              "pluvial_protection_delta",
+                                                                              "fluvial_protection_delta"),
+                                                           is_where = TRUE,
+                                                           where_cond = paste(c(IHM_CONDITION,
+                                                                                PLAYER_CODE_CONDITION),
+                                                                              collapse = " AND ")
+  )
+  )
+  
+  housemeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(housemeasure_filtered_df, "cost_absolute", "measure_cost"))
+  
+  
+  personalmeasure_filtered_df <- sqldf::sqldf(select_sqlquery(personalmeasure_df, c("id", "measuretype_id", "group_name",
+                                                                                    "player_code", "house_code",
+                                                                                    "groupround_round_number", "round_income",
+                                                                                    "short_alias", "calculated_costs",
+                                                                                    "satisfaction_delta_once",
+                                                                                    "pluvial_protection_delta",
+                                                                                    "fluvial_protection_delta")))
+  
+  personalmeasure_filtered_df <- sqldf::sqldf(rename_cols_sqlquery(personalmeasure_filtered_df, "calculated_costs", "measure_cost"))
+  
+  
+  # Add a source column to each measures table and combine them
+  measures_combined_df <- sqldf::sqldf(union_all_sqlquery(personalmeasure_filtered_df, housemeasure_filtered_df,
+                                                          source_col = "source", source_label_dbtable1 ="personalmeasure_filtered", source_label_dbtable2 = "housemeasure_filtered")
+  )
+  
+  
+  measures_combined_info_df <- sqldf::sqldf(left_join_sqlquery(measuretype_df, match_dbtable1_cols = "short_alias",
+                                                               MEASURETEXT_DF, match_dbtable2_cols = "short_alias",
+                                                               kept_dbtable1_cols = c("short_alias", "cost_absolute", "cost_percentage_income", "cost_percentage_house"),
+                                                               kept_dbtable2_cols = c(MEASURE_COSTREF_COL, MEASURE_COSTPLOT_COL, MEASURE_ICONS_COL))
+  )
+  
+  measures_combined_info_df <- sqldf::sqldf(sort_dbtable_sqlquery(measures_combined_info_df, MEASURE_COSTPLOT_COL))
+  measures_combined_info_df <- sqldf::sqldf(sort_dbtable_sqlquery(measures_combined_info_df, "cost_absolute", asc = FALSE))
+  
+  measures_combined_info_df <- append_cost_info(measures_combined_info_df, COST_INFO_COL)
+  
+  
+  measures_combined_df <- sqldf::sqldf(left_join_sqlquery(measures_combined_df, match_dbtable1_cols = "short_alias",
+                                                          measures_combined_info_df, match_dbtable2_cols = "short_alias",
+                                                          kept_dbtable2_cols = c(MEASURE_ICONS_COL, COST_INFO_COL))
+                                       )
+  
+  ## Update list to be returned with the tables used in the calculation 
+  dbtable_list <- list(
+    housemeasure_filtered = housemeasure_filtered_df,
+    personalmeasure_filtered = personalmeasure_filtered_df,
+    measures_combined = measures_combined_df,
+    measuretype = measuretype_df,
+    playerround = playerround_df,
+    personalmeasure = personalmeasure_df,
+    housemeasure = housemeasure_df,
+    questionscore = questionscore_df,
+    questionitem = questionitem_df,
+    initialhousemeasure = initialhousemeasure_df,
+    house = house_df,
+    housegroup = housegroup_df,
+    group = group_df,
+    groupround = groupround_df,
+    player = player_df,
+    gamesession = gamesession_df
+  )
+  
+  # if (excel) {
+  #   export_excel(dbtable_list, session_name, preprocessed = TRUE)
+  # }
+  
+  return(dbtable_list)
+  
 }

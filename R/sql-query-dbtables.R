@@ -10,32 +10,27 @@ source(here::here(file.path(FUNCTION_PATH, "check-df-cols.R")))
 
 # Functions ---
 
-## test whether character vector contains blank element
-contains_blank_char <- function(x) {
+make_where_statement <- function(where_cond) {
   
-    # NULL or length-0 vectors are considered blank
-    if (is.null(x) || length(x) == 0L) return(TRUE)
-    
-    # Treat factors as their character labels
-    if (is.factor(x)) x <- as.character(x)
-    
-    res <- is.na(x)
-    
-    # For character inputs, blank means "" or whitespace-only
-    if (is.character(x)) {
-      res <- res | trimws(x) == ""
+  where_statement <- ""
+  
+      if(is.character(where_cond) & length(where_cond) == 1 & contains_blank_char(where_cond) == FALSE) {
+      
+      where_statement <- paste(" WHERE", where_cond)
+      
+    } else {
+      
+      stop("where_cond expected to be an non-empty character of length == 1.")
     }
     
-    # Return logical stating whether any element in character vector is blank 
-    return(any(res))
-  }
-
+  return(where_statement)
+}
 
 ## Create sql query for sqldf to select and sort columns from dbtable
-select_sqlquery <- function(dbtable, selected_cols) {
+select_sqlquery <- function(dbtable, selected_cols, is_where = FALSE, where_cond = "") {
   
   ## write default sql query if no selected_cols are given as argument
-  sqlquery <- paste0("SELECT * FROM ", deparse(substitute(dbtable)))
+  select_from_statement <- paste0("SELECT * FROM ", deparse(substitute(dbtable)))
   
   ## Check selected_cols is not missing. Otherwise all collums are selected with no change in order
   if (missing(selected_cols) == FALSE) {
@@ -51,16 +46,31 @@ select_sqlquery <- function(dbtable, selected_cols) {
     ## check selected_cols is not identical to the current names of dbtable. In that case columns are selected and sorted as in selected_cols, ignore non mentioned ones.
       
     if (identical(selected_cols, names(dbtable)) == FALSE) {
-      sqlquery <- paste0("SELECT ", paste(selected_cols[selected_cols %in% names(dbtable)], collapse = ", "), " FROM ", deparse(substitute(dbtable)))
+      select_from_statement <- paste0("SELECT ", paste(selected_cols[selected_cols %in% names(dbtable)], collapse = ", "), " FROM ", deparse(substitute(dbtable)))
     }
   }
+  
+  
+  ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
+  ## By default where condition is ignored and where_ statement remains blank character.
+  
+  if (is_where) {
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
+  }
+  
+  
+  ## paste statements to make complete left join sql query
+  sqlquery <- paste0(select_from_statement, where_statement)
+  
   
   return(sqlquery)
 }
 
 
 ## Create sql query for sqldf to left join two dbtables
-left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, kept_dbtable1_cols, kept_dbtable2_cols) {
+left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_dbtable2_cols, kept_dbtable1_cols, kept_dbtable2_cols, is_where = FALSE, where_cond = "") {
   
   ## Check match_dbtable1_cols and match_dbtable2_cols have no blank characters have the same exact length
   stopifnot("match_dbtable1_cols not expected to have blank character elements" = contains_blank_char(match_dbtable1_cols) == FALSE,
@@ -114,12 +124,27 @@ left_join_sqlquery <- function(dbtable1, match_dbtable1_cols, dbtable2, match_db
   ## write default on statement
   on_statement <- paste0("ON ", paste(paste(paste0("dbtable1.", match_dbtable1_cols), paste0("dbtable2.",  match_dbtable2_cols), sep = " = "), collapse = " AND "))
   
+  ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
+  ## By default where condition is ignored and where_ statement remains blank character.
+  
+  if (is_where) {
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
+  }
+  
+  
+  
   ## paste statements to make complete left join sql query
-  sqlquery <- paste(select_statement,
-                    from_statement,
-                    left_join_statement,
-                    on_statement
+  sqlquery <- paste0(
+    paste(select_statement,
+          from_statement,
+          left_join_statement,
+          on_statement
+    ),
+    where_statement
   )
+  
   
   return(sqlquery)
 }
@@ -253,6 +278,139 @@ combine_cols_sqlquery <- function(dbtable, cast_col1, col_type1, cast_col2, col_
                                    make_cast_statement(cast_col2, col_type2),
                      " AS ", comb_col,
                      " FROM ", deparse(substitute(dbtable)))
+  
+  return(sqlquery)
+}
+
+## Create sql query to convert a column in dbtable to value in coal_val if NA/NULL values are found.
+unnull_dbcol_sqlquery <- function(dbtable, coal_col, coal_val = 0) {
+  
+  ## Check coal_col is not blank, has length one and is a table column name. Coal_val should also have length 1.
+  stopifnot("coal_col not expected to be blank character" = contains_blank_char(coal_col) == FALSE,
+            "Only one column name is allowed to be coalesced" = length(coal_col) == 1,
+            "Only a value with length one is allowed for coalesce" = length(coal_val) == 1)
+  
+  ## Check dbtable is data frame and coal_col exists as collumn
+  check_df_cols(dbtable, coal_col)
+  
+  ## warning if coal_val not 0
+  if (coal_val != 0) {
+    warning("coal_val expected to be 0. Please double check the value introduced to replace NULL/NA values is valid for SQL query.")
+  }
+  
+  ## create sql statement coalesce
+  coal_statement <- paste0("COALESCE(", coal_col, ", ", coal_val, ") AS ", coal_col)
+  
+  ## find collumn index to be checked for NA/NULL values
+  coal_ind <- match(coal_col, names(dbtable))
+  
+  select_statement <- "SELECT "
+  
+  ## create sql select statement where coalesce action is excuted while keeping original column sorting
+  
+  if (coal_ind > 1) {
+    select_statement <- paste0(select_statement,
+                               paste(c(names(dbtable)[seq_len(coal_ind - 1)], coal_statement), collapse = ", ")
+    )
+  } else {
+    select_statement <- paste0(select_statement,
+                               coal_statement
+    )
+  }
+  
+  if (coal_ind < length(names(dbtable))) {
+    select_statement <- paste(select_statement,
+                              paste(names(dbtable)[(coal_ind + 1) : length(names(dbtable))], collapse = ", "),
+                              sep = ", ")
+  }
+  
+  
+  sqlquery <- paste0(select_statement,
+                     " FROM ", deparse(substitute(dbtable)))
+  
+  return(sqlquery)
+}
+
+
+## Create to union all two dbtables
+union_all_sqlquery <- function(dbtable1, dbtable2, source_col, source_label_dbtable1, source_label_dbtable2, kept_dbtable1_cols, kept_dbtable2_cols, is_where = FALSE, where_cond = "") {
+  
+  ## Check source_col, source_label_dbtable1 and source_label_dbtable2 are not blank, and have length = 1.
+  stopifnot("source_col not expected to be blank character" = contains_blank_char(source_col) == FALSE,
+            "Only one column name is allowed to be used in source_col" = length(source_col) == 1,
+            "source_label_dbtable1 not expected to be blank character" = contains_blank_char(source_label_dbtable1) == FALSE,
+            "Only one column name is allowed to be coalesced" = length(source_label_dbtable1) == 1,
+            "source_label_dbtable2 not expected to be blank character" = contains_blank_char(source_label_dbtable2) == FALSE,
+            "Only one column name is allowed to be coalesced" = length(source_label_dbtable2) == 1)
+  
+
+  ## If kept_dbtable1_cols is a non-blank character_vector and differs from names(dbtable1) in size or sorting, Select statement is written considering kept_dbtable1_cols. Otherwise all the collumns are selected as they are.
+  if (missing(kept_dbtable1_cols) == FALSE && contains_blank_char(kept_dbtable1_cols) == FALSE && identical(kept_dbtable1_cols, names(dbtable1)) == FALSE) {
+    
+    select_statement_dbtable1 <- paste0("SELECT ", paste(paste0("dbtable1.", kept_dbtable1_cols[kept_dbtable1_cols %in% names(dbtable1)]), collapse = ", "))
+    
+  } else {
+    
+    warning("All the collumns from the first dbtable are kept.")
+    
+    kept_dbtable1_cols <- names(dbtable1)
+    
+    select_statement_dbtable1 <- "SELECT dbtable1.*"
+    
+  }
+
+  
+  ## If kept_dbtable2_cols is a non-blank character_vector and differs from names(dbtable2) in size or sorting, Select statement is written considering kept_dbtable2_cols. Otherwise all the collumns are selected as they are.
+  if (missing(kept_dbtable2_cols) == FALSE && contains_blank_char(kept_dbtable2_cols) == FALSE && identical(kept_dbtable2_cols, names(dbtable2)) == FALSE) {
+    
+    select_statement_dbtable2 <- paste0("SELECT ", paste(paste0("dbtable2.", kept_dbtable2_cols[kept_dbtable2_cols %in% names(dbtable2)]), collapse = ", "))
+    
+  } else {
+    
+    warning("All the collumns from the second dbtable are kept.")
+    
+    kept_dbtable2_cols <- names(dbtable2)
+    
+    select_statement_dbtable2 <- "SELECT dbtable2.*"
+  }
+  
+  stopifnot("dbtable1 and dbtable2 expected to have the same collumn names and sorting" = identical(kept_dbtable1_cols, kept_dbtable2_cols),
+            "dbtable1 and dbtable2 collums expected to have the same type" = identical(vapply(dbtable1[,kept_dbtable1_cols], typeof, character(1)),
+                                                                                       vapply(dbtable2[,kept_dbtable2_cols], typeof, character(1))))
+  
+  select_statement_dbtable1 <- paste(select_statement_dbtable1,
+                                     paste(paste0("'", source_label_dbtable1, "'"), source_col, sep = " AS "), sep = ", ")
+  
+  select_statement_dbtable2 <- paste(select_statement_dbtable2,
+                                     paste(paste0("'", source_label_dbtable2, "'"), source_col, sep = " AS "), sep = ", ")
+  
+  ## write default from statement for dbtable1
+  from_statement_dbtable1 <- paste0("FROM [", deparse(substitute(dbtable1)), "] AS dbtable1")
+  
+  ## write default from statement for dbtable2
+  from_statement_dbtable2 <- paste0("FROM [", deparse(substitute(dbtable2)), "] AS dbtable2")
+  
+  
+  ## write where condition if its existence is stated as TRUE by is_where and if condition(s) are given as a one length character.
+  ## By default where condition is ignored and where_ statement remains blank character.
+  
+  if (is_where) {
+    where_statement <- make_where_statement(where_cond)
+  } else {
+    where_statement <- ""
+  }
+  
+  ## paste statements to make complete left join sql query
+  sqlquery <- paste0(
+    paste(select_statement_dbtable1,
+          from_statement_dbtable1,
+          "UNION ALL",
+          select_statement_dbtable2,
+          from_statement_dbtable2
+    ),
+    where_statement
+  )
+  
   
   return(sqlquery)
 }

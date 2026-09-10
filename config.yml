@@ -1,3 +1,21 @@
-defaults:
-  selected_gamesession: "All"
-  selected_username: "researcher"
+plotly:
+  GP2:
+    app:
+        yaxis_title: "Game Currency (k)"
+        yaxis2_title: "Average total satisfaction"
+    script:
+        yaxis_title: "Game Currency (k)"
+        yaxis2_title: "Average total satisfaction"
+  GP3:
+    app:
+        yaxis_title: "Private adaptation measures"
+        yaxis_standoff: 330
+        top_margin: 60
+        right_margin: 0
+        left_margin: 0
+    script:
+        yaxis_title: "Private adaptation measures"
+        yaxis_standoff: 360
+        top_margin: 60
+        right_margin: 50
+        left_margin: 400

@@ -44,7 +44,7 @@ mod_multicheck_reset_ui <- function(id, label) {
 }
 
 # Reusable accordion panel for a game round (or SELECT_ALL)
-make_round_panels <- function(round_ids) {
+make_round_panels <- function(round_ids, plot_height) {
   
   shiny::req(length(round_ids) > 0)
   
@@ -62,7 +62,9 @@ make_round_panels <- function(round_ids) {
       title = label,
       shiny::tabsetPanel(
         type = "tabs",
-        shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id)),
+        shiny::tabPanel("Plot",    plotly::plotlyOutput(plot_id,
+                                                        height = plot_height,
+                                                        width = "100%")),
         shiny::tabPanel("Summary", shiny::verbatimTextOutput(summary_id)),
         shiny::tabPanel("Table",   shiny::tableOutput(table_id))
       )
