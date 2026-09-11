@@ -43,6 +43,51 @@ mod_multicheck_reset_ui <- function(id, label) {
   )
 }
 
+make_GP3plottype_selectize <- function(question_alias) {
+  
+  shiny::conditionalPanel(
+    condition = paste0(
+      "input['",
+      question_alias,
+      "-input_value'] == 'GP3'"
+    ),
+    
+    mod_input_reset_ui(
+      "gp3_display_mode",
+      "Display values as"
+    )
+  )
+}
+
+
+# shiny::conditionalPanel(
+#   condition = paste0(
+#     "input['",
+#     QUESTION_ACCORDION_VALUE,
+#     "-input_value'] == 'GP3'"
+#   ),
+#   
+#   tags$hr(),
+#   
+#   tags$strong("GP3 Display Settings"),
+#   
+#   selectizeInput(
+#     "gp3_display_mode",
+#     "Display values as",
+#     c("Frequencies", "Percentages"),
+#     selected = "Frequencies"
+#   )
+# )
+
+
+make_GP2segment_panel <- function(segment_alias = GP2_SEGMENT_ACCORDION_VALUE, segment_label = GP2_SEGMENT_ACCORDION_LABEL) {
+  
+  shiny::conditionalPanel(
+    condition = paste0("input['", segment_alias, "-input_value'] == '", "GP2", "'"),
+    mod_multicheck_reset_ui(segment_alias, segment_label)
+  )
+}
+
 # Reusable accordion panel for a game round (or SELECT_ALL)
 make_round_panels <- function(round_ids, plot_height) {
   

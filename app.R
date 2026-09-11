@@ -190,6 +190,17 @@ ui <- bslib::page_navbar(
                                  mod_input_reset_ui(QUESTION_ACCORDION_VALUE, QUESTION_ACCORDION_LABEL)
           ),
           
+          bslib::accordion_panel(
+            QUESTION_ACCORDION_TITLE,
+            
+            mod_input_reset_ui(
+              QUESTION_ACCORDION_VALUE,
+              QUESTION_ACCORDION_LABEL
+            ),
+            
+            make_GP3plottype_selectize(QUESTION_ACCORDION_VALUE) 
+          ),
+          
           ## Game Session Filter Details
           bslib::accordion_panel(SESSION_ACCORDION_TITLE,
                           mod_input_reset_ui(SESSION_ACCORDION_VALUE, SESSION_ACCORDION_LABEL)
@@ -208,14 +219,7 @@ ui <- bslib::page_navbar(
           bslib::accordion_panel(
             GP2_SEGMENT_ACCORDION_TITLE,
             
-            shiny::conditionalPanel(
-              condition = paste0("input['", QUESTION_ACCORDION_VALUE, "-input_value'] == '", "GP2", "'"),
-              
-              mod_multicheck_reset_ui(
-                GP2_SEGMENT_ACCORDION_VALUE,
-                GP2_SEGMENT_ACCORDION_LABEL
-              )
-            )
+            make_GP2segment_panel(GP2_SEGMENT_ACCORDION_VALUE, GP2_SEGMENT_ACCORDION_LABEL)
           ),
           
           ## Measures Filter Details
@@ -274,6 +278,46 @@ server <- function(input, output, session) {
     id             = "gamesession"                              # matches your UI module id
   )
 
+  gp3_display_mode <- mod_input_reset_server(
+    id = "gp3_display_mode",
+    
+    get_choice = shiny::reactive({
+      "Frequencies"
+    }),
+    
+    get_options = shiny::reactive({
+      c("Frequencies", "Percentages")
+    })
+  )
+  
+  # make_single_select_filter <- function(
+  #   id,
+  #   label,
+  #   choices,
+  #   default
+  # ) {
+  #   
+  #   mod_input_reset_server(
+  #     id = id,
+  #     
+  #     get_choice = shiny::reactive({
+  #       default
+  #     }),
+  #     
+  #     get_options = shiny::reactive({
+  #       choices
+  #     })
+  #   )
+  #   
+  # }
+  # 
+  # gp3_display_mode <- make_single_select_filter(
+  #   id = "gp3_display_mode",
+  #   label = "Display values as",
+  #   choices = c("Frequencies", "Percentages"),
+  #   default = "Frequencies"
+  # )
+  
   # Keep names for readability
   selected_question         <- question_filtered_output$filter_choice_reactive
   selected_gamesession      <- gamesession_filtered_output$filter_choice_reactive
@@ -373,9 +417,14 @@ server <- function(input, output, session) {
           make_round_panels(round_ids(),
                             plot_height = plot_height())
         })
-          
+        
         output[[plot_id]] <- plotly::renderPlotly({
-          (selected_dashboard_workflow()$render_plot(plot_data(), CONFIG[["plotly"]][[selected_question()]][["app"]]))
+          selected_dashboard_workflow()$render_plot(
+            plot_data(),
+            CONFIG[["plotly"]][[selected_question()]][["app"]],
+            gp3_display_mode()
+          )
+          
         })
         
         output[[summary_id]] <- shiny::renderPrint({

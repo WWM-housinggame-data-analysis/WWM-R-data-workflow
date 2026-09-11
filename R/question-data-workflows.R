@@ -129,7 +129,18 @@ question_dashboard_workflow <- list(
       
     },
     
-    render_plot = create_GP2_plotly,
+    render_plot = function(
+    plot_data,
+    plotly_configs,
+    display_mode = NULL
+    ) {
+      
+      create_GP2_plotly(
+        plot_data,
+        plotly_configs
+      )
+      
+    },
     
     adjust_plotly_height = adjust_GP2_plotly_height,
     
@@ -192,7 +203,19 @@ question_dashboard_workflow <- list(
       
     },
     
-    render_plot = create_GP3_plotly,
+    render_plot = function(
+    plot_data,
+    plotly_configs,
+    display_mode
+    ) {
+      
+      create_GP3_plotly(
+        plot_data,
+        plotly_configs,
+        display_mode
+      )
+      
+    },
     
     adjust_plotly_height = adjust_GP3_plotly_height,
     

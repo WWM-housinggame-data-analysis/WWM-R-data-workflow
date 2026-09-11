@@ -198,7 +198,7 @@ create_plotly_axislabels_annotations <- function(axislabels) {
 }
 
 
-create_GP3_plotly <- function(plot_data, plotly_configs) {
+create_GP3_plotly <- function(plot_data, plotly_configs, display_mode = "Frequencies") {
   
   bar_df                  <- plot_data$n_df
   selected_bar_segments   <- levels(bar_df[, "barseglabel"])
@@ -209,12 +209,21 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
   bar_x_min <- calculate_axis_min(bar_df, "ylabels", "N")
   bar_x_max <- calculate_axis_max(bar_df, "ylabels", "N")
 
+  x_title <- switch(
+    display_mode,
+    "Percentages" = "Percentage (%)",
+    "Frequencies" = "Frequency",
+    "Frequency"
+  )
+  
   # Start plotly
   
-  GP3_plot <- create_GP3_plotly_layout("Frequency",
-                                       ylevels,
-                                       c(bar_x_min, bar_x_max),
-                                       plotly_configs)
+  GP3_plot <- create_GP3_plotly_layout(
+    x_title,
+    ylevels,
+    c(bar_x_min, bar_x_max),
+    plotly_configs
+  )
   
   GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, names(PLAYER_AGGREGATION_OPTIONS)[PLAYER_AGGREGATION_OPTIONS %in% group_col]) 
   

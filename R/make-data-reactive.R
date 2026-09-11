@@ -188,6 +188,7 @@ add_global_reset_observer <- function(input, session, reset_button_id = "reset_a
     if (!is.null(session$userData$gamesession_reset)) session$userData$gamesession_reset()
     if (!is.null(session$userData$table_reset))       session$userData$table_reset()
     if (!is.null(session$userData$cost_types_reset))  session$userData$cost_types_reset()
+    if (!is.null(session$userData$gp3_display_mode_reset)) session$userData$gp3_display_mode_reset()
     
   })
 }
