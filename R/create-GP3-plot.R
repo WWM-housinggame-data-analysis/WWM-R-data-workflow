@@ -182,7 +182,7 @@ create_plotly_icon_list <- function(df, path_col, axislabel_col) {
   })
 }
 
-create_plotly_axislabels_annotations <- function(axislabels) {
+create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
   
   annotations <- lapply(seq_along(axislabels), function(i) {
     list(
@@ -190,7 +190,7 @@ create_plotly_axislabels_annotations <- function(axislabels) {
       yref = "y",
       x = -0.06,
       y = axislabels[i],
-      text = axislabels[i],
+      text = signal_newline(axislabels[i], nl_char),
       showarrow = FALSE,
       xanchor = "right"
     )
