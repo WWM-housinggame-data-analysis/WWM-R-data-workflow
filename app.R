@@ -290,17 +290,17 @@ server <- function(input, output, session) {
   
   shiny::observe({
     
-    question_dashboard_visuals_workflow <- shiny::reactive({
+    selected_dashboard_workflow <- shiny::reactive({
       
       req(selected_question())
       
-      question_dashboard_workflow[[selected_question()]]
+      question_dashboard_visuals_workflow[[selected_question()]]
       
     })
     
     shinyjs::toggle(
       "cost_types_container",
-      condition = question_dashboard_visuals_workflow()$show_cost_filter
+      condition = selected_dashboard_workflow()$show_cost_filter
     )
     
     shiny::req(length(round_ids()) > 0)
@@ -320,7 +320,7 @@ server <- function(input, output, session) {
         
         plot_data <- shiny::reactive({
           
-          question_dashboard_visuals_workflow()$get_plot_data(
+          selected_dashboard_workflow()$get_plot_data(
             df = question_session_df(),
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
@@ -330,11 +330,11 @@ server <- function(input, output, session) {
           
         })
         
-        plot_height <- shiny::reactive({question_dashboard_visuals_workflow()$adjust_plotly_height(plot_data()$barlevels)})
+        plot_height <- shiny::reactive({selected_dashboard_workflow()$adjust_plotly_height(plot_data()$barlevels)})
         
         summary_data <- shiny::reactive({
           
-          question_dashboard_visuals_workflow()$get_summary_table(
+          selected_dashboard_workflow()$get_summary_table(
             df = question_session_df(),
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
@@ -346,7 +346,7 @@ server <- function(input, output, session) {
         
         stats_data <- shiny::reactive({
           
-          question_dashboard_visuals_workflow()$get_stats_table(
+          selected_dashboard_workflow()$get_stats_table(
             df = question_session_df(),
             selected_table = selected_table(),
             selected_cost_types = selected_cost_types(),
@@ -363,7 +363,7 @@ server <- function(input, output, session) {
         })
           
         output[[plot_id]] <- plotly::renderPlotly({
-          (question_dashboard_visuals_workflow()$render_plot(plot_data(), CONFIG[["plotly"]][[selected_question()]][["app"]]))
+          (selected_dashboard_workflow()$render_plot(plot_data(), CONFIG[["plotly"]][[selected_question()]][["app"]]))
         })
         
         output[[summary_id]] <- shiny::renderPrint({
