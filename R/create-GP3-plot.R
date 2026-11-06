@@ -46,8 +46,30 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       barmode   = "stack",
       hovermode = "closest",
       
+      # xaxis = list(
+      #   title         = xtitle,
+      #   
+      #   range = x_axis_range,
+      #   rangemode = "normal",
+      #   
+      #   tickmode = "array",
+      #   tickvals = tick_vals,
+      #   ticktext = tick_vals,
+      #   
+      #   zeroline = TRUE,
+      #   zerolinecolor = "#aaaaaa",
+      #   zerolinewidth = 1,
+      #   
+      #   # (ii) vertical grid lines
+      #   showgrid = TRUE,
+      #   gridcolor = "rgba(0,0,0,0.08)",
+      #   gridwidth = 1
+      # ),
+      
       xaxis = list(
-        title         = xtitle,
+        domain = c(0.25, 1),
+        
+        title = xtitle,
         
         range = x_axis_range,
         rangemode = "normal",
@@ -60,11 +82,31 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
         zerolinecolor = "#aaaaaa",
         zerolinewidth = 1,
         
-        # (ii) vertical grid lines
         showgrid = TRUE,
         gridcolor = "rgba(0,0,0,0.08)",
         gridwidth = 1
       ),
+      
+      xaxis2 = list(
+        domain = c(0.18, 0.25),
+        
+        visible = FALSE,
+        
+        range = c(0,1),
+        
+        fixedrange = TRUE
+      ),
+      
+      xaxis3 = list(
+        domain = c(0.00, 0.18),
+        
+        visible = FALSE,
+        
+        range = c(0,1),
+        
+        fixedrange = TRUE
+      ),
+      
       
       yaxis = list(
         title    = list(text = yaxis_title,
@@ -158,37 +200,87 @@ add_GP3_bar_data <- function(out_plot, bar_df, selected_bar_segments, bar_legend
   return(out_plot)
 }
 
-create_plotly_icon_list <- function(df, path_col, axislabel_col) {
+# create_plotly_icon_list <- function(df, path_col, axislabel_col) {
+#   
+#   icon_map <- df %>%
+#     dplyr::select(tidyselect::all_of(c(axislabel_col, path_col))) %>%
+#     distinct() %>%
+#     mutate(icons_path = as.character(.data[[path_col]])) %>%
+#     mutate(src = vapply(.data[[path_col]], encode_b64, FUN.VALUE = character(1)))
+#   
+#   lapply(seq_len(nrow(icon_map)), function(i) {
+#     list(
+#       source   = icon_map$src[i],
+#       xref     = "paper",
+#       yref     = "y",
+#       x        = -0.03,
+#       y        = icon_map$ylabels[i],
+#       sizex    = .8,
+#       sizey    = .8,
+#       xanchor  = "center",
+#       yanchor  = "middle",
+#       layer    = "above"
+#     )
+#   })
+# }
+
+
+create_plotly_icon_list <- function(
+    df,
+    path_col,
+    axislabel_col
+) {
   
   icon_map <- df %>%
-    dplyr::select(tidyselect::all_of(c(axislabel_col, path_col))) %>%
+    dplyr::select(
+      tidyselect::all_of(
+        c(axislabel_col, path_col)
+      )
+    ) %>%
     distinct() %>%
-    mutate(icons_path = as.character(.data[[path_col]])) %>%
-    mutate(src = vapply(.data[[path_col]], encode_b64, FUN.VALUE = character(1)))
+    mutate(!!path_col := as.character(.data[[path_col]])) %>%
+    mutate(
+      src = vapply(
+        .data[[path_col]],
+        encode_b64,
+        character(1)
+      )
+    )
   
   lapply(seq_len(nrow(icon_map)), function(i) {
+    
     list(
-      source   = icon_map$src[i],
-      xref     = "paper",
-      yref     = "y",
-      x        = -0.03,
-      y        = icon_map$ylabels[i],
-      sizex    = .8,
-      sizey    = .8,
-      xanchor  = "center",
-      yanchor  = "middle",
-      layer    = "above"
+      
+      source = icon_map$src[i],
+      
+      xref = "x2",
+      yref = "y",
+      
+      x = 0.5,
+      
+      y = icon_map[[axislabel_col]][i],
+      
+      sizex = 0.8,
+      sizey = 0.8,
+      
+      xanchor = "center",
+      yanchor = "middle",
+      
+      layer = "above"
+      
     )
+    
   })
+  
 }
 
 create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
-  
+
   annotations <- lapply(seq_along(axislabels), function(i) {
     list(
       xref = "paper",
       yref = "y",
-      x = -0.06,
+      x = 0.17,
       y = axislabels[i],
       text = signal_newline(axislabels[i], nl_char),
       showarrow = FALSE,
@@ -196,6 +288,50 @@ create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
     )
   })
 }
+
+# add_GP3_label_trace <- function(
+#     out_plot,
+#     ylevels,
+#     nl_char = " - "
+# ) {
+#   
+#   label_df <- data.frame(
+#     
+#     x = 1,
+#     
+#     y = ylevels,
+#     
+#     text = vapply(
+#       ylevels,
+#       signal_newline,
+#       FUN.VALUE = character(1),
+#       nl_char = nl_char
+#     )
+#     
+#   )
+#   
+#   out_plot %>%
+#     plotly::add_trace(
+#       
+#       data = label_df,
+#       
+#       x = ~x,
+#       y = ~y,
+#       
+#       type = "scatter",
+#       text = ~text,
+#       
+#       xaxis = "x3",
+#       yaxis = "y",
+#       
+#       textposition = "middle right",
+#       
+#       showlegend = FALSE,
+#       
+#       hoverinfo = "skip"
+#     )
+#   
+# }
 
 
 create_GP3_plotly <- function(plot_data, plotly_configs) {
@@ -218,15 +354,23 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
   
   GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, names(PLAYER_AGGREGATION_OPTIONS)[PLAYER_AGGREGATION_OPTIONS %in% group_col]) 
   
+  
   GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
+  # GP3_plot <- add_GP3_label_trace(GP3_plot, ylevels)
   
   
   GP3_yaxis_icons <- create_plotly_icon_list(bar_df, MEASURE_ICONS_COL, GP3_YLABEL_COL)
   
-  plotly::layout(GP3_plot,
-                 annotations = GP3_ylabels_annotations,
-                 images = GP3_yaxis_icons)
+  GP3_plot <- plotly::layout(GP3_plot,
+                             annotations = GP3_ylabels_annotations,
+                             images = GP3_yaxis_icons)
   
+  # GP3_plot <- plotly::layout(
+  #   GP3_plot,
+  #   images = GP3_yaxis_icons
+  # )
+  
+  GP3_plot
 }
 
 
