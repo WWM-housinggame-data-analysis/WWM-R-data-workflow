@@ -98,7 +98,17 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       ),
       
       xaxis3 = list(
-        domain = c(0.00, 0.18),
+        domain = c(0.02, 0.18),
+        
+        visible = FALSE,
+        
+        range = c(0,1),
+        
+        fixedrange = TRUE
+      ),
+      
+      xaxis4 = list(
+        domain = c(0, 0.02),
         
         visible = FALSE,
         
@@ -109,8 +119,9 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       
       
       yaxis = list(
-        title    = list(text = yaxis_title,
-                        standoff = plotly_configs[["yaxis_standoff"]]),
+        # title    = list(text = yaxis_title,
+        #                 standoff = plotly_configs[["yaxis_standoff"]]),
+        title = list(text = ""),
         
         categoryorder = "array",
         categoryarray = ylevels,
@@ -278,9 +289,9 @@ create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
 
   annotations <- lapply(seq_along(axislabels), function(i) {
     list(
-      xref = "paper",
+      xref = "x3",
       yref = "y",
-      x = 0.17,
+      x = 1,
       y = axislabels[i],
       text = signal_newline(axislabels[i], nl_char),
       showarrow = FALSE,
@@ -334,6 +345,31 @@ create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
 # }
 
 
+create_yaxis_title_annotation <- function(yaxis_text, nl_char = " - "){
+  
+  yaxis_text <- signal_newline(yaxis_text, nl_char)
+  
+  list(
+    xref = "x4",
+    yref = "paper",
+    
+    x = 0.5,
+    y = 0.5,
+    
+    text = yaxis_text,
+    
+    textangle = -90,
+    
+    showarrow = FALSE,
+    
+    xanchor = "center",
+    yanchor = "middle",
+    
+    font = list(size = 14)
+  )
+  
+}
+
 create_GP3_plotly <- function(plot_data, plotly_configs) {
   
   bar_df                  <- plot_data$n_df
@@ -355,15 +391,28 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
   GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, names(PLAYER_AGGREGATION_OPTIONS)[PLAYER_AGGREGATION_OPTIONS %in% group_col]) 
   
   
+  GP3_title_annotation <-
+    create_yaxis_title_annotation(plotly_configs[["yaxis_title"]])
+  
+  
   GP3_ylabels_annotations <- create_plotly_axislabels_annotations(ylevels)
   # GP3_plot <- add_GP3_label_trace(GP3_plot, ylevels)
   
   
   GP3_yaxis_icons <- create_plotly_icon_list(bar_df, MEASURE_ICONS_COL, GP3_YLABEL_COL)
   
-  GP3_plot <- plotly::layout(GP3_plot,
-                             annotations = GP3_ylabels_annotations,
-                             images = GP3_yaxis_icons)
+  GP3_plot <-   plotly::layout(
+    GP3_plot,
+    annotations = c(
+      GP3_ylabels_annotations,
+      list(GP3_title_annotation)
+    ),
+    images = GP3_yaxis_icons
+  )
+  
+  # GP3_plot <- plotly::layout(GP3_plot,
+  #                            annotations = GP3_ylabels_annotations,
+  #                            images = GP3_yaxis_icons)
   
   # GP3_plot <- plotly::layout(
   #   GP3_plot,
