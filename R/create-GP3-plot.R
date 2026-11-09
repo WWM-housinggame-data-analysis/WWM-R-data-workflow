@@ -67,7 +67,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       # ),
       
       xaxis = list(
-        domain = c(0.25, 1),
+        domain = c(0.30, 1),
         
         title = xtitle,
         
@@ -88,7 +88,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       ),
       
       xaxis2 = list(
-        domain = c(0.18, 0.25),
+        domain = c(0.23, 0.30),
         
         visible = FALSE,
         
@@ -98,7 +98,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       ),
       
       xaxis3 = list(
-        domain = c(0.02, 0.18),
+        domain = c(0.04, 0.23),
         
         visible = FALSE,
         
@@ -108,7 +108,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
       ),
       
       xaxis4 = list(
-        domain = c(0, 0.02),
+        domain = c(0, 0.04),
         
         visible = FALSE,
         
@@ -128,7 +128,7 @@ create_GP3_plotly_layout <- function(xtitle, ylevels, x_axis_range, plotly_confi
         
         showticklabels = FALSE,
         
-        showgrid  = TRUE,
+        showgrid  = FALSE,
         gridcolor = "rgba(0,0,0,0.06)",
         gridwidth = 1,
         
@@ -291,11 +291,11 @@ create_plotly_axislabels_annotations <- function(axislabels, nl_char = " - ") {
     list(
       xref = "x3",
       yref = "y",
-      x = 1,
+      x = 0.5,
       y = axislabels[i],
       text = signal_newline(axislabels[i], nl_char),
       showarrow = FALSE,
-      xanchor = "right"
+      xanchor = "center"
     )
   })
 }
@@ -391,6 +391,32 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
   GP3_plot <- add_GP3_bar_data(GP3_plot, bar_df, selected_bar_segments, names(PLAYER_AGGREGATION_OPTIONS)[PLAYER_AGGREGATION_OPTIONS %in% group_col]) 
   
   
+  
+  GP3_gridlines <- lapply(seq_along(ylevels), function(i){
+    
+    list(
+      type = "line",
+      xref = "paper",
+      yref = "y",
+      
+      x0 = 0.30,
+      x1 = 1,
+      
+      y0 = ylevels[i],
+      y1 = ylevels[i],
+      
+      line = list(
+        color = "rgba(0,0,0,0.06)",
+        width = 1
+      ),
+      
+      layer = "below"
+    )
+    
+  })
+  
+  
+  
   GP3_title_annotation <-
     create_yaxis_title_annotation(plotly_configs[["yaxis_title"]])
   
@@ -407,7 +433,8 @@ create_GP3_plotly <- function(plot_data, plotly_configs) {
       GP3_ylabels_annotations,
       list(GP3_title_annotation)
     ),
-    images = GP3_yaxis_icons
+    images = GP3_yaxis_icons,
+    shapes = GP3_gridlines
   )
   
   # GP3_plot <- plotly::layout(GP3_plot,
