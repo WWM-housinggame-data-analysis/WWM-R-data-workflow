@@ -49,11 +49,84 @@ create_GP2_xlabels <- function(df, group_col) {
   return(df)
 }
 
-filter_game_rounds <- function(df, game_round, interm_rounds) {
+
+# Build xlabels on the row-level data
+create_GP3_ylabels <- function(df) {
+  
+  df <- df |>
+    dplyr::mutate(
+      !!GP3_YLABEL_COL := factor(
+        paste(.data[[MEASURE_ALIAS_COL]], paste0("(", .data[[COST_INFO_COL]], ")"), sep = " - "),
+        levels = paste(MEASURE_ALIASES,
+                       paste0("(", .data[[COST_INFO_COL]][match(MEASURE_ALIASES, .data[[MEASURE_ALIAS_COL]])] , ")"),
+                       sep = " - ")
+      )
+    )
+  
+  return(df)
+}
+
+
+# Build xlabels on the row-level data
+create_GP3_barseg_labels <- function(df, group_col) {
+  
+  if (identical(group_col, INCOME_GRP_COL)) {
+    
+    df <- df |>
+      dplyr::mutate(
+        !!GP3_BARGEGLABEL_COL := factor(
+          paste(WELFARE_LABELS[match(.data[[group_col]], names(WELFARE_LABELS))], .data[[group_col]], sep = " - "),
+          levels = paste(WELFARE_LABELS, names(WELFARE_LABELS), sep = " - ")
+        )
+      )
+    
+  } else if (identical(group_col, PLAYER_CODE_COL)) {
+    
+    df <- df |>
+      dplyr::mutate(
+        !!GP3_BARGEGLABEL_COL := factor(
+          paste(.data[[group_col]], .data[[INCOME_GRP_COL]], sep = " - "),
+          levels = paste(.data[[PLAYER_CODE_COL]][match(names(WELFARE_LABELS), .data[[INCOME_GRP_COL]])], names(WELFARE_LABELS), sep = " - ")
+        )
+      )
+  }
+  
+  return(df)
+}
+
+retrieve_most_frequent_round <- function(df, group_cols, round_col, n_col, mostfreq_col) {
+  
+  df |>
+    left_join(df |>
+                dplyr::select(tidyselect::all_of(c(group_cols, round_col, n_col))) |>
+                dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+                slice_max(.data[[n_col]], n = 1, with_ties = TRUE) |>
+                dplyr::summarise(
+                  !!mostfreq_col := paste(paste0("R", sort(unique(.data[[round_col]]))), collapse = "/"),
+                  .groups = "drop"
+                ),
+              by = group_cols
+    )
+}
+
+aggregate_all_rounds <- function(df, group_cols, n_col, mostfreq_col) {
+  
+  df |>
+    dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+    dplyr::summarise(
+      !!n_col := sum(.data[[n_col]]),
+      !!mostfreq_col := first(.data[[FREQUENT_ROUND_COL]]),
+      .groups = "drop"
+    ) |>
+    as.data.frame()
+  
+}
+
+filter_game_rounds <- function(df, game_round, indiv_rounds) {
   
   shiny::req(nrow(df) > 0)
   
-  if (game_round %in% interm_rounds) {
+  if (game_round %in% indiv_rounds) {
     
     df <- df |>
       dplyr::filter(.data[[ROUND_NUMBER_COL]] %in% game_round) |>
@@ -65,18 +138,20 @@ filter_game_rounds <- function(df, game_round, interm_rounds) {
   return(df)
 }
 
-retrieve_n_table <- function(df, group_col, id_col = "player_code") {
+retrieve_n_table <- function(df, group_cols, id_col = "player_code") {
   
-  if (identical(group_col, id_col)) {
+  if (identical(group_cols, id_col)) {
     n_df <- df |>
       dplyr::select(tidyselect::all_of(id_col)) |>
-      dplyr::summarise(N = dplyr::n())
+      dplyr::summarise(N = dplyr::n()) |>
+      as.data.frame()
     
   } else {
     n_df <- df |>
-      dplyr::select(tidyselect::all_of(c(group_col, id_col))) |>
-      dplyr::group_by(.data[[group_col]]) |>
-      dplyr::summarise(N = dplyr::n())
+      dplyr::select(tidyselect::all_of(c(group_cols, id_col))) |>
+      dplyr::group_by(dplyr::across(tidyselect::all_of(group_cols))) |>
+      dplyr::summarise(N = dplyr::n(), .groups = "drop") |>
+      as.data.frame()
   }
   return(n_df)
 }
