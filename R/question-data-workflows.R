@@ -57,6 +57,18 @@ question_preprocessing_workflow <- list(
     }
   ),
   
+  GP3 = list(
+    
+    get_preprocessed_data = function(gamesession_data_tables, session_name) {
+      
+      ##R/preprocess-dbtables.R
+      preprocess_data_tables <- preprocess_selected_dbtables(gamesession_data_tables, session_name, excel = FALSE)
+      
+      preprocess_extra_dbtables_GP3(preprocess_data_tables, session_name, excel = FALSE)
+      
+    }
+  ),
+  
   All = list(
     
     get_preprocessed_data = function(gamesession_data_tables, session_name) {
@@ -70,7 +82,21 @@ question_preprocessing_workflow <- list(
   )
 )
 
-question_dashboard_workflow <- list(
+question_dashboard_data_workflow <- function(dashboard_data_list, question_options, preprocess_data_list, session_name) {
+  
+  if ("GP2" %in% question_options) {
+    dashboard_data_list[["GP2"]][[session_name]] <- retrieve_GP2_dataframe(preprocess_data_list[[session_name]][["playerround"]][, INCOME_DIST_ALLCOLS])
+  }
+  
+  if ("GP3" %in% question_options) {
+    dashboard_data_list[["GP3"]][[session_name]] <- retrieve_GP3_dataframe(preprocess_data_list[[session_name]][["measures_combined"]])
+  }
+  
+  return(dashboard_data_list)
+}
+
+
+question_dashboard_visuals_workflow <- list(
   
   GP2 = list(
     

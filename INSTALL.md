@@ -16,23 +16,13 @@ Please follow the instructions below to set up your environment for working with
 
 ```bash
 sudo apt update
-sudo apt install -y r-base
+sudo apt install r-base
 ```
-- Install system dependencies for R packages used in this project. For Linux, you can use the following command:
+
+Once installed, open R via the terminal
 
 ```bash
-sudo apt install -y \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    libharfbuzz-dev \
-    libfribidi-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libtiff5-dev \
-    libxml2-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    build-essential
+R
 ```
 
 - Install the `renv` package for R package management by running `install.packages("renv")` in your R console.

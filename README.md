@@ -79,6 +79,11 @@ R
 
 > **Note**: If you encounter any issues with the R version, please ensure that you are using a compatible version of R and that all dependencies are correctly installed.
 
+> **Note**: when running `renv::restore()` for the first time you may receive a notification on missing system dependencies for R packages that need to be installed and the respective command to achieve that. For example:
+> ```bash
+> sudo apt install libcurl4-openssl-dev libpng-dev libssl-dev libx11-dev libxml2-dev pandoc
+> ```
+
 - Run the app by executing `Rscript -e "shiny::runApp('.', host='0.0.0.0', port=3838)"` and check the display in http://localhost:3838.
 
 ## Community

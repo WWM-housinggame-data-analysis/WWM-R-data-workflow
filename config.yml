@@ -9,7 +9,7 @@ plotly:
   GP3:
     app:
         yaxis_title: "Private adaptation measures"
-        yaxis_standoff: 330
+        yaxis_standoff: 250
         top_margin: 60
         right_margin: 0
         left_margin: 0
